@@ -1,0 +1,103 @@
+% Path setup
+F='/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/AAV single cell data/5-15 GBM CSVs/'; % Updated file path
+
+% File processing
+files=dir([F,'*.csv']);
+files={files.name};
+
+% Separate Day 0 and Day 14 BC files
+day0_files = contains(files, 'day 0'); % Updated to 'day 0'
+bc_files = contains(files, 'day 14 BC'); % Updated to 'day 14 BC'
+
+day0_files = files(day0_files);
+bc_files = files(bc_files);
+
+% Remove '.csv' from file names for labels
+day0_files = erase(day0_files, '.csv');
+bc_files = erase(bc_files, '.csv');
+
+nDay0 = length(day0_files);
+nBC = length(bc_files);
+
+% Get full list of all genes
+names={};
+for i=1:length(day0_files)
+    T=readtable([F,day0_files{i},'.csv']);
+    names=[names;T.FeatureName];
+end
+for i=1:length(bc_files)
+    T=readtable([F,bc_files{i},'.csv']);
+    names=[names;T.FeatureName];
+end
+names=unique(names);
+
+% Initialize matrices
+[GA,GL]=deal(nan(length(names),nDay0 + nBC)); % Gene average
+
+% Load Day 0 files
+for i=1:nDay0
+    T=readtable([F,day0_files{i},'.csv']);
+    [~,idx]=ismember(T.FeatureName,names);
+    GA(idx,i)=T{:,3};
+    GL(idx,i)=T{:,4};
+end
+
+% Load Day 14 BC files
+for i=1:nBC
+    T=readtable([F,bc_files{i},'.csv']);
+    [~,idx]=ismember(T.FeatureName,names);
+    GA(idx,nDay0+i)=T{:,3};
+    GL(idx,nDay0+i)=T{:,4};
+end
+
+% Calculate correlations
+[CA,CL,pA,pL,n]=deal(nan(nDay0, nBC)); % Adjusted size to Day 0 x Day 14 BC
+for i=1:nDay0
+    for j=1:nBC
+        a=GA(:,i);        b=GA(:,nDay0+j);
+        rm=isnan(a)|isnan(b);
+        a=a(~rm);         b=b(~rm);
+        [CA(i,j),pA(i,j)]=corr(a,b);
+        a=GL(:,i);        b=GL(:,nDay0+j);
+        rm=isnan(a)|isnan(b);
+        a=a(~rm);         b=b(~rm);
+        [CL(i,j),pL(i,j)]=corr(a,b);
+        n(i,j)=length(a);
+    end
+end
+
+% Plot stuff
+figure(1);
+subplot(131)
+imagesc(n);
+axis square
+xticks(1:nBC); xticklabels(bc_files)
+yticks(1:nDay0); yticklabels(day0_files)
+colorbar
+title('Number of genes in common') % Updated title
+
+subplot(132)
+imagesc(CA);
+axis square
+xticks(1:nBC); xticklabels(bc_files)
+yticks(1:nDay0); yticklabels(day0_files)
+colorbar
+title('Average expression level correlation') % Updated title
+
+subplot(133)
+imagesc(CL);
+axis square
+xticks(1:nBC); xticklabels(bc_files)
+yticks(1:nDay0); yticklabels(day0_files)
+colorbar
+title('Log2 fold change correlation') % Updated title
+
+sgtitle('Day 0 vs. Day 14 BC')
+
+% Write to excel
+N=array2table(n,'RowNames',day0_files,'VariableNames',bc_files);
+writetable(N,'nOverlappingGenes.xlsx','WriteRowNames',true);
+CAx=array2table(CA,'RowNames',day0_files,'VariableNames',bc_files);
+writetable(CAx,'corrAverage.xlsx','WriteRowNames',true);
+CLx=array2table(CL,'RowNames',day0_files,'VariableNames',bc_files);
+writetable(CLx,'corrLog.xlsx','WriteRowNames',true);
