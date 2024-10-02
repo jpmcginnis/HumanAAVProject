@@ -1,0 +1,68 @@
+dir = getDirectory("choose the directory containing the lif files");
+lif_files = getFileList(dir);
+len_lif_files = lif_files.length;
+for(m=0;m<len_lif_files;m++){
+	liffile = lif_files[m];
+	if(endsWith(liffile, ".lif")){
+		liffilepath = dir + liffile;
+		open(liffilepath);
+		//print(path);
+		LST = getList("image.titles");
+		num = LST.length;
+		//waitForUser("Make sure you made a subfolder titled images");
+		for (i = 0; i < num; i++) {
+			name = LST[i];
+			selectWindow(name);
+			getDimensions(width, height, channels, slices, frames);
+			//print(height);
+			if(height < 5000){
+				selectWindow(name);
+				close();
+			}else{
+				continue;
+			}
+		}
+		LST2 = getList("image.titles");
+		num2 = LST2.length;
+		for (j = 0; j < num2; j++) {
+			name2 = LST2[j];
+			selectWindow(name2);
+			getDimensions(width, height, channels, slices, frames);
+			if(channels < 4){
+				selectWindow(name2);
+				close();
+			}else{
+				continue;
+			}
+		}
+		path = File.directory;
+		//print(path);
+		LST3 = getList("image.titles");
+		num3 = LST3.length;
+		for(k=0;k<num3;k++){
+			name3 = LST3[k];
+			selectWindow(name3);
+			//IJ.log(name3);
+			indexineed = indexOf(name3, "/");
+			//IJ.log(indexineed);
+			if(indexineed < 0){
+				indexineed2 = 0;
+			}else{
+				indexineed2 = indexineed + 1;
+				name3_3 = substring(name3, indexineed2);
+				//IJ.log(name3_3);
+				selectWindow(name3);
+				rename(name3_3);
+				kernel = path + name3_3 + ".tif";
+				//IJ.log(kernel);
+				saveAs("Tiff", kernel);
+				name4 = name3_3 + ".tif";
+				//IJ.log(name4);
+				selectWindow(name4);
+				close();
+			}
+		}
+	}else{
+		continue;
+	}
+}
