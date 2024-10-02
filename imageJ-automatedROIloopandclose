@@ -1,0 +1,100 @@
+// Define the circle diameter and set it as an ROI
+circleDiameter = 14098;
+radius = circleDiameter / 2;
+
+// Specify the directory path where TIFF files are located
+inputDirectory = "J:\\AAV imaging\\2024-6-24 BT\\";  // Use double backslashes for Windows paths
+outputDirectory = "J:\\AAV imaging\\2024-6-24 BT\\";  // Same for the output path
+
+// Get the list of TIFF files in the folder
+fileList = getFileList(inputDirectory);
+
+// Loop through all the TIFF files in the folder
+for (i = 0; i < fileList.length; i++) {
+
+    // Open each TIFF file
+    open(inputDirectory + fileList[i]);
+
+    // Get the current image title
+    title = getTitle();
+
+    // Sanitize the title by replacing spaces, slashes, and other problematic characters with underscores
+    sanitizedTitle = replace(title, " ", "_");
+    sanitizedTitle = replace(sanitizedTitle, "/", "_");
+    sanitizedTitle = replace(sanitizedTitle, "\\", "_");
+
+    // Get image dimensions
+    width = getWidth();
+    height = getHeight();
+
+    // Activate the third channel
+    Stack.setChannel(3);
+
+    // Initialize variables to track the maximum signal and best location
+    maxSignalDensity = 0;
+    bestX = 0;
+    bestY = 0;
+
+    // Loop through the image in steps of a small fraction of the radius to find the location with the maximum density
+    stepSize = radius / 5; // You can adjust this to balance accuracy and speed
+    for (x = radius; x <= width - radius; x += stepSize) {
+        for (y = radius; y <= height - radius; y += stepSize) {
+            
+            // Set the oval ROI at the current (x, y) position
+            makeOval(x - radius, y - radius, circleDiameter, circleDiameter);
+            
+            // Measure the signal density within the current ROI
+            run("Measure");
+            signalDensity = getResult("Mean");
+            
+            // Update the best position if a higher density is found
+            if (signalDensity > maxSignalDensity) {
+                maxSignalDensity = signalDensity;
+                bestX = x;
+                bestY = y;
+            }
+            
+            // Clear the current results to avoid clutter
+            run("Clear Results");
+        }
+    }
+
+    // After looping, set the ROI to the position with the highest density
+    makeOval(bestX - radius, bestY - radius, circleDiameter, circleDiameter);
+
+    // Ensure the ROI is active and visible
+    // Save the screenshot of the entire image with the ROI
+    saveAs("Tiff", outputDirectory + sanitizedTitle + "_screenshot.tif");
+
+    // Clear everything outside the drawn ROI
+    run("Clear Outside", "stack");
+
+    // Remove the ROI
+    run("Select None");
+
+    // Save the image with a new name starting with 'roi...'
+    saveAs("Tiff", outputDirectory + sanitizedTitle + "_roi.tif");
+
+    // Close the image and result windows
+    closeImageAndResults();
+
+}
+
+// Function to close the active image and any results
+function closeImageAndResults() {
+    // Ensure the image is active
+    selectWindow(getTitle());
+    
+    // Close the image
+    run("Close");
+
+    // Close any remaining results if open
+    if (isResultsWindowOpen()) {
+        run("Close Results");
+    }
+}
+
+// Helper function to check if results window is open
+function isResultsWindowOpen() {
+    return (nResults() > 0);
+}
