@@ -1,0 +1,106 @@
+#At least for me, colab can't see anything in a shared folder. So this will mount a personal google drive to the notebook. So this will bring up a pop up for a sign in for google.
+from google.colab import drive
+drive.mount('/content/gdrive')
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+#if you run the next cell, the thresholds have got to be set before you click go. Otherwise it will use the old thresholds from the last time you ran it.
+#This will work well if your thresholds are consistent from image to image. If they are still varying greatly, I'm not sure how to go about automating this notebook.
+#There are ways of automatically finding a threshold value from a histogram, but it's going to be difficult to implement here.
+#I've left the rest of the notebook intact. If you can't use an auto threshold value for everything, than you have to run it the old way.
+
+#to get the data imported, you'll need to put the path to the data in the last line of this cell. On the far left of the screen, click on the folder icon then click through to the gdrive
+#and navigate to where you have the data saved
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+import glob
+LST = glob.glob('/content/drive/MyDrive/AAV Gene Therapy/Imaging and analysis/5-15-24 STL GBM/*.csv')
+for item in LST:
+  df=pd.read_csv(item)
+  new_labels = df['Label'].str.split(':', expand=True)
+  df['new_labels'] = new_labels[1]
+  chan1 = df.loc[df['Ch']==1].reset_index()
+  chan2 = df.loc[df['Ch']==2].reset_index()
+  chan3 = df.loc[df['Ch']==3].reset_index()
+  chan4 = df.loc[df['Ch']==4].reset_index()
+  if chan1.new_labels[0] == chan2.new_labels[0] and chan1.new_labels[0] == chan3.new_labels[0] and chan1.new_labels[0] == chan4.new_labels[0]:
+    print('Labels Match')
+  else:
+    print('Labels DO NOT Match')
+  if chan1.new_labels[2] == chan2.new_labels[2] and chan1.new_labels[2] == chan3.new_labels[2] and chan1.new_labels[2] == chan4.new_labels[2]:
+    print('Labels Match')
+  else:
+    print('Labels DO NOT Match')
+  #This is where you need to set the thresholds before you go through and run this cell. But you won't know what the thresholds are until you run the plots below
+  #which defeats the whole purpose
+  pos_chan4 = chan4.loc[chan4['Mean']>12].reset_index()
+  pos_chan2 = chan2.loc[chan2['Mean']>12].reset_index()
+  pos_chan3 = chan3.loc[chan3['Mean']>1.335].reset_index()
+
+
+  pos_chan3['is_dapi'] = pos_chan3['new_labels'].isin(chan1['new_labels'])
+  pos_chan3['is_GFAP'] = pos_chan3['new_labels'].isin(pos_chan2['new_labels'])
+  pos_chan3['is_gfp'] = pos_chan3['new_labels'].isin(pos_chan3['new_labels'])
+  pos_chan3['is_neun'] = pos_chan3['new_labels'].isin(pos_chan4['new_labels'])
+  pos_chan3.drop('level_0', axis=1, inplace=True)
+
+  dapi_pos_gfp = pos_chan3.loc[pos_chan3['is_dapi']==True].reset_index()
+  GFAP_pos_gfp = pos_chan3.loc[pos_chan3['is_GFAP']==True].reset_index()
+  gfp_pos_gfp = pos_chan3.loc[pos_chan3['is_gfp']==True].reset_index()
+  neun_pos_gfp = pos_chan3.loc[pos_chan3['is_neun']==True].reset_index()
+
+  num_other_cells = gfp_pos_gfp.shape[0] - (GFAP_pos_gfp.shape[0] + neun_pos_gfp.shape[0])
+  #print('There are ')
+  #print(num_other_cells)
+  #print('GFP positive objects that are not NeuN or GFAP positive')
+  #print('out of')
+  #print(gfp_pos_gfp.shape[0])
+  #print('total GFP positive objects')
+
+
+
+  #This is the new part of the code that handles the divide by zero errors. If the length of the pos for each channel is zero, it just makes the fraction value zero rather than
+  #doing the division.
+  if(chan1.shape[0]>0):
+    frac_dapi = (dapi_pos_gfp.shape[0]/chan1.shape[0])
+  else:
+    frac_dapi = 0
+  if(pos_chan2.shape[0]>0):
+    frac_GFAP = (GFAP_pos_gfp.shape[0]/pos_chan2.shape[0])
+  else:
+    frac_GFAP = 0
+  if(pos_chan3.shape[0]>0):
+    frac_gfp = (gfp_pos_gfp.shape[0]/pos_chan3.shape[0])
+  else:
+    frac_gfp = 0
+  if(pos_chan4.shape[0]>0):
+    frac_neun = (neun_pos_gfp.shape[0]/pos_chan4.shape[0])
+  else:
+    frac_neun = 0
+
+  fracs = [frac_dapi, frac_GFAP, frac_gfp, frac_neun]
+  df_fracs = pd.DataFrame(fracs, columns=['Fraction'])
+  labs = ['DAPI', 'GFAP', 'GFP', 'NeuN']
+  df_fracs['labels'] = labs
+  df_fracs['percents'] = df_fracs['Fraction']*100
+  lenchan1 = chan1.shape[0]
+  lenchan2 = pos_chan2.shape[0]
+  lenchan3 = pos_chan3.shape[0]
+  lenchan4 = pos_chan4.shape[0]
+  df_fracs['num_cells'] = ''
+  df_fracs.loc[0, 'num_cells'] = lenchan1
+  df_fracs.loc[1, 'num_cells'] = lenchan2
+  df_fracs.loc[2, 'num_cells'] = lenchan3
+  df_fracs.loc[3, 'num_cells'] = lenchan4
+  item2 = item + '_perc_results.csv'
+
+  #so I'm going to make two more columns that will have the number of non GFAP/non NeuN objects in one column and the total number of objects in the next column
+  #it will fill in all rows in each new column with the same value. All numbers in these columns should be the same.
+  df_fracs['not_GFAP_NeuN'] = num_other_cells
+  df_fracs['total_objects'] = gfp_pos_gfp.shape[0]
+
+  #i've aggregated the fractions, percents, num cells and labels all into one df that I write to a spreadsheet. It will use the original name of the data sheet
+  #and just append '_perc_results.csv' onto the end of that file name. This should make it easy enough to keep track of everything.
+  df_fracs.to_csv(item2)
