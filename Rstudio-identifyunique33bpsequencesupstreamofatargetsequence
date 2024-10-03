@@ -1,0 +1,58 @@
+# Load required libraries
+library(ShortRead)
+library(Biostrings)
+library(dplyr)  # For data manipulation
+library(readr)  # For writing CSV files
+
+# Define the target sequence and length of the sequence to extract
+target_sequence <- "gttcaaaaccaaggaatacttccgggtatggttt"
+extract_length <- 33
+
+# Function to process a single sequence and extract the 33 bp sequence before the target
+extract_before_sequence <- function(seq, target, length) {
+  target_pos <- matchPattern(target, seq, fixed = TRUE)
+  
+  # Extract 33 bp sequences before each occurrence of the target
+  extracted_seqs <- c()
+  
+  if (length(target_pos) > 0) {
+    for (i in seq_along(target_pos)) {
+      pos <- target_pos[i]
+      start_pos <- start(pos) - length + 1
+      if (start_pos > 0) {
+        extracted_seq <- subseq(seq, start = start_pos, width = length)
+        extracted_seqs <- c(extracted_seqs, as.character(extracted_seq))
+      }
+    }
+  }
+  
+  return(extracted_seqs)
+}
+
+# Read FASTQ files
+fastq_r1 <- readFastq("/Users/jpmcginnis1/Desktop/RStudio_work/30-1079452244/00_fastq/AAV9libviralBC1f1r_R1_001.fastq.gz")
+fastq_r2 <- readFastq("/Users/jpmcginnis1/Desktop/RStudio_work/30-1079452244/00_fastq/AAV9libviralBC1f1r_R2_001.fastq.gz")
+
+# Get sequences from FASTQ files
+sequences_r1 <- sread(fastq_r1)
+sequences_r2 <- sread(fastq_r2)
+
+# Combine sequences from both files into a list
+sequences <- c(sequences_r1, sequences_r2)
+
+# Apply extraction function to each sequence
+all_extracted_sequences <- unlist(lapply(sequences, function(seq) extract_before_sequence(seq, target_sequence, extract_length)))
+
+# Convert to a data frame
+df_sequences <- as.data.frame(table(all_extracted_sequences))
+
+# Rename columns
+colnames(df_sequences) <- c("Unique_33bp_Sequence", "Count")
+
+# Define file path
+file_path <- "/Users/jpmcginnis1/Desktop/unique_33bp_sequences_before_target.csv"
+
+# Write data frame to CSV
+write_csv(df_sequences, file_path)
+
+print(paste("Unique 33bp sequences before target and their counts saved to:", file_path))
