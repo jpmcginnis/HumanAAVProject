@@ -1,0 +1,66 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+import os
+import pandas as pd
+
+# Mount Google Drive to access the folder containing the spreadsheets
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Define the folder path
+folder_path = '/content/drive/MyDrive/AAV Gene Therapy/Imaging and analysis/5-15-24 STL GBM/1.335 GFP max perc results/'
+
+# Create an empty DataFrame to store aggregated data
+aggregate_data = pd.DataFrame()
+
+# Loop through all files in the folder
+for filename in os.listdir(folder_path):
+    if filename.endswith(".csv"):
+        file_path = os.path.join(folder_path, filename)
+
+        # Read the current spreadsheet
+        current_data = pd.read_csv(file_path)
+
+        # Transpose the data
+        current_data = current_data.transpose()
+
+        # Add a column with the filename
+        current_data['Filename'] = filename
+
+        # Append the data to the aggregate_data DataFrame
+        aggregate_data = pd.concat([aggregate_data, current_data], ignore_index=True)
+
+# Save the aggregated data to a new "aggregate_results.csv" file
+aggregate_data.to_csv('/content/drive/MyDrive/AAV Gene Therapy/Imaging and analysis/5-15-24 STL GBM/1.335 GFP max perc results/aggregate_results.csv', index=False)
+
+# Load the CSV file without header
+input_path = '/content/drive/MyDrive/AAV Gene Therapy/Imaging and analysis/5-15-24 STL GBM/1.335 GFP max perc results/aggregate_results.csv'
+output_path = '/content/drive/MyDrive/AAV Gene Therapy/Imaging and analysis/5-15-24 STL GBM/1.335 GFP max perc results/aggregate_results-spaced.csv'
+
+df = pd.read_csv(input_path, header=None)
+
+# Extract the grouping key from the filename (before the fourth underscore)
+df['Group'] = df[4].str.split('_').str[:4].str.join('_')
+
+# Add empty row at the very top
+df.loc[-1] = [None] * len(df.columns)
+df.index = df.index + 1
+df = df.sort_index()
+
+# Add empty column at the very left
+df.insert(0, 'EmptyColumn', [None] * len(df))
+
+# Iterate through the DataFrame to add five empty rows between groups
+result_df = pd.DataFrame(columns=df.columns)
+for _, group_df in df.groupby('Group'):
+    result_df = pd.concat([result_df, group_df, pd.DataFrame([[None] * len(df.columns)] * 5, columns=df.columns)])
+
+# Reset index
+result_df = result_df.reset_index(drop=True)
+
+# Drop the 'Group' column
+result_df = result_df.drop(columns=['Group'])
+
+# Save the modified DataFrame to a new CSV file
+result_df.to_csv(output_path, index=False, header=False)
