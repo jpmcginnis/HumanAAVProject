@@ -1,0 +1,27 @@
+# Load the Biostrings library
+library(Biostrings)
+
+# Define file paths
+input_file <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/30-1079452244/00_fastq/shared DNA sequences for python.csv'
+output_file <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/30-1079452244/00_fastq/translated_sequences.csv'
+
+# Read the DNA sequences from the CSV file
+dna_data <- read.csv(input_file, stringsAsFactors = FALSE)
+
+# Assuming the DNA sequences are in the first column, extract them
+dna_sequences <- dna_data[, 1]  # Modify if the sequences are in another column
+
+# Translate DNA sequences to amino acid sequences
+protein_sequences <- sapply(dna_sequences, function(seq) {
+  dna_string <- DNAString(seq)
+  protein_string <- translate(dna_string)
+  return(as.character(protein_string))
+})
+
+# Combine DNA and translated protein sequences into a new data frame
+output_data <- data.frame(DNA_Sequence = dna_sequences, Protein_Sequence = protein_sequences)
+
+# Write the output to a CSV file
+write.csv(output_data, output_file, row.names = FALSE)
+
+cat("Translation complete. Output saved to", output_file, "\n")
