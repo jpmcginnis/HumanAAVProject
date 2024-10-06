@@ -3,17 +3,24 @@ circleDiameter = 14098;
 radius = circleDiameter / 2;
 
 // Specify the directory path where TIFF files are located
-inputDirectory = "J:\\AAV imaging\\2024-6-24 BT\\";  // Use double backslashes for Windows paths
-outputDirectory = "J:\\AAV imaging\\2024-6-24 BT\\";  // Same for the output path
+inputDirectory = "J:\\AAV imaging\\2024-6-20 STL-1\\";  // Use double backslashes for Windows paths
+outputDirectory = "J:\\AAV imaging\\2024-6-20 STL-1\\";  // Same for the output path
 
 // Get the list of TIFF files in the folder
 fileList = getFileList(inputDirectory);
 
 // Loop through all the TIFF files in the folder
 for (i = 0; i < fileList.length; i++) {
+    currentFile = inputDirectory + fileList[i];
+    
+    // Check if the file exists before proceeding
+    if (!File.exists(currentFile)) {
+        print("File not found: " + currentFile); // Optional: print a warning
+        continue; // Skip to the next file
+    }
 
-    // Open each TIFF file
-    open(inputDirectory + fileList[i]);
+    // Open the existing TIFF file
+    open(currentFile);
 
     // Get the current image title
     title = getTitle();
