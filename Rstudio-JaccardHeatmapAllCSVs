@@ -1,0 +1,50 @@
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("pheatmap")
+
+library(dplyr)
+library(ggplot2)
+library(pheatmap)
+# Set the path to your CSV files
+csv_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work"
+
+# List all CSV files in the directory
+csv_files <- list.files(path = csv_path, pattern = "*.csv", full.names = TRUE)
+
+# Load all CSVs into a list of data frames
+cluster_data <- lapply(csv_files, read.csv)
+# Extract gene sets (using gene name and filtering based on average expression in the third column)
+get_expressed_genes <- function(df) {
+    df %>%
+        filter(., df[, 3] > 0) %>%  # Filter for genes with non-zero average expression
+        pull(2)  # Pull gene names (from the second column)
+}
+
+# Get list of expressed genes for each cluster
+expressed_genes_list <- lapply(cluster_data, get_expressed_genes)
+# Function to calculate Jaccard index
+jaccard_index <- function(set1, set2) {
+    intersection <- length(intersect(set1, set2))
+    union <- length(union(set1, set2))
+    return(intersection / union)
+}
+
+# Create an empty matrix to store the Jaccard indices
+num_clusters <- length(expressed_genes_list)
+jaccard_matrix <- matrix(0, nrow = num_clusters, ncol = num_clusters)
+
+# Fill the matrix with pairwise Jaccard indices
+for (i in 1:num_clusters) {
+    for (j in 1:num_clusters) {
+        jaccard_matrix[i, j] <- jaccard_index(expressed_genes_list[[i]], expressed_genes_list[[j]])
+    }
+}
+# Add row and column names to the matrix
+rownames(jaccard_matrix) <- colnames(jaccard_matrix) <- basename(csv_files)
+
+# Generate heatmap
+pheatmap(jaccard_matrix, 
+         cluster_rows = TRUE, 
+         cluster_cols = TRUE, 
+         display_numbers = TRUE, 
+         main = "Jaccard Similarity Heatmap")
