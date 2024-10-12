@@ -1,0 +1,77 @@
+# Load Required Libraries
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("pheatmap")
+
+library(dplyr)
+library(ggplot2)
+library(pheatmap)
+
+# Set the path to your CSV files
+csv_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work"
+
+# List all CSV files in the directory that end with 'day 0' or 'day 14 untrans'
+csv_files <- list.files(path = csv_path, pattern = "day 0|day 14 untrans", full.names = TRUE)
+
+# Load the filtered CSVs into a list of data frames
+cluster_data <- lapply(csv_files, read.csv)
+
+# Extract gene sets (using gene name and filtering based on average expression in the third column)
+get_expressed_genes <- function(df) {
+  df %>%
+    filter(., df[, 3] > 0) %>%  # Filter for genes with non-zero average expression
+    pull(2)  # Pull gene names (from the second column)
+}
+
+# Get list of expressed genes for each cluster
+expressed_genes_list <- lapply(cluster_data, get_expressed_genes)
+
+# Separate the clusters into day 0 and day 14 groups
+day_0_genes <- expressed_genes_list[grepl("day 0", basename(csv_files))]
+day_14_genes <- expressed_genes_list[grepl("day 14 untrans", basename(csv_files))]
+
+# Get the names for labeling
+day_0_names <- basename(csv_files[grepl("day 0", basename(csv_files))])
+day_14_names <- basename(csv_files[grepl("day 14 untrans", basename(csv_files))])
+
+# Sort names and corresponding gene sets
+day_0_ordered <- order(day_0_names)
+day_14_ordered <- order(day_14_names)
+
+sorted_day_0_genes <- day_0_genes[day_0_ordered]
+sorted_day_14_genes <- day_14_genes[day_14_ordered]
+
+day_0_names <- sort(day_0_names)
+day_14_names <- sort(day_14_names)
+
+# Function to calculate Jaccard index
+jaccard_index <- function(set1, set2) {
+  intersection <- length(intersect(set1, set2))
+  union <- length(union(set1, set2))
+  return(intersection / union)
+}
+
+# Create an empty matrix to store the Jaccard indices
+num_day_0 <- length(sorted_day_0_genes)
+num_day_14 <- length(sorted_day_14_genes)
+jaccard_matrix <- matrix(0, nrow = num_day_0, ncol = num_day_14)
+
+# Fill the matrix with pairwise Jaccard indices
+for (i in 1:num_day_0) {
+  for (j in 1:num_day_14) {
+    jaccard_matrix[i, j] <- jaccard_index(sorted_day_0_genes[[i]], sorted_day_14_genes[[j]])
+  }
+}
+
+# Add row and column names to the matrix
+rownames(jaccard_matrix) <- day_0_names
+colnames(jaccard_matrix) <- day_14_names
+
+# Generate heatmap
+pheatmap(jaccard_matrix, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         display_numbers = TRUE, 
+         main = "Jaccard Similarity Heatmap (Day 0 vs Day 14 Untrans)",
+         fontsize_row = 10, 
+         fontsize_col = 10)
