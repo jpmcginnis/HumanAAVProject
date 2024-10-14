@@ -2,9 +2,10 @@
 library(ggplot2)
 library(reshape2)
 library(dplyr)
+library(writexl)  # For saving Excel files
 
 # Define the path to your CSV files
-path <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs'
+path <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs'
 
 # List all CSV files in the folder
 file_list <- list.files(path, pattern = "*.csv", full.names = TRUE)
@@ -31,6 +32,10 @@ results$Shared_Genes <- mapply(function(x, y) length(intersect(gene_sets[[x]], g
                                results$Cluster1, results$Cluster2)
 results$Total_Genes_Cluster1 <- mapply(function(x) length(gene_sets[[x]]), results$Cluster1)
 results$Percentage_Shared <- (results$Shared_Genes / results$Total_Genes_Cluster1) * 100
+
+# Save results to an Excel file
+output_file <- file.path(path, "correlation_matrix_values.xlsx")
+write_xlsx(results, output_file)
 
 # Prepare data for heatmaps
 heatmap_counts <- dcast(results, Cluster1 ~ Cluster2, value.var = "Shared_Genes")
