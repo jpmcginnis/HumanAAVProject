@@ -1,0 +1,65 @@
+# Load necessary libraries
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+
+# Define the path to your CSV files
+path <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs'
+
+# List all CSV files in the folder
+file_list <- list.files(path, pattern = "*.csv", full.names = TRUE)
+
+# Initialize a list to store gene sets
+gene_sets <- list()
+
+# Read each CSV and extract expressed genes
+for (file in file_list) {
+    # Read CSV
+    data <- read.csv(file)
+    
+    # Extract expressed genes (assuming 'FeatureID' column has gene identifiers)
+    expressed_genes <- unique(data$FeatureID)
+    
+    # Store in list
+    gene_sets[[basename(file)]] <- expressed_genes
+}
+
+# Calculate the number of shared genes and the percentage
+results <- expand.grid(names(gene_sets), names(gene_sets))
+colnames(results) <- c("Cluster1", "Cluster2")
+results$Shared_Genes <- mapply(function(x, y) length(intersect(gene_sets[[x]], gene_sets[[y]])), 
+                               results$Cluster1, results$Cluster2)
+results$Total_Genes_Cluster1 <- mapply(function(x) length(gene_sets[[x]]), results$Cluster1)
+results$Percentage_Shared <- (results$Shared_Genes / results$Total_Genes_Cluster1) * 100
+
+# Prepare data for heatmaps
+heatmap_counts <- dcast(results, Cluster1 ~ Cluster2, value.var = "Shared_Genes")
+heatmap_percentage <- dcast(results, Cluster1 ~ Cluster2, value.var = "Percentage_Shared")
+
+# Create heatmap for shared gene counts
+heatmap_counts_melted <- melt(heatmap_counts, id.vars = "Cluster1")
+
+# Reorder Cluster1 to be alphabetical from the top
+heatmap_counts_melted$Cluster1 <- factor(heatmap_counts_melted$Cluster1, levels = rev(sort(unique(heatmap_counts_melted$Cluster1))))
+
+ggplot(heatmap_counts_melted, aes(x = variable, y = Cluster1, fill = value)) +
+    geom_tile() +
+    geom_text(aes(label = value), color = "black", size = 3) + # Reduced font size for text labels
+    scale_fill_gradient(low = "white", high = "blue") +
+    labs(title = "Shared Gene Counts", x = "Cluster", y = "Cluster") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) # Rotate x-axis text
+
+# Create heatmap for percentage of shared genes
+heatmap_percentage_melted <- melt(heatmap_percentage, id.vars = "Cluster1")
+
+# Reorder Cluster1 to be alphabetical from the top
+heatmap_percentage_melted$Cluster1 <- factor(heatmap_percentage_melted$Cluster1, levels = rev(sort(unique(heatmap_percentage_melted$Cluster1))))
+
+ggplot(heatmap_percentage_melted, aes(x = variable, y = Cluster1, fill = value)) +
+    geom_tile() +
+    geom_text(aes(label = round(value, 1)), color = "black", size = 3) + # Reduced font size for text labels
+    scale_fill_gradient(low = "white", high = "red") +
+    labs(title = "Percentage of Shared Genes", x = "Cluster", y = "Cluster") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) # Rotate x-axis text
