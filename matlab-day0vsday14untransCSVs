@@ -1,0 +1,133 @@
+% Path setup
+F = '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/'; % Updated file path
+
+% File processing
+files = dir([F, '*.csv']);
+files = {files.name};
+
+% Separate Day 0 and Untrans files
+day0_files = contains(files, 'day 0'); % Updated to 'day 0'
+untrans_files = contains(files, 'untrans'); % Updated to 'untrans'
+day0_files = files(day0_files);
+untrans_files = files(untrans_files);
+
+% Remove '.csv' from file names for reading
+day0_files_clean = erase(day0_files, '.csv');
+untrans_files_clean = erase(untrans_files, '.csv');
+
+% Generate labels, replacing 'untrans' with 'day 14' for plot labels
+untrans_labels = strrep(untrans_files_clean, 'untrans', 'day 14');
+nDay0 = length(day0_files_clean);
+nUntrans = length(untrans_files_clean);
+
+% Get full list of all genes
+names = {};
+for i = 1:length(day0_files_clean)
+    T = readtable([F, day0_files_clean{i}, '.csv']);
+    names = [names; T.FeatureName];
+end
+for i = 1:length(untrans_files_clean)
+    T = readtable([F, untrans_files_clean{i}, '.csv']);
+    names = [names; T.FeatureName];
+end
+names = unique(names);
+
+% Initialize matrices
+[GA, GL] = deal(nan(length(names), nDay0 + nUntrans)); % Gene average and log2 fold change
+
+% Load Day 0 files
+for i = 1:nDay0
+    T = readtable([F, day0_files_clean{i}, '.csv']);
+    [~, idx] = ismember(T.FeatureName, names);
+    GA(idx, i) = T{:, 3}; % Assuming column 3 has average expression
+    GL(idx, i) = T{:, 4}; % Assuming column 4 has log2 fold change
+end
+
+% Load Day 14 (Untrans) files
+for i = 1:nUntrans
+    T = readtable([F, untrans_files_clean{i}, '.csv']);
+    [~, idx] = ismember(T.FeatureName, names);
+    GA(idx, nDay0 + i) = T{:, 3};
+    GL(idx, nDay0 + i) = T{:, 4};
+end
+
+% Calculate correlations
+[CA, CL, pA, pL, n] = deal(nan(nDay0, nUntrans)); % Adjusted size to Day 0 x Day 14
+for i = 1:nDay0
+    for j = 1:nUntrans
+        % Average expression level correlation
+        a = GA(:, i);      
+        b = GA(:, nDay0 + j);
+        rm = isnan(a) | isnan(b);
+        a = a(~rm);        
+        b = b(~rm);
+        
+        if ~isempty(a) && ~isempty(b) && length(a) > 1 && length(b) > 1
+            [CA(i, j), pA(i, j)] = corr(a, b);
+        else
+            CA(i, j) = NaN; % Assign NaN if there's insufficient data
+            pA(i, j) = NaN;
+        end
+        
+        % Log2 fold change correlation
+        a = GL(:, i);       
+        b = GL(:, nDay0 + j);
+        rm = isnan(a) | isnan(b);
+        a = a(~rm);        
+        b = b(~rm);
+        
+        if ~isempty(a) && ~isempty(b) && length(a) > 1 && length(b) > 1
+            [CL(i, j), pL(i, j)] = corr(a, b);
+        else
+            CL(i, j) = NaN; % Assign NaN if there's insufficient data
+            pL(i, j) = NaN;
+        end
+        
+        % Track number of non-NaN values
+        n(i, j) = length(a);
+    end
+end
+
+% Plot results
+figure(1);
+subplot(131)
+imagesc(n);
+axis square
+xticks(1:nUntrans); 
+xticklabels(untrans_labels); % Use 'day 14' labels here
+yticks(1:nDay0); 
+yticklabels(day0_files_clean);
+colorbar;
+title('Number of genes in common');
+
+subplot(132)
+imagesc(CA);
+axis square
+xticks(1:nUntrans); 
+xticklabels(untrans_labels); % Use 'day 14' labels here
+yticks(1:nDay0); 
+yticklabels(day0_files_clean);
+colorbar;
+title('Average expression level correlation');
+
+subplot(133)
+imagesc(CL);
+axis square
+xticks(1:nUntrans); 
+xticklabels(untrans_labels); % Use 'day 14' labels here
+yticks(1:nDay0); 
+yticklabels(day0_files_clean);
+colorbar;
+title('Log2 fold change correlation');
+
+sgtitle('Day 0 vs. Day 14');
+
+% Write to Excel
+N = array2table(n, 'RowNames', day0_files_clean, 'VariableNames', untrans_labels);
+writetable(N, 'nOverlappingGenes.xlsx', 'WriteRowNames', true);
+
+CAx = array2table(CA, 'RowNames', day0_files_clean, 'VariableNames', untrans_labels);
+writetable(CAx, 'corrAverage.xlsx', 'WriteRowNames', true);
+
+CLx = array2table(CL, 'RowNames', day0_files_clean, 'VariableNames', untrans_labels);
+writetable(CLx, 'corrLog.xlsx', 'WriteRowNames', true);
