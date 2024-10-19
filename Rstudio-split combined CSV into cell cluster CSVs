@@ -1,51 +1,68 @@
 # Load necessary libraries
 library(tidyverse)
 
-# Define the input file path for day 0 gene expression data with low expression hidden
-input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/day 0 to day 0, low expression hidden/day 0 gene expression all clusters low expression hidden.csv"
+# Define the input file path
+input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons/Day 14 untrans combined clusters.csv"
+
+# Define the output directory (same as the input path)
+output_directory <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons"
 
 # Read the CSV file
 data <- read.csv(input_file, check.names = FALSE)
 
-# Define the cell clusters you're interested in
-cell_clusters <- c("Endothelial cells", "Fibroblasts", "Microglia 1", 
-                   "Microglia 2", "Oligodendrocytes", "Astrocytes", 
-                   "Excitatory neurons", "Inhibitory neurons", 
-                   "Reactive astrocytes,", "OPCs")
+# Clean column names to avoid issues with extra spaces
+colnames(data) <- trimws(colnames(data))
 
-# Loop through each cluster and extract relevant columns
-for (cluster in cell_clusters) {
-    avg_col <- paste0(cluster, " day 0 Average")
-    log2_col <- paste0(cluster, " day 0 Log2 Fold Change")
-    pvalue_col <- paste0(cluster, " day 0 P-Value")
+# Print the column names to inspect (for debugging)
+print(colnames(data))
+
+# Get the first two columns (FeatureID and FeatureName)
+first_two_columns <- data[, 1:2]
+
+# Get the rest of the columns (excluding the first two)
+cluster_data <- data[, -c(1, 2)]
+
+# Identify clusters based on the pattern in the column names
+# Using gsub to remove extra spaces
+cluster_names <- unique(gsub(" ?day.*$", "", colnames(cluster_data)))
+
+# Iterate over each cluster and create a separate CSV file for each
+for (cluster in cluster_names) {
+    # Clean the cluster name for the output file (remove commas and extra spaces)
+    cleaned_cluster_name <- gsub("[,]", "", cluster) # Remove commas
+    cleaned_cluster_name <- gsub(" +", " ", cleaned_cluster_name) # Remove extra spaces
+    cleaned_cluster_name <- trimws(cleaned_cluster_name) # Trim leading/trailing whitespace
     
-    # Check if the columns exist in the data
-    if (avg_col %in% colnames(data) && 
-        log2_col %in% colnames(data) && 
-        pvalue_col %in% colnames(data)) {
-        
-        # Extract the first two columns (FeatureID, FeatureName)
-        first_two_columns <- data[1:2]
-        
-        # Combine the data into a new data frame
-        combined_data <- data.frame(
+    # Dynamically construct the expected column names based on actual column names
+    avg_col <- grep(paste0(cleaned_cluster_name, ".*Average"), colnames(data), value = TRUE)
+    log2_col <- grep(paste0(cleaned_cluster_name, ".*Log2 Fold Change"), colnames(data), value = TRUE)
+    pvalue_col <- grep(paste0(cleaned_cluster_name, ".*P-Value"), colnames(data), value = TRUE)
+    
+    # Print the expected column names for debugging
+    print(paste("Checking columns:", avg_col, log2_col, pvalue_col))
+    
+    # Check if all required columns exist in the dataset
+    if (length(avg_col) == 1 && length(log2_col) == 1 && length(pvalue_col) == 1) {
+        # Combine the first two columns with the cluster-specific columns
+        output_data <- data.frame(
             first_two_columns,
             Average = data[[avg_col]],
             Log2_Fold_Change = data[[log2_col]],
             P_Value = data[[pvalue_col]]
         )
         
-        # Define output file name (removing 'gene expression' from the name)
-        output_file_name <- paste0(cluster, " day 0.csv")
-        output_file_path <- file.path("/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/day 0 to day 0, low expression hidden", output_file_name)
-
-        # Write the combined data to a CSV file
-        write.csv(combined_data, output_file_path, row.names = FALSE)
+        # Create the output file name using the cleaned cluster name and the day info
+        day_info <- sub(".*?(day \\d+.*)", "\\1", avg_col)  # Extract day information from the average column name
+        day_info <- gsub(" Average", "", day_info)  # Remove 'Average' from day_info if it exists
+        output_file <- paste0(output_directory, "/", cleaned_cluster_name, " ", day_info, ".csv")
         
-        print(paste("Successfully created:", output_file_name))
+        # Save the output CSV file
+        write.csv(output_data, file = output_file, row.names = FALSE)
         
+        # Print a message for each saved file
+        print(paste("Saved:", output_file))
     } else {
-        # If any column is missing, print a message
-        print(paste("Columns for cluster", cluster, "day 0 do not exist. Skipping..."))
+        # Print a message if the cluster does not have all necessary columns
+        print(paste("Columns for cluster", cleaned_cluster_name, "do not exist. Skipping..."))
     }
 }
