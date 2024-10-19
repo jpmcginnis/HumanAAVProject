@@ -1,0 +1,51 @@
+# Load necessary libraries
+library(tidyverse)
+
+# Define the input file path for day 0 gene expression data with low expression hidden
+input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/day 0 to day 0, low expression hidden/day 0 gene expression all clusters low expression hidden.csv"
+
+# Read the CSV file
+data <- read.csv(input_file, check.names = FALSE)
+
+# Define the cell clusters you're interested in
+cell_clusters <- c("Endothelial cells", "Fibroblasts", "Microglia 1", 
+                   "Microglia 2", "Oligodendrocytes", "Astrocytes", 
+                   "Excitatory neurons", "Inhibitory neurons", 
+                   "Reactive astrocytes,", "OPCs")
+
+# Loop through each cluster and extract relevant columns
+for (cluster in cell_clusters) {
+    avg_col <- paste0(cluster, " day 0 Average")
+    log2_col <- paste0(cluster, " day 0 Log2 Fold Change")
+    pvalue_col <- paste0(cluster, " day 0 P-Value")
+    
+    # Check if the columns exist in the data
+    if (avg_col %in% colnames(data) && 
+        log2_col %in% colnames(data) && 
+        pvalue_col %in% colnames(data)) {
+        
+        # Extract the first two columns (FeatureID, FeatureName)
+        first_two_columns <- data[1:2]
+        
+        # Combine the data into a new data frame
+        combined_data <- data.frame(
+            first_two_columns,
+            Average = data[[avg_col]],
+            Log2_Fold_Change = data[[log2_col]],
+            P_Value = data[[pvalue_col]]
+        )
+        
+        # Define output file name (removing 'gene expression' from the name)
+        output_file_name <- paste0(cluster, " day 0.csv")
+        output_file_path <- file.path("/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/day 0 to day 0, low expression hidden", output_file_name)
+
+        # Write the combined data to a CSV file
+        write.csv(combined_data, output_file_path, row.names = FALSE)
+        
+        print(paste("Successfully created:", output_file_name))
+        
+    } else {
+        # If any column is missing, print a message
+        print(paste("Columns for cluster", cluster, "day 0 do not exist. Skipping..."))
+    }
+}
