@@ -4,8 +4,8 @@ library(tidyverse)
 # Define the input file path
 input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/day 0 to day 0 comparison/Day 14 untrans combined clusters.csv"
 
-# Define the output directory (same as the input path)
-output_directory <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/day 0 to day 0 comparison/"
+# Define the output directory based on the input file path
+output_directory <- dirname(input_file)
 
 # Read the CSV file
 data <- read.csv(input_file, check.names = FALSE)
@@ -29,9 +29,9 @@ cluster_names <- unique(gsub(" ?day.*$", "", colnames(cluster_data)))
 # Iterate over each cluster and create a separate CSV file for each
 for (cluster in cluster_names) {
     # Clean the cluster name for the output file (remove commas and extra spaces)
-    cleaned_cluster_name <- gsub("[,]", "", cluster) # Remove commas
-    cleaned_cluster_name <- gsub(" +", " ", cleaned_cluster_name) # Remove extra spaces
-    cleaned_cluster_name <- trimws(cleaned_cluster_name) # Trim leading/trailing whitespace
+    cleaned_cluster_name <- gsub("[,]", "", cluster)  # Remove commas
+    cleaned_cluster_name <- gsub(" +", " ", cleaned_cluster_name)  # Remove extra spaces
+    cleaned_cluster_name <- trimws(cleaned_cluster_name)  # Trim leading/trailing whitespace
     
     # Dynamically construct the expected column names based on actual column names
     avg_col <- grep(paste0(cleaned_cluster_name, ".*Average"), colnames(data), value = TRUE)
@@ -51,10 +51,8 @@ for (cluster in cluster_names) {
             P_Value = data[[pvalue_col]]
         )
         
-        # Create the output file name using the cleaned cluster name and the day info
-        day_info <- sub(".*?(day \\d+.*)", "\\1", avg_col)  # Extract day information from the average column name
-        day_info <- gsub(" Average", "", day_info)  # Remove 'Average' from day_info if it exists
-        output_file <- paste0(output_directory, "/", cleaned_cluster_name, " ", day_info, ".csv")
+        # Create the output file name using the cleaned cluster name
+        output_file <- file.path(output_directory, paste0(cleaned_cluster_name, " ", "Day 14 untrans", ".csv"))
         
         # Save the output CSV file
         write.csv(output_data, file = output_file, row.names = FALSE)
