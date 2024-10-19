@@ -2,10 +2,10 @@
 library(tidyverse)
 
 # Define the input file path
-input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons/Day 14 untrans combined clusters.csv"
+input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/day 0 to day 0 comparison/Day 14 untrans combined clusters.csv"
 
 # Define the output directory (same as the input path)
-output_directory <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons"
+output_directory <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/day 0 to day 0 comparison/"
 
 # Read the CSV file
 data <- read.csv(input_file, check.names = FALSE)
