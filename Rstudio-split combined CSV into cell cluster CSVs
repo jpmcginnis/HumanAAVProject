@@ -2,7 +2,7 @@
 library(tidyverse)
 
 # Define the input file path
-input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-13-24 STL medullo CSVs/day 0 to day 0 comparisons/Day 14 untrans combined clusters.csv"
+input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/day 0 to day 0 comparisons/Day 0 combined clusters.csv"
 
 # Define the output directory based on the input file path
 output_directory <- dirname(input_file)
@@ -28,6 +28,9 @@ cluster_names <- unique(gsub(" ?day.*$", "", colnames(cluster_data)))
 
 # Extract the day-related information from the input file name
 day_info <- gsub(".*?(Day \\d+.*?)(?=\\s*combined clusters.csv).*", "\\1", input_file, perl = TRUE)
+
+# Convert "Day" to lowercase
+day_info <- gsub("Day", "day", day_info)
 
 # Debugging print for day_info
 print(paste("Day info extracted:", day_info))
