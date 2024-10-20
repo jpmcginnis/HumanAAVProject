@@ -1,70 +1,141 @@
 # Load necessary libraries
-library(readr)
-library(dplyr)
-library(clusterProfiler)
-library(org.Hs.eg.db)  # Adjust if your organism is different
-library(ggplot2)
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
 
-# Set the path to the folder containing your CSV files
-folder_path <- "/Users/jpmcginnis1/Library/CloudStorage/GoogleDrive-jpmcginnis1@gmail.com/My Drive/AAV Gene Therapy/Single cell sequencing/1-29-24 TCH temp lob/Differences/"
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons/'
 
-# Get a list of all CSV files in the folder
-file_list <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+# File processing
+files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
 
-# Loop through each CSV file
-for (file in file_list) {
-    # Load the CSV file
-    data <- read_csv(file)
+# Separate Day 0 and Untrans files
+day0_files <- files[grep('day 0', files)]
+untrans_files <- files[grep('untrans', files)]
+
+# Generate labels, extracting cluster names from file names
+untrans_labels <- gsub('untrans', 'day 14', basename(untrans_files))
+untrans_labels <- gsub('\\.csv$', '', untrans_labels)
+
+# Initialize gene list
+names <- unique(c())
+
+# Read all Feature Names from both Day 0 and Untrans files
+for (file in c(day0_files, untrans_files)) {
+    T <- read_csv(file)
+    names <- unique(c(names, T$FeatureName))
+}
+
+# Initialize matrices
+nDay0 <- length(day0_files)
+nUntrans <- length(untrans_files)
+GA <- matrix(NA, nrow = length(names), ncol = nDay0 + nUntrans) # Gene average
+GL <- matrix(NA, nrow = length(names), ncol = nDay0 + nUntrans) # Log2 fold change
+
+# Load Day 0 files
+for (i in seq_along(day0_files)) {
+    T <- read_csv(day0_files[i])
+    feature_names <- T$FeatureName
+    idx <- match(feature_names, names)
     
-    # Print out the file name being processed
-    cat("Processing:", basename(file), "\n")
-    
-    # Filter for significant genes using column index (5 for column E)
-    sig_genes <- data %>% filter(.[[5]] < 0.05)  # Assuming column E is the 5th column
-    
-    # Gene symbols will be in the second column
-    gene_symbols <- sig_genes[[2]]  # The second column for gene symbols
-    
-    # Convert gene symbols to Entrez IDs
-    gene_ids <- bitr(gene_symbols, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-    
-    # Check if gene_ids is empty
-    if (nrow(gene_ids) == 0) {
-        cat("No valid Entrez IDs for", basename(file), "\n")
-        next  # Skip to the next file if no IDs are found
-    }
-    
-    # Perform GO enrichment analysis
-    go_results <- enrichGO(gene = gene_symbols, 
-                           OrgDb = org.Hs.eg.db,
-                           keyType = "SYMBOL",  # Specify that we are using gene symbols
-                           pAdjustMethod = "BH",
-                           qvalueCutoff = 0.05)
-    
-    # Print GO results
-    cat("GO Results for", basename(file), ":\n")
-    print(head(go_results))
-    
-    # Plot GO enrichment results
-    p1 <- dotplot(go_results) + ggtitle(paste("GO Enrichment Analysis for", basename(file)))
-    ggsave(filename = paste0(folder_path, "GO_Enrichment_", basename(file), ".png"), plot = p1)
-    
-    # Perform KEGG enrichment analysis using Entrez IDs
-    kegg_results <- enrichKEGG(gene = gene_ids$ENTREZID,  # Use Entrez IDs for the analysis
-                               organism = "hsa",  # Change according to your organism
-                               pAdjustMethod = "BH",
-                               qvalueCutoff = 0.05)
-    
-    # Check if kegg_results is not NULL
-    if (!is.null(kegg_results)) {
-        # Print KEGG results
-        cat("KEGG Results for", basename(file), ":\n")
-        print(head(kegg_results))
-        
-        # Plot KEGG enrichment results
-        p2 <- dotplot(kegg_results) + ggtitle(paste("KEGG Pathway Enrichment Analysis for", basename(file)))
-        ggsave(filename = paste0(folder_path, "KEGG_Enrichment_", basename(file), ".png"), plot = p2)
-    } else {
-        cat("No KEGG enrichment results for", basename(file), "\n")
+    # Ensure correct length assignment
+    if (any(!is.na(idx))) {
+        GA[idx, i] <- T[[3]][!is.na(idx)]  # Assuming column 3 has average expression
+        GL[idx, i] <- T[[4]][!is.na(idx)]  # Assuming column 4 has log2 fold change
     }
 }
+
+# Load Day 14 (Untrans) files
+for (i in seq_along(untrans_files)) {
+    T <- read_csv(untrans_files[i])
+    feature_names <- T$FeatureName
+    idx <- match(feature_names, names)
+    
+    # Ensure correct length assignment
+    if (any(!is.na(idx))) {
+        GA[idx, nDay0 + i] <- T[[3]][!is.na(idx)]
+        GL[idx, nDay0 + i] <- T[[4]][!is.na(idx)]
+    }
+}
+
+# Calculate correlations
+CA <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Average expression correlation
+CL <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Log2 fold change correlation
+n <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Count of common genes
+
+for (i in 1:nDay0) {
+    for (j in 1:nUntrans) {
+        a <- GA[, i]      
+        b <- GA[, nDay0 + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]        
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CA[i, j] <- cor(a, b, use = "complete.obs")
+        }
+        
+        a <- GL[, i]       
+        b <- GL[, nDay0 + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]        
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        }
+        
+        n[i, j] <- sum(!is.na(a) & !is.na(b))
+    }
+}
+
+# Convert row and column names
+day0_files_clean <- gsub('.csv$', '', basename(day0_files))
+rownames(CA) <- day0_files_clean
+colnames(CA) <- untrans_labels
+rownames(CL) <- day0_files_clean
+colnames(CL) <- untrans_labels
+
+# Filter out rows that contain 'day 14 untrans' in the rownames
+day0_only_rows <- grepl('day 0$', rownames(CA))
+
+# Subset the CA matrix to include only 'day 0' rows
+CA_day0 <- CA[day0_only_rows, ]
+
+# Subset the CL matrix similarly
+CL_day0 <- CL[day0_only_rows, ]
+
+# Correct the matrix for overlapping genes
+# Adjust the dimensions of the overlapping genes matrix (number of genes in common)
+overlap_matrix <- matrix(NA, nrow = length(day0_files_clean), ncol = length(untrans_labels))
+
+for (i in seq_along(day0_files_clean)) {
+    for (j in seq_along(untrans_labels)) {
+        overlap_matrix[i, j] <- sum(!is.na(GA[, i]) & !is.na(GA[, nDay0 + j]))
+    }
+}
+
+# Plot the number of overlapping genes as a heatmap
+pheatmap(overlap_matrix, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = day0_files_clean, labels_col = untrans_labels,
+         main = "Number of Genes in Common")
+
+# Plot average expression level correlation as a heatmap
+breaks_avg <- seq(-1, 1, length.out = 100)  # Creates a sequence with 100 unique breaks
+pheatmap(CA_day0, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CA_day0), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Average Expression Level Correlation", 
+         breaks = breaks_avg, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Plot log2 fold change correlation as a heatmap
+breaks_log2 <- seq(-1, 1, length.out = 100)  # Creates a sequence with 100 unique breaks
+pheatmap(CL_day0, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CL_day0), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Log2 Fold Change Correlation", 
+         breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Write to CSV (Optional, if needed)
+write.csv(n, 'nOverlappingGenes.csv', row.names = TRUE)
+write.csv(CA_day0, 'corrAverage_day0.csv', row.names = TRUE)
+write.csv(CL_day0, 'corrLog_day0.csv', row.names = TRUE)
