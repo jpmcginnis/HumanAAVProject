@@ -1,0 +1,30 @@
+# Load necessary library
+library(dplyr)
+
+# Define file paths for the two CSVs
+file_path1 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/differences/GBM tumor cell differences.csv'
+file_path2 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/differences/GBM tumor cell differences.csv'
+
+# Load the two CSV files into data frames
+df1 <- read.csv(file_path1)
+df2 <- read.csv(file_path2)
+
+# Filter for significant genes (p-value < 0.05) in both data frames
+significant_genes_df1 <- df1 %>%
+    filter(`GBM.tumor.cells.day.0.P.Value` < 0.05 | `GBM.tumor.cells.day.14.untrans.P.Value` < 0.05)
+
+significant_genes_df2 <- df2 %>%
+    filter(`GBM.tumor.cells.day.0.P.Value` < 0.05 | `GBM.tumor.cells.day.14.untrans.P.Value` < 0.05)
+
+# Compile lists of significant gene symbols
+significant_genes_list1 <- unique(significant_genes_df1$FeatureName)
+significant_genes_list2 <- unique(significant_genes_df2$FeatureName)
+
+# Find common significant genes in both lists
+common_significant_genes <- intersect(significant_genes_list1, significant_genes_list2)
+
+# Convert to a data frame for better presentation
+common_significant_genes_df <- data.frame(Common_Significant_Genes = common_significant_genes)
+
+# Display the common significant genes
+print(common_significant_genes_df)
