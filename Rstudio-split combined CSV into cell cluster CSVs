@@ -2,7 +2,7 @@
 library(tidyverse)
 
 # Define the input file path
-input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/day 0 to day 0 comparisons/Day 0 combined clusters.csv"
+input_file <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/complete list for correlation/Day 0 combined cluster.csv"
 
 # Define the output directory based on the input file path
 output_directory <- dirname(input_file)
@@ -26,8 +26,8 @@ cluster_data <- data[, -c(1, 2)]
 # Using gsub to remove extra spaces
 cluster_names <- unique(gsub(" ?day.*$", "", colnames(cluster_data)))
 
-# Extract the day-related information from the input file name
-day_info <- gsub(".*?(Day \\d+.*?)(?=\\s*combined clusters.csv).*", "\\1", input_file, perl = TRUE)
+# Extract the day-related information from the input file name using regular expressions
+day_info <- gsub(".*?(Day \\d+[^/]*)combined cluster.*", "\\1", input_file, perl = TRUE)
 
 # Convert "Day" to lowercase
 day_info <- gsub("Day", "day", day_info)
@@ -60,7 +60,7 @@ for (cluster in cluster_names) {
             P_Value = data[[pvalue_col]]
         )
         
-        # Create the output file name without underscores
+        # Create the output file name, replacing underscores with spaces
         output_file <- file.path(output_directory, paste0(cleaned_cluster_name, " ", day_info, ".csv"))
         
         # Debugging print for output_file
