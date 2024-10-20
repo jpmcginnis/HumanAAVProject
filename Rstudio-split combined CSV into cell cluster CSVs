@@ -60,8 +60,8 @@ for (cluster in cluster_names) {
             P_Value = data[[pvalue_col]]
         )
         
-        # Create the output file name, replacing underscores with spaces
-        output_file <- file.path(output_directory, paste0(cleaned_cluster_name, " ", day_info, ".csv"))
+        # Create the output file name, ensuring no extra spaces before ".csv"
+        output_file <- file.path(output_directory, paste0(trimws(cleaned_cluster_name), " ", trimws(day_info), ".csv"))
         
         # Debugging print for output_file
         print(paste("Output file path:", output_file))
