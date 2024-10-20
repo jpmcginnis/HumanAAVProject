@@ -1,0 +1,43 @@
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(clusterProfiler)
+library(org.Hs.eg.db)  # Adjust if your organism is different
+library(ggplot2)
+
+# Load your CSV file
+data <- read_csv("/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/differences/Excitatory neurons differences.csv")
+
+# Print out all column names to confirm structure
+print(colnames(data))
+
+# Filter for significant genes using column index (5 for column E)
+sig_genes <- data %>% filter(.[[5]] < 0.05)  # Assuming column E is the 5th column
+
+# Gene IDs will be in the first column
+gene_ids <- sig_genes[[1]]  # The first column for gene IDs
+
+# Perform GO enrichment analysis
+go_results <- enrichGO(gene = gene_ids, 
+                       OrgDb = org.Hs.eg.db,
+                       keyType = "ENSEMBL",  # Adjust according to your gene ID type
+                       pAdjustMethod = "BH",
+                       qvalueCutoff = 0.05)
+
+# View GO results
+print(head(go_results))
+
+# Plot GO enrichment results
+dotplot(go_results) + ggtitle("GO Enrichment Analysis")
+
+# Perform KEGG enrichment analysis
+kegg_results <- enrichKEGG(gene = gene_ids,
+                           organism = "hsa",  # Change according to your organism
+                           pAdjustMethod = "BH",
+                           qvalueCutoff = 0.05)
+
+# View KEGG results
+print(head(kegg_results))
+
+# Plot KEGG enrichment results
+dotplot(kegg_results) + ggtitle("KEGG Pathway Enrichment Analysis")
