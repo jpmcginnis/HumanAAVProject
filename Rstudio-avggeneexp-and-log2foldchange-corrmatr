@@ -1,0 +1,136 @@
+# Load necessary libraries
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
+
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-6-24 TCH CSVs/day 0 to day 0 comparisons/'
+
+# File processing
+files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
+
+# Separate Day 0 and Untrans files
+day0_files <- files[grep('day 0', files)]
+untrans_files <- files[grep('untrans', files)]
+
+# Generate labels, extracting cluster names from file names
+untrans_labels <- gsub('untrans', 'day 14', basename(untrans_files))
+untrans_labels <- gsub('\\.csv$', '', untrans_labels)
+
+# Initialize gene list
+names <- unique(c())
+
+# Read all Feature Names from both Day 0 and Untrans files
+for (file in c(day0_files, untrans_files)) {
+    T <- read_csv(file)
+    names <- unique(c(names, T$FeatureName))
+}
+
+# Initialize matrices
+nDay0 <- length(day0_files)
+nUntrans <- length(untrans_files)
+GA <- matrix(NA, nrow = length(names), ncol = nDay0 + nUntrans) # Gene average
+GL <- matrix(NA, nrow = length(names), ncol = nDay0 + nUntrans) # Log2 fold change
+
+# Load Day 0 files
+for (i in seq_along(day0_files)) {
+    T <- read_csv(day0_files[i])
+    feature_names <- T$FeatureName
+    if (is.null(feature_names)) {
+        feature_names <- basename(day0_files[i])  # Fallback to filename if no FeatureName column
+    }
+    idx <- match(feature_names, names)
+    
+    # Ensure correct length assignment
+    if (any(!is.na(idx))) {
+        GA[idx, i] <- T[[3]][!is.na(idx)]  # Assuming column 3 has average expression
+        GL[idx, i] <- T[[4]][!is.na(idx)]  # Assuming column 4 has log2 fold change
+    }
+}
+
+# Load Day 14 (Untrans) files
+for (i in seq_along(untrans_files)) {
+    T <- read_csv(untrans_files[i])
+    feature_names <- T$FeatureName
+    if (is.null(feature_names)) {
+        feature_names <- basename(untrans_files[i])  # Fallback to filename if no FeatureName column
+    }
+    idx <- match(feature_names, names)
+    
+    # Ensure correct length assignment
+    if (any(!is.na(idx))) {
+        GA[idx, nDay0 + i] <- T[[3]][!is.na(idx)]
+        GL[idx, nDay0 + i] <- T[[4]][!is.na(idx)]
+    }
+}
+
+# Calculate correlations
+CA <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Average expression correlation
+CL <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Log2 fold change correlation
+n <- matrix(NA, nrow = nDay0, ncol = nUntrans) # Count of common genes
+
+for (i in 1:nDay0) {
+    for (j in 1:nUntrans) {
+        a <- GA[, i]      
+        b <- GA[, nDay0 + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]        
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CA[i, j] <- cor(a, b, use = "complete.obs")
+        }
+        
+        a <- GL[, i]       
+        b <- GL[, nDay0 + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]        
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        }
+        
+        n[i, j] <- sum(!is.na(a) & !is.na(b))
+    }
+}
+
+# Convert row and column names
+day0_files_clean <- gsub('.csv$', '', basename(day0_files))
+rownames(CA) <- day0_files_clean
+colnames(CA) <- untrans_labels
+rownames(CL) <- day0_files_clean
+colnames(CL) <- untrans_labels
+
+# Filter out rows that contain 'day 14 untrans' in the rownames
+day0_only_rows <- grepl('day 0$', rownames(CA))
+
+# Subset the CA matrix to include only 'day 0' rows
+CA_day0 <- CA[day0_only_rows, ]
+
+# Subset the CL matrix similarly
+CL_day0 <- CL[day0_only_rows, ]
+
+# Plot the number of overlapping genes as a heatmap
+pheatmap(matrix(rowSums(!is.na(GA)), nrow = length(day0_files_clean), ncol = nUntrans),
+         cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = day0_files_clean, labels_col = untrans_labels,
+         main = "Number of Genes in Common")
+
+# Plot average expression level correlation as a heatmap
+pheatmap(CA_day0, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CA_day0), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Average Expression Level Correlation", 
+         breaks = seq(-1, 1, length.out = 100), color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Plot log2 fold change correlation as a heatmap
+pheatmap(CL_day0, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CL_day0), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Log2 Fold Change Correlation", 
+         breaks = seq(-1, 1, length.out = 100), color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Write to CSV (Optional, if needed)
+write.csv(n, 'nOverlappingGenes.csv', row.names = TRUE)
+write.csv(CA_day0, 'corrAverage_day0.csv', row.names = TRUE)
+write.csv(CL_day0, 'corrLog_day0.csv', row.names = TRUE)
