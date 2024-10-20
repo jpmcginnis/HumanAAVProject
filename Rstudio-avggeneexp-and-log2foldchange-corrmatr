@@ -5,7 +5,7 @@ library(tidyr)    # For data tidying
 library(pheatmap) # For plotting heatmaps
 
 # Path setup
-F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-6-24 TCH CSVs/day 0 to day 0 comparisons/'
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/day 0 to day 0 comparisons/'
 
 # File processing
 files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
@@ -37,9 +37,6 @@ GL <- matrix(NA, nrow = length(names), ncol = nDay0 + nUntrans) # Log2 fold chan
 for (i in seq_along(day0_files)) {
     T <- read_csv(day0_files[i])
     feature_names <- T$FeatureName
-    if (is.null(feature_names)) {
-        feature_names <- basename(day0_files[i])  # Fallback to filename if no FeatureName column
-    }
     idx <- match(feature_names, names)
     
     # Ensure correct length assignment
@@ -53,9 +50,6 @@ for (i in seq_along(day0_files)) {
 for (i in seq_along(untrans_files)) {
     T <- read_csv(untrans_files[i])
     feature_names <- T$FeatureName
-    if (is.null(feature_names)) {
-        feature_names <- basename(untrans_files[i])  # Fallback to filename if no FeatureName column
-    }
     idx <- match(feature_names, names)
     
     # Ensure correct length assignment
@@ -112,9 +106,18 @@ CA_day0 <- CA[day0_only_rows, ]
 # Subset the CL matrix similarly
 CL_day0 <- CL[day0_only_rows, ]
 
+# Correct the matrix for overlapping genes
+# Adjust the dimensions of the overlapping genes matrix (number of genes in common)
+overlap_matrix <- matrix(NA, nrow = length(day0_files_clean), ncol = length(untrans_labels))
+
+for (i in seq_along(day0_files_clean)) {
+    for (j in seq_along(untrans_labels)) {
+        overlap_matrix[i, j] <- sum(!is.na(GA[, i]) & !is.na(GA[, nDay0 + j]))
+    }
+}
+
 # Plot the number of overlapping genes as a heatmap
-pheatmap(matrix(rowSums(!is.na(GA)), nrow = length(day0_files_clean), ncol = nUntrans),
-         cluster_rows = FALSE, cluster_cols = FALSE,
+pheatmap(overlap_matrix, cluster_rows = FALSE, cluster_cols = FALSE,
          labels_row = day0_files_clean, labels_col = untrans_labels,
          main = "Number of Genes in Common")
 
