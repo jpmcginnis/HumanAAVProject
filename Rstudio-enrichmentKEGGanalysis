@@ -5,39 +5,66 @@ library(clusterProfiler)
 library(org.Hs.eg.db)  # Adjust if your organism is different
 library(ggplot2)
 
-# Load your CSV file
-data <- read_csv("/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/1-29-24 TCH CSVs/differences/Excitatory neurons differences.csv")
+# Set the path to the folder containing your CSV files
+folder_path <- "/Users/jpmcginnis1/Library/CloudStorage/GoogleDrive-jpmcginnis1@gmail.com/My Drive/AAV Gene Therapy/Single cell sequencing/1-29-24 TCH temp lob/Differences/"
 
-# Print out all column names to confirm structure
-print(colnames(data))
+# Get a list of all CSV files in the folder
+file_list <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
 
-# Filter for significant genes using column index (5 for column E)
-sig_genes <- data %>% filter(.[[5]] < 0.05)  # Assuming column E is the 5th column
-
-# Gene IDs will be in the first column
-gene_ids <- sig_genes[[1]]  # The first column for gene IDs
-
-# Perform GO enrichment analysis
-go_results <- enrichGO(gene = gene_ids, 
-                       OrgDb = org.Hs.eg.db,
-                       keyType = "ENSEMBL",  # Adjust according to your gene ID type
-                       pAdjustMethod = "BH",
-                       qvalueCutoff = 0.05)
-
-# View GO results
-print(head(go_results))
-
-# Plot GO enrichment results
-dotplot(go_results) + ggtitle("GO Enrichment Analysis")
-
-# Perform KEGG enrichment analysis
-kegg_results <- enrichKEGG(gene = gene_ids,
-                           organism = "hsa",  # Change according to your organism
+# Loop through each CSV file
+for (file in file_list) {
+    # Load the CSV file
+    data <- read_csv(file)
+    
+    # Print out the file name being processed
+    cat("Processing:", basename(file), "\n")
+    
+    # Filter for significant genes using column index (5 for column E)
+    sig_genes <- data %>% filter(.[[5]] < 0.05)  # Assuming column E is the 5th column
+    
+    # Gene symbols will be in the second column
+    gene_symbols <- sig_genes[[2]]  # The second column for gene symbols
+    
+    # Convert gene symbols to Entrez IDs
+    gene_ids <- bitr(gene_symbols, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+    
+    # Check if gene_ids is empty
+    if (nrow(gene_ids) == 0) {
+        cat("No valid Entrez IDs for", basename(file), "\n")
+        next  # Skip to the next file if no IDs are found
+    }
+    
+    # Perform GO enrichment analysis
+    go_results <- enrichGO(gene = gene_symbols, 
+                           OrgDb = org.Hs.eg.db,
+                           keyType = "SYMBOL",  # Specify that we are using gene symbols
                            pAdjustMethod = "BH",
                            qvalueCutoff = 0.05)
-
-# View KEGG results
-print(head(kegg_results))
-
-# Plot KEGG enrichment results
-dotplot(kegg_results) + ggtitle("KEGG Pathway Enrichment Analysis")
+    
+    # Print GO results
+    cat("GO Results for", basename(file), ":\n")
+    print(head(go_results))
+    
+    # Plot GO enrichment results
+    p1 <- dotplot(go_results) + ggtitle(paste("GO Enrichment Analysis for", basename(file)))
+    ggsave(filename = paste0(folder_path, "GO_Enrichment_", basename(file), ".png"), plot = p1)
+    
+    # Perform KEGG enrichment analysis using Entrez IDs
+    kegg_results <- enrichKEGG(gene = gene_ids$ENTREZID,  # Use Entrez IDs for the analysis
+                               organism = "hsa",  # Change according to your organism
+                               pAdjustMethod = "BH",
+                               qvalueCutoff = 0.05)
+    
+    # Check if kegg_results is not NULL
+    if (!is.null(kegg_results)) {
+        # Print KEGG results
+        cat("KEGG Results for", basename(file), ":\n")
+        print(head(kegg_results))
+        
+        # Plot KEGG enrichment results
+        p2 <- dotplot(kegg_results) + ggtitle(paste("KEGG Pathway Enrichment Analysis for", basename(file)))
+        ggsave(filename = paste0(folder_path, "KEGG_Enrichment_", basename(file), ".png"), plot = p2)
+    } else {
+        cat("No KEGG enrichment results for", basename(file), "\n")
+    }
+}
