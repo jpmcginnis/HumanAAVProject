@@ -1,30 +1,73 @@
 # Load necessary library
 library(dplyr)
 
-# Define file paths for the two CSVs
-file_path1 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/differences/GBM tumor cell differences.csv'
-file_path2 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/differences/GBM tumor cell differences.csv'
+# Define the folder paths
+folder_path1 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/differences'
+folder_path2 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/differences'
 
-# Load the two CSV files into data frames
-df1 <- read.csv(file_path1)
-df2 <- read.csv(file_path2)
+# List CSV files in both folders
+files1 <- list.files(folder_path1, pattern = "\\.csv$", full.names = TRUE)
+files2 <- list.files(folder_path2, pattern = "\\.csv$", full.names = TRUE)
 
-# Filter for significant genes (p-value < 0.05) in both data frames
-significant_genes_df1 <- df1 %>%
-    filter(`GBM.tumor.cells.day.0.P.Value` < 0.05 | `GBM.tumor.cells.day.14.untrans.P.Value` < 0.05)
+# Extract just the file names (without paths)
+file_names1 <- basename(files1)
+file_names2 <- basename(files2)
 
-significant_genes_df2 <- df2 %>%
-    filter(`GBM.tumor.cells.day.0.P.Value` < 0.05 | `GBM.tumor.cells.day.14.untrans.P.Value` < 0.05)
+# Find common file names
+common_file_names <- intersect(file_names1, file_names2)
 
-# Compile lists of significant gene symbols
-significant_genes_list1 <- unique(significant_genes_df1$FeatureName)
-significant_genes_list2 <- unique(significant_genes_df2$FeatureName)
+# Initialize a list to store common significant genes for each matching file
+common_significant_genes_list <- list()
 
-# Find common significant genes in both lists
-common_significant_genes <- intersect(significant_genes_list1, significant_genes_list2)
+# Set the p-value threshold for significance
+p_value_threshold <- 0.05
 
-# Convert to a data frame for better presentation
-common_significant_genes_df <- data.frame(Common_Significant_Genes = common_significant_genes)
+# Loop through each common file name to check for shared genes
+for (file_name in common_file_names) {
+    # Load the corresponding CSV files from both folders
+    df1 <- read.csv(file.path(folder_path1, file_name))
+    df2 <- read.csv(file.path(folder_path2, file_name))
+    
+    # Check for numeric columns that likely contain p-values
+    p_value_columns_df1 <- sapply(df1, is.numeric) & grepl("P.Value", colnames(df1))
+    p_value_columns_df2 <- sapply(df2, is.numeric) & grepl("P.Value", colnames(df2))
+    
+    # Get the names of the p-value columns
+    p_value_names_df1 <- colnames(df1)[p_value_columns_df1]
+    p_value_names_df2 <- colnames(df2)[p_value_columns_df2]
+    
+    # Filter for significant genes in df1
+    significant_genes_df1 <- df1 %>%
+        filter(rowSums(df1[p_value_names_df1] < p_value_threshold) > 0)
+    
+    # Filter for significant genes in df2
+    significant_genes_df2 <- df2 %>%
+        filter(rowSums(df2[p_value_names_df2] < p_value_threshold) > 0)
+    
+    # Compile lists of significant gene symbols
+    significant_genes_list1 <- unique(significant_genes_df1$FeatureName)
+    significant_genes_list2 <- unique(significant_genes_df2$FeatureName)
+    
+    # Find common significant genes in both lists
+    common_significant_genes <- intersect(significant_genes_list1, significant_genes_list2)
+    
+    # Store the results if there are common genes
+    if (length(common_significant_genes) > 0) {
+        common_significant_genes_list[[file_name]] <- common_significant_genes
+        
+        # Create a data frame for the common genes
+        common_genes_df <- data.frame(Common_Significant_Genes = common_significant_genes)
+        
+        # Save the results to a CSV file in both input paths
+        write.csv(common_genes_df, 
+                  file.path(folder_path1, paste0("Common_Significant_Genes_", file_name)), 
+                  row.names = FALSE)
+        
+        write.csv(common_genes_df, 
+                  file.path(folder_path2, paste0("Common_Significant_Genes_", file_name)), 
+                  row.names = FALSE)
+    }
+}
 
-# Display the common significant genes
-print(common_significant_genes_df)
+# Optionally, print a message indicating completion
+cat("Common significant genes saved to CSV files in both input paths.\n")
