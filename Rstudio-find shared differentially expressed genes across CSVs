@@ -2,8 +2,8 @@
 library(dplyr)
 
 # Define the folder paths
-folder_path1 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/2-19-24 STL GBM CSVs/differences'
-folder_path2 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-15-24 STL GBM CSVs/differences'
+folder_path1 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/5-6-24 TCH CSVs/Differences'
+folder_path2 <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/6-20-24 STL CSVs/Differences'
 
 # List CSV files in both folders
 files1 <- list.files(folder_path1, pattern = "\\.csv$", full.names = TRUE)
@@ -58,13 +58,35 @@ for (file_name in common_file_names) {
         # Create a data frame for the common genes
         common_genes_df <- data.frame(Common_Significant_Genes = common_significant_genes)
         
+        # Identify upregulated or downregulated status
+        regulation_status <- c()
+        for (gene in common_significant_genes) {
+            # Check the log2 fold change in df1 and df2 for the common gene
+            log2_fold_change_df1 <- df1[df1$FeatureName == gene, grep("Log2.Fold.Change", colnames(df1))]
+            log2_fold_change_df2 <- df2[df2$FeatureName == gene, grep("Log2.Fold.Change", colnames(df2))]
+            
+            # Determine regulation status based on fold change
+            if (nrow(log2_fold_change_df1) > 0 && nrow(log2_fold_change_df2) > 0) {
+                if (log2_fold_change_df1[1] > 0) {
+                    regulation_status <- c(regulation_status, "Upregulated")
+                } else if (log2_fold_change_df1[1] < 0) {
+                    regulation_status <- c(regulation_status, "Downregulated")
+                } else {
+                    regulation_status <- c(regulation_status, "No Change")
+                }
+            }
+        }
+        
+        # Add regulation status to the data frame
+        common_genes_df$Regulation_Status <- regulation_status
+        
         # Save the results to a CSV file in both input paths
-        write.csv(common_genes_df, 
-                  file.path(folder_path1, paste0("Common_Significant_Genes_", file_name)), 
+        write.csv(common_genes_df,
+                  file.path(folder_path1, paste0("Common_Significant_Genes_", file_name)),
                   row.names = FALSE)
         
-        write.csv(common_genes_df, 
-                  file.path(folder_path2, paste0("Common_Significant_Genes_", file_name)), 
+        write.csv(common_genes_df,
+                  file.path(folder_path2, paste0("Common_Significant_Genes_", file_name)),
                   row.names = FALSE)
     }
 }
