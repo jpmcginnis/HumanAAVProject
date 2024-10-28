@@ -1,0 +1,233 @@
+#install.packages("singleR")
+#install.packages("celldex")
+install.packages("Seurat")
+install.packages("tidyverse")
+install.packages("pheatmap")
+install.packages("hdf5r")
+install.packages("viridis")
+
+library(Seurat)
+library(tidyverse)
+library(pheatmap)
+library(hdf5r)
+library(viridis)
+
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("celldex")
+BiocManager::install("SingleR")
+BiocManager::install("scRNAseq")
+BiocManager::install("zellkonverter")
+BiocManager::install("anndata")
+library(scRNAseq)
+library(SingleR)
+library(celldex)
+library(zellkonverter)
+library(anndata)
+
+??singleR
+
+
+TCH_obj <- Read10X_h5(filename = '/Users/arenkiellab/Downloads/5-6-24_TCH_filtered_feature_bc_matrix.h5', use.names = TRUE, unique.features = TRUE)
+rownames(TCH_obj) <- gsub("_", "-", rownames(TCH_obj))
+TCH.Seurat <- CreateSeuratObject(counts = TCH_obj)
+#Normalizing data
+TCH.Seurat <- NormalizeData(object = TCH.Seurat)
+TCH.Seurat <- FindVariableFeatures(object = TCH.Seurat)
+TCH.Seurat <- ScaleData(object = TCH.Seurat)
+TCH.Seurat <- RunPCA(object = TCH.Seurat)
+TCH.Seurat <- FindNeighbors(object = TCH.Seurat, dims = 1:10)
+TCH.Seurat <- FindClusters(object = TCH.Seurat)
+TCH.Seurat <- RunUMAP(object = TCH.Seurat, dims = 1:10)
+DimPlot(TCH.Seurat, reduction = 'umap')
+
+
+# Load the reference data from .csv file
+reference_data <- read.csv('/Users/arenkiellab/Downloads/medians.csv', row.names = 1)
+
+# Transpose the dataset to match SingleR format (genes as rows, cell types as columns)
+reference_data <- as.matrix(reference_data)
+# Convert to long format
+reference_df <- as.data.frame(reference_data)
+reference_df$Gene <- rownames(reference_df)  # Create a column for gene names
+
+reference_long <- reference_df %>%
+  pivot_longer(-Gene, names_to = "CellType", values_to = "Expression")
+
+# Define a mapping from subtypes to general clusters
+cluster_mapping <- c(
+  "Astrocytes" = "Astrocytes",
+  "Astrocytes.1" = "Astrocytes",
+  "Astrocytes.2" = "Astrocytes",
+  "Astrocytes.3" = "Astrocytes",
+  "Astrocytes.4" = "Astrocytes",
+  
+  "Endothelial.cells" = "Endothelial",
+  "Endothelial.cells.1" = "Endothelial",
+  "Endothelial.cells.2" = "Endothelial",
+  
+  "GABA.ergic" = "GABAergic",
+  "GABA.ergic.1" = "GABAergic",
+  "GABA.ergic.2" = "GABAergic",
+  "GABA.ergic.3" = "GABAergic",
+  "GABA.ergic.4" = "GABAergic",
+  "GABA.ergic.5" = "GABAergic",
+  "GABA.ergic.6" = "GABAergic",
+  "GABA.ergic.7" = "GABAergic",
+  "GABA.ergic.8" = "GABAergic",
+  "GABA.ergic.9" = "GABAergic",
+  "GABA.ergic.10" = "GABAergic",
+  "GABA.ergic.11" = "GABAergic",
+  "GABA.ergic.12" = "GABAergic",
+  "GABA.ergic.13" = "GABAergic",
+  "GABA.ergic.14" = "GABAergic",
+  "GABA.ergic.15" = "GABAergic",
+  "GABA.ergic.16" = "GABAergic",
+  "GABA.ergic.17" = "GABAergic",
+  "GABA.ergic.18" = "GABAergic",
+  "GABA.ergic.19" = "GABAergic",
+  "GABA.ergic.20" = "GABAergic",
+  "GABA.ergic.21" = "GABAergic",
+  "GABA.ergic.22" = "GABAergic",
+  "GABA.ergic.23" = "GABAergic",
+  "GABA.ergic.24" = "GABAergic",
+  "GABA.ergic.25" = "GABAergic",
+  "GABA.ergic.26" = "GABAergic",
+  "GABA.ergic.27" = "GABAergic",
+  "GABA.ergic.28" = "GABAergic",
+  "GABA.ergic.29" = "GABAergic",
+  "GABA.ergic.30" = "GABAergic",
+  "GABA.ergic.31" = "GABAergic",
+  "GABA.ergic.32" = "GABAergic",
+  "GABA.ergic.33" = "GABAergic",
+  "GABA.ergic.34" = "GABAergic",
+  "GABA.ergic.35" = "GABAergic",
+  "GABA.ergic.36" = "GABAergic",
+  "GABA.ergic.37" = "GABAergic",
+  "GABA.ergic.38" = "GABAergic",
+  "GABA.ergic.39" = "GABAergic",
+  "GABA.ergic.40" = "GABAergic",
+  "GABA.ergic.41" = "GABAergic",
+  "GABA.ergic.42" = "GABAergic",
+  "GABA.ergic.43" = "GABAergic",
+  "GABA.ergic.44" = "GABAergic",
+  "GABA.ergic.45" = "GABAergic",
+  "GABA.ergic.46" = "GABAergic",
+  "GABA.ergic.47" = "GABAergic",
+  "GABA.ergic.48" = "GABAergic",
+  "GABA.ergic.49" = "GABAergic",
+  "GABA.ergic.50" = "GABAergic",
+  "GABA.ergic.51" = "GABAergic",
+  "GABA.ergic.52" = "GABAergic",
+  "GABA.ergic.53" = "GABAergic",
+  "GABA.ergic.54" = "GABAergic",
+  "GABA.ergic.55" = "GABAergic",
+  "GABA.ergic.56" = "GABAergic",
+  "GABA.ergic.57" = "GABAergic",
+  "GABA.ergic.58" = "GABAergic",
+  "GABA.ergic.59" = "GABAergic",
+  "GABA.ergic.60" = "GABAergic",
+  "GABA.ergic.61" = "GABAergic",
+  "GABA.ergic.62" = "GABAergic",
+  "GABA.ergic.63" = "GABAergic",
+  "GABA.ergic.64" = "GABAergic",
+  "GABA.ergic.65" = "GABAergic",
+  "GABA.ergic.66" = "GABAergic",
+  
+  "Glutamatergic" = "Glutamatergic",
+  "Glutamatergic.1" = "Glutamatergic",
+  "Glutamatergic.2" = "Glutamatergic",
+  "Glutamatergic.3" = "Glutamatergic",
+  "Glutamatergic.4" = "Glutamatergic",
+  "Glutamatergic.5" = "Glutamatergic",
+  "Glutamatergic.6" = "Glutamatergic",
+  "Glutamatergic.7" = "Glutamatergic",
+  "Glutamatergic.8" = "Glutamatergic",
+  "Glutamatergic.9" = "Glutamatergic",
+  "Glutamatergic.10" = "Glutamatergic",
+  "Glutamatergic.11" = "Glutamatergic",
+  "Glutamatergic.12" = "Glutamatergic",
+  "Glutamatergic.13" = "Glutamatergic",
+  "Glutamatergic.14" = "Glutamatergic",
+  "Glutamatergic.15" = "Glutamatergic",
+  "Glutamatergic.16" = "Glutamatergic",
+  "Glutamatergic.17" = "Glutamatergic",
+  "Glutamatergic.18" = "Glutamatergic",
+  "Glutamatergic.19" = "Glutamatergic",
+  "Glutamatergic.20" = "Glutamatergic",
+  "Glutamatergic.21" = "Glutamatergic",
+  "Glutamatergic.22" = "Glutamatergic",
+  "Glutamatergic.23" = "Glutamatergic",
+  "Glutamatergic.24" = "Glutamatergic",
+  "Glutamatergic.25" = "Glutamatergic",
+  "Glutamatergic.26" = "Glutamatergic",
+  "Glutamatergic.27" = "Glutamatergic",
+  "Glutamatergic.28" = "Glutamatergic",
+  "Glutamatergic.29" = "Glutamatergic",
+  "Glutamatergic.30" = "Glutamatergic",
+  "Glutamatergic.31" = "Glutamatergic",
+  "Glutamatergic.32" = "Glutamatergic",
+  "Glutamatergic.33" = "Glutamatergic",
+  "Glutamatergic.34" = "Glutamatergic",
+  "Glutamatergic.35" = "Glutamatergic",
+  "Glutamatergic.36" = "Glutamatergic",
+  "Glutamatergic.37" = "Glutamatergic",
+  "Glutamatergic.38" = "Glutamatergic",
+  "Glutamatergic.39" = "Glutamatergic",
+  "Glutamatergic.40" = "Glutamatergic",
+  "Glutamatergic.41" = "Glutamatergic",
+  
+  "Microglia" = "Microglia",
+  "Microglia.1" = "Microglia",
+  
+  "Oligodendrocyte.Precursor.Cells" = "Oligodendrocyte Precursors",
+  "Oligodendrocyte.Precursor.Cells.1" = "Oligodendrocyte Precursors",
+  "Oligodendrocytes" = "Oligodendrocytes",
+  "Oligodendrocytes.1" = "Oligodendrocytes",
+  "Oligodendrocytes.2" = "Oligodendrocytes",
+  "Oligodendrocytes.3" = "Oligodendrocytes",
+  
+  "VLMC" = "VLMC",
+  "VLMC.1" = "VLMC"
+)
+
+reference_long <- reference_long %>%
+  mutate(GeneralCluster = recode(CellType, !!!cluster_mapping)) %>%
+  group_by(GeneralCluster, Gene) %>%
+  summarize(AverageExpression = mean(Expression, na.rm = TRUE))
+
+# Now proceed to widen the dataset again
+reference_wide <- reference_long %>%
+  pivot_wider(names_from = GeneralCluster, values_from = AverageExpression, values_fill = 0)
+
+# Convert to matrix for SingleR
+reference_matrix <- as.matrix(reference_wide[,-1])  # Exclude the Gene column
+rownames(reference_matrix) <- reference_wide$Gene
+
+#head(rownames((reference_matrix)))
+
+# Ensure the row names of TCH_counts match the gene names in reference_data
+TCH_counts <- as.matrix(GetAssayData(TCH.Seurat, slot = 'counts'))
+common_genes <- intersect(rownames(reference_matrix), rownames(TCH_counts))
+reference_matrix <- reference_matrix[common_genes, ]
+TCH_counts <- TCH_counts[common_genes, ]
+
+# Perform SingleR classification
+cell_type_labels <- colnames(reference_matrix)  # Extract cell type labels from the reference data
+pred <- SingleR(test = TCH_counts, ref = reference_matrix, labels = cell_type_labels)
+
+# Annotate Seurat object with SingleR labels
+TCH.Seurat$singleR.labels <- pred$labels[match(colnames(TCH_counts), colnames(TCH.Seurat))]
+
+# Visualize SingleR annotations on UMAP
+DimPlot(TCH.Seurat, reduction = 'umap', group.by = 'singleR.labels')
+
+# Annotation diagnostics
+plotScoreHeatmap(pred)
+plotDeltaDistribution(pred)
+
+# Compare SingleR annotations with unsupervised clusters
+tab <- table(Assigned = pred$labels, Clusters = TCH.Seurat$seurat_clusters)
+pheatmap(log10(tab + 1), color = colorRampPalette(c('white', 'darkblue'))(10), main = "Cluster Annotation with SingleR")
+
