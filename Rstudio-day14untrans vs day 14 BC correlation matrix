@@ -1,0 +1,115 @@
+# Load necessary libraries
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
+
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Combined 5-6 and 6-20/day 14 BC vs day 14 untrans differences/'
+
+# File processing
+files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
+
+# Separate files by matching the last part of the filenames: 'BC' and 'untrans'
+day14BC_files <- files[grep('BC\\.csv$', files)]
+untrans_files <- files[grep('untrans\\.csv$', files)]
+
+# Generate labels, extracting cluster names from file names
+untrans_labels <- gsub('untrans\\.csv$', '', basename(untrans_files))
+day14BC_labels <- gsub('BC\\.csv$', '', basename(day14BC_files))
+
+# Initialize gene list
+names <- unique(c())
+
+# Read all Feature Names from both Day 14 BC and Untrans files
+for (file in c(day14BC_files, untrans_files)) {
+    T <- read_csv(file)
+    names <- unique(c(names, T$FeatureName))
+}
+
+# Ensure matrices have correct dimensions
+nDay14BC <- length(day14BC_files)
+nUntrans <- length(untrans_files)
+GA <- matrix(NA, nrow = length(names), ncol = nDay14BC + nUntrans) # Gene average
+GL <- matrix(NA, nrow = length(names), ncol = nDay14BC + nUntrans) # Log2 fold change
+
+# Load Day 14 BC files
+for (i in seq_along(day14BC_files)) {
+    T <- read_csv(day14BC_files[i])
+    feature_names <- T$FeatureName
+    idx <- match(feature_names, names)
+
+    if (any(!is.na(idx))) {
+        GA[idx, i] <- T[[3]][!is.na(idx)]  # Assuming column 3 has average expression
+        GL[idx, i] <- T[[4]][!is.na(idx)]  # Assuming column 4 has log2 fold change
+    }
+}
+
+# Load Untrans files
+for (i in seq_along(untrans_files)) {
+    T <- read_csv(untrans_files[i])
+    feature_names <- T$FeatureName
+    idx <- match(feature_names, names)
+
+    if (any(!is.na(idx))) {
+        GA[idx, nDay14BC + i] <- T[[3]][!is.na(idx)]
+        GL[idx, nDay14BC + i] <- T[[4]][!is.na(idx)]
+    }
+}
+
+# Calculate correlations
+CA <- matrix(NA, nrow = nDay14BC, ncol = nUntrans) # Average expression correlation
+CL <- matrix(NA, nrow = nDay14BC, ncol = nUntrans) # Log2 fold change correlation
+
+for (i in 1:nDay14BC) {
+    for (j in 1:nUntrans) {
+        a <- GA[, i]
+        b <- GA[, nDay14BC + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]
+        b <- b[!rm]
+
+        if (length(a) > 1 && length(b) > 1) {
+            CA[i, j] <- cor(a, b, use = "complete.obs")
+        }
+
+        a <- GL[, i]
+        b <- GL[, nDay14BC + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]
+        b <- b[!rm]
+
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        }
+    }
+}
+
+# Convert row and column names
+rownames(CA) <- gsub('.csv$', '', basename(day14BC_files))
+colnames(CA) <- untrans_labels
+rownames(CL) <- gsub('.csv$', '', basename(day14BC_files))
+colnames(CL) <- untrans_labels
+
+# Subset matrices for Day 14 BC rows
+day14BC_only_rows <- grepl('BC$', rownames(CA))
+
+CA_day14BC <- CA[day14BC_only_rows, ]
+CL_day14BC <- CL[day14BC_only_rows, ]
+
+# Plot heatmaps
+breaks_avg <- seq(-1, 1, length.out = 100)
+pheatmap(CA_day14BC, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CA_day14BC), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Average Expression Level Correlation", 
+         breaks = breaks_avg, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+breaks_log2 <- seq(-1, 1, length.out = 100)
+pheatmap(CL_day14BC, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = rownames(CL_day14BC), labels_col = untrans_labels,
+         display_numbers = TRUE, main = "Log2 Fold Change Correlation", 
+         breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Write to CSV (Optional)
+write.csv(CA_day14BC, 'corrAverage_day14BC.csv', row.names = TRUE)
+write.csv(CL_day14BC, 'corrLog_day14BC.csv', row.names = TRUE)
