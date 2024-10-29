@@ -1,0 +1,57 @@
+run("Set Measurements...", "area mean stack display redirect=None decimal=3");
+path = File.openDialog("choose a file");
+dir = File.getDirectory(path);
+//print(dir);
+LST = getFileList(dir);
+num = LST.length;
+for (i = 0; i < num; i++) {
+	name = LST[i];
+	if(endsWith(name, ".tif")){
+		//name = File.name;
+		fileineed = dir + "/" + name;
+		open(fileineed);
+		rename("data");
+		run("Gaussian Blur...", "sigma=2 stack");
+		run("Subtract Background...", "rolling=200 stack");
+		//run("Z Project...", "projection=[Average Intensity]");
+		//selectImage("AVG_data");
+		run("Duplicate...", "duplicate channels=1");
+		selectWindow("data-1");
+		run("Subtract Background...", "rolling=200");
+		setAutoThreshold("Triangle dark no-reset");
+		setOption("BlackBackground", true);
+		run("Convert to Mask");
+		run("Watershed");
+		//run("Analyze Particles...", "add");
+		run("Analyze Particles...", "size=10-1000 add");
+		selectWindow("data");
+		roiManager("multi-measure measure_all");
+		selectWindow("data");
+		rename(name);
+		selectWindow("data-1");
+		close();
+		kernel = dir + "/" + name + "_ROIS.zip";
+		roiManager("save", kernel);
+		roiManager("Show None");
+		roiManager("Show All");
+		roiManager("Delete");
+		selectWindow(name);
+		close();
+		selectWindow("Results");
+		kernel2 = dir + "/" + name + "_results.csv";
+		saveAs("Results", kernel2);
+		selectWindow("Results");
+		run("Close");
+		//CNT = roiManager("count");
+		//for(j=0;j<4;j++){
+		//	Stack.setChannel(j);
+		//	for (i = 0; i < CNT; i++) {
+		//		selectWindow("data");
+		//		roiManager("select", i);
+		//		run("Measure");
+		//	}
+		//}
+	}else{
+		continue;
+	}
+}
