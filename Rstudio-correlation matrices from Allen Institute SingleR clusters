@@ -1,0 +1,87 @@
+# Load necessary libraries
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
+
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis'
+
+# File processing
+files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
+
+# Separate files by matching day14bc and day0 in the filenames
+day14bc_files <- files[grep('_day14bc_differential_expression\\.csv$', files)]
+day0_files <- files[grep('_day0_differential_expression\\.csv$', files)]
+
+# Generate labels, extracting cluster names from file names
+day0_labels <- gsub('_day0_differential_expression\\.csv$', '', basename(day0_files))
+day14bc_labels <- gsub('_day14bc_differential_expression\\.csv$', '', basename(day14bc_files))
+
+# Initialize gene list
+names <- unique(c())
+
+# Read all Gene names from both Day 14 BC and Day 0 files
+for (file in c(day14bc_files, day0_files)) {
+    T <- read_csv(file, col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    names <- unique(c(names, gene_names))
+}
+
+# Ensure matrices have correct dimensions
+nDay14BC <- length(day14bc_files)
+nDay0 <- length(day0_files)
+GL <- matrix(NA, nrow = length(names), ncol = nDay14BC + nDay0) # Log2 fold change
+
+# Load Day 14 BC files and extract log2 fold change (row 3), ensuring numeric values
+for (i in seq_along(day14bc_files)) {
+    T <- read_csv(day14bc_files[i], col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    idx <- match(gene_names, names)
+    if (any(!is.na(idx))) {
+        GL[idx, i] <- log2_fold_change[!is.na(idx)]
+    }
+}
+
+# Load Day 0 files and extract log2 fold change (row 3), ensuring numeric values
+for (i in seq_along(day0_files)) {
+    T <- read_csv(day0_files[i], col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    idx <- match(gene_names, names)
+    if (any(!is.na(idx))) {
+        GL[idx, nDay14BC + i] <- log2_fold_change[!is.na(idx)]
+    }
+}
+
+# Calculate correlations based on log2 fold change values
+CL <- matrix(NA, nrow = nDay14BC, ncol = nDay0) # Log2 fold change correlation
+
+for (i in 1:nDay14BC) {
+    for (j in 1:nDay0) {
+        a <- GL[, i]
+        b <- GL[, nDay14BC + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        }
+    }
+}
+
+# Convert row and column names
+rownames(CL) <- day14bc_labels
+colnames(CL) <- day0_labels
+
+# Plot heatmap for log2 fold change correlations
+breaks_log2 <- seq(-1, 1, length.out = 100)
+pheatmap(CL, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = day14bc_labels, labels_col = day0_labels,
+         display_numbers = TRUE, main = "Log2 Fold Change Correlation",
+         breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Write to CSV (Optional)
+write.csv(CL, file.path(F, 'corrLog2_day14BC_vs_day0.csv'), row.names = TRUE)
