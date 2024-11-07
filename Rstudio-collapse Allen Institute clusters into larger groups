@@ -1,0 +1,184 @@
+# Step 4: Uploading Allen Institute reference data 
+Allen_Institute_Reference <- read.csv('/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis/medians 2.csv', row.names = 1)
+# Transpose the dataset to match SingleR format (genes as rows, cell types as columns)
+Allen_Institute_Reference <- as.matrix(Allen_Institute_Reference)
+# Convert to long format
+Allen_Institute_Reference_df <- as.data.frame(Allen_Institute_Reference)
+Allen_Institute_Reference_df$Gene <- rownames(Allen_Institute_Reference_df)  # Create a column for gene names
+
+reference_long <- Allen_Institute_Reference_df %>%
+    pivot_longer(-Gene, names_to = "CellType", values_to = "Expression")
+
+# Define subtypes to general clusters
+cluster_mapping <- c(
+    "Astrocytes" = "Astrocytes",
+    "Astrocytes.1" = "Astrocytes",
+    "Astrocytes.2" = "Astrocytes",
+    "Astrocytes.3" = "Astrocytes",
+    "Astrocytes.4" = "Astrocytes",
+    
+    "Endothelial.cells" = "Endothelial",
+    "Endothelial.cells.1" = "Endothelial",
+    "Endothelial.cells.2" = "Endothelial",
+    
+    "GABA.ergic" = "GABAergic",
+    "GABA.ergic.1" = "GABAergic",
+    "GABA.ergic.2" = "GABAergic",
+    "GABA.ergic.3" = "GABAergic",
+    "GABA.ergic.4" = "GABAergic",
+    "GABA.ergic.5" = "GABAergic",
+    "GABA.ergic.6" = "GABAergic",
+    "GABA.ergic.7" = "GABAergic",
+    "GABA.ergic.8" = "GABAergic",
+    "GABA.ergic.9" = "GABAergic",
+    "GABA.ergic.10" = "GABAergic",
+    "GABA.ergic.11" = "GABAergic",
+    "GABA.ergic.12" = "GABAergic",
+    "GABA.ergic.13" = "GABAergic",
+    "GABA.ergic.14" = "GABAergic",
+    "GABA.ergic.15" = "GABAergic",
+    "GABA.ergic.16" = "GABAergic",
+    "GABA.ergic.17" = "GABAergic",
+    "GABA.ergic.18" = "GABAergic",
+    "GABA.ergic.19" = "GABAergic",
+    "GABA.ergic.20" = "GABAergic",
+    "GABA.ergic.21" = "GABAergic",
+    "GABA.ergic.22" = "GABAergic",
+    "GABA.ergic.23" = "GABAergic",
+    "GABA.ergic.24" = "GABAergic",
+    "GABA.ergic.25" = "GABAergic",
+    "GABA.ergic.26" = "GABAergic",
+    "GABA.ergic.27" = "GABAergic",
+    "GABA.ergic.28" = "GABAergic",
+    "GABA.ergic.29" = "GABAergic",
+    "GABA.ergic.30" = "GABAergic",
+    "GABA.ergic.31" = "GABAergic",
+    "GABA.ergic.32" = "GABAergic",
+    "GABA.ergic.33" = "GABAergic",
+    "GABA.ergic.34" = "GABAergic",
+    "GABA.ergic.35" = "GABAergic",
+    "GABA.ergic.36" = "GABAergic",
+    "GABA.ergic.37" = "GABAergic",
+    "GABA.ergic.38" = "GABAergic",
+    "GABA.ergic.39" = "GABAergic",
+    "GABA.ergic.40" = "GABAergic",
+    "GABA.ergic.41" = "GABAergic",
+    "GABA.ergic.42" = "GABAergic",
+    "GABA.ergic.43" = "GABAergic",
+    "GABA.ergic.44" = "GABAergic",
+    "GABA.ergic.45" = "GABAergic",
+    "GABA.ergic.46" = "GABAergic",
+    "GABA.ergic.47" = "GABAergic",
+    "GABA.ergic.48" = "GABAergic",
+    "GABA.ergic.49" = "GABAergic",
+    "GABA.ergic.50" = "GABAergic",
+    "GABA.ergic.51" = "GABAergic",
+    "GABA.ergic.52" = "GABAergic",
+    "GABA.ergic.53" = "GABAergic",
+    "GABA.ergic.54" = "GABAergic",
+    "GABA.ergic.55" = "GABAergic",
+    "GABA.ergic.56" = "GABAergic",
+    "GABA.ergic.57" = "GABAergic",
+    "GABA.ergic.58" = "GABAergic",
+    "GABA.ergic.59" = "GABAergic",
+    "GABA.ergic.60" = "GABAergic",
+    "GABA.ergic.61" = "GABAergic",
+    "GABA.ergic.62" = "GABAergic",
+    "GABA.ergic.63" = "GABAergic",
+    "GABA.ergic.64" = "GABAergic",
+    "GABA.ergic.65" = "GABAergic",
+    "GABA.ergic.66" = "GABAergic",
+    
+    "Glutamatergic" = "Glutamatergic",
+    "Glutamatergic.1" = "Glutamatergic",
+    "Glutamatergic.2" = "Glutamatergic",
+    "Glutamatergic.3" = "Glutamatergic",
+    "Glutamatergic.4" = "Glutamatergic",
+    "Glutamatergic.5" = "Glutamatergic",
+    "Glutamatergic.6" = "Glutamatergic",
+    "Glutamatergic.7" = "Glutamatergic",
+    "Glutamatergic.8" = "Glutamatergic",
+    "Glutamatergic.9" = "Glutamatergic",
+    "Glutamatergic.10" = "Glutamatergic",
+    "Glutamatergic.11" = "Glutamatergic",
+    "Glutamatergic.12" = "Glutamatergic",
+    "Glutamatergic.13" = "Glutamatergic",
+    "Glutamatergic.14" = "Glutamatergic",
+    "Glutamatergic.15" = "Glutamatergic",
+    "Glutamatergic.16" = "Glutamatergic",
+    "Glutamatergic.17" = "Glutamatergic",
+    "Glutamatergic.18" = "Glutamatergic",
+    "Glutamatergic.19" = "Glutamatergic",
+    "Glutamatergic.20" = "Glutamatergic",
+    "Glutamatergic.21" = "Glutamatergic",
+    "Glutamatergic.22" = "Glutamatergic",
+    "Glutamatergic.23" = "Glutamatergic",
+    "Glutamatergic.24" = "Glutamatergic",
+    "Glutamatergic.25" = "Glutamatergic",
+    "Glutamatergic.26" = "Glutamatergic",
+    "Glutamatergic.27" = "Glutamatergic",
+    "Glutamatergic.28" = "Glutamatergic",
+    "Glutamatergic.29" = "Glutamatergic",
+    "Glutamatergic.30" = "Glutamatergic",
+    "Glutamatergic.31" = "Glutamatergic",
+    "Glutamatergic.32" = "Glutamatergic",
+    "Glutamatergic.33" = "Glutamatergic",
+    "Glutamatergic.34" = "Glutamatergic",
+    "Glutamatergic.35" = "Glutamatergic",
+    "Glutamatergic.36" = "Glutamatergic",
+    "Glutamatergic.37" = "Glutamatergic",
+    "Glutamatergic.38" = "Glutamatergic",
+    "Glutamatergic.39" = "Glutamatergic",
+    "Glutamatergic.40" = "Glutamatergic",
+    "Glutamatergic.41" = "Glutamatergic",
+    
+    "Microglia" = "Microglia",
+    "Microglia.1" = "Microglia",
+    
+    "Oligodendrocyte.Precursor.Cells" = "Oligodendrocyte Precursors",
+    "Oligodendrocyte.Precursor.Cells.1" = "Oligodendrocyte Precursors",
+    "Oligodendrocytes" = "Oligodendrocytes",
+    "Oligodendrocytes.1" = "Oligodendrocytes",
+    "Oligodendrocytes.2" = "Oligodendrocytes",
+    "Oligodendrocytes.3" = "Oligodendrocytes",
+    
+    "VLMC" = "VLMC",
+    "VLMC.1" = "VLMC"
+)
+reference_long <- reference_long %>%
+    mutate(GeneralCluster = recode(CellType, !!!cluster_mapping)) %>%
+    group_by(GeneralCluster, Gene) %>%
+    summarize(AverageExpression = mean(Expression, na.rm = TRUE))
+
+# Now proceed to widen the dataset again
+reference_wide <- reference_long %>%
+    pivot_wider(names_from = GeneralCluster, values_from = AverageExpression, values_fill = 0)
+
+# Convert to matrix for SingleR
+Allen_Institute_Reference_matrix <- as.matrix(reference_wide[,-1])  # Exclude the Gene column
+rownames(Allen_Institute_Reference_matrix) <- reference_wide$Gene
+
+# Assuming each Seurat object is already integrated and stored in each_day_analysis
+each_day_analysis <- list(Day0 = Seurat_d0, Day14u = Seurat_d14u, Day14BC = Seurat_d14BC)
+heatmap_list <- list()
+# Iterate through each sample
+for (sample_name in names(each_day_analysis)) {
+    sample <- each_day_analysis[[sample_name]]
+    
+    # Get data from the assay and find common genes with the reference
+    counts_layer <- GetAssayData(sample, slot = "data")
+    common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
+    
+    # Subset and reorder rows in both matrices according to a consistent order
+    reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
+    counts_layer <- counts_layer[match(common_genes, rownames(counts_layer)), ]
+    
+    # Perform SingleR prediction
+    predict_clusters <- SingleR(test = as(counts_layer, "dgCMatrix"), ref = as(reference_sub, "dgCMatrix"), labels = colnames(reference_sub))
+    
+    # Generate the heatmap and add it to the list as a grob
+    heat_map <- plotScoreHeatmap(predict_clusters)
+    heatmap_grob <- grid::grid.grabExpr({
+        print(heat_map)
+        grid::grid.text(paste("Heatmap with SingleR Labels -", sample_name), y = 0.95, gp = grid::gpar(fontsize = 14))
+    })
