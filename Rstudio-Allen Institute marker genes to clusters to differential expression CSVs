@@ -1,140 +1,87 @@
 # Load necessary libraries
-library(Seurat)
-library(SingleR)
-library(dplyr)
-library(tibble)
-library(tidyr)
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
 
-# Define input path where files will be saved
-input_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis"  # Adjust as needed
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis'
 
-# Step 1: Load and process Allen Institute reference data
-Allen_Institute_Reference <- read.csv('/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis/medians 2.csv', row.names = 1)
-Allen_Institute_Reference <- as.matrix(Allen_Institute_Reference)
+# File processing
+files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
 
-# Convert reference data to a data frame for easier manipulation
-Allen_Institute_Reference_df <- as.data.frame(Allen_Institute_Reference)
-Allen_Institute_Reference_df$Gene <- rownames(Allen_Institute_Reference_df)
+# Separate files by matching day14bc and day0 in the filenames
+day14bc_files <- files[grep('_day14bc_differential_expression\\.csv$', files)]
+day0_files <- files[grep('_day0_differential_expression\\.csv$', files)]
 
-# Define subtype mappings for general clusters, covering all provided subtypes
-cluster_mapping <- c(
-    # GABAergic neurons
-    "GABA.ergic" = "GABAergic", "GABA.ergic.1" = "GABAergic", "GABA.ergic.2" = "GABAergic",
-    "GABA.ergic.3" = "GABAergic", "GABA.ergic.4" = "GABAergic", "GABA.ergic.5" = "GABAergic",
-    "GABA.ergic.6" = "GABAergic", "GABA.ergic.7" = "GABAergic", "GABA.ergic.8" = "GABAergic",
-    "GABA.ergic.9" = "GABAergic", "GABA.ergic.10" = "GABAergic", "GABA.ergic.11" = "GABAergic",
-    "GABA.ergic.12" = "GABAergic", "GABA.ergic.13" = "GABAergic", "GABA.ergic.14" = "GABAergic",
-    "GABA.ergic.15" = "GABAergic", "GABA.ergic.16" = "GABAergic", "GABA.ergic.17" = "GABAergic",
-    "GABA.ergic.18" = "GABAergic", "GABA.ergic.19" = "GABAergic", "GABA.ergic.20" = "GABAergic",
-    "GABA.ergic.21" = "GABAergic", "GABA.ergic.22" = "GABAergic", "GABA.ergic.23" = "GABAergic",
-    "GABA.ergic.24" = "GABAergic", "GABA.ergic.25" = "GABAergic", "GABA.ergic.26" = "GABAergic",
-    "GABA.ergic.27" = "GABAergic", "GABA.ergic.28" = "GABAergic", "GABA.ergic.29" = "GABAergic",
-    "GABA.ergic.30" = "GABAergic", "GABA.ergic.31" = "GABAergic", "GABA.ergic.32" = "GABAergic",
-    "GABA.ergic.33" = "GABAergic", "GABA.ergic.34" = "GABAergic", "GABA.ergic.35" = "GABAergic",
-    "GABA.ergic.36" = "GABAergic", "GABA.ergic.37" = "GABAergic", "GABA.ergic.38" = "GABAergic",
-    "GABA.ergic.39" = "GABAergic", "GABA.ergic.40" = "GABAergic", "GABA.ergic.41" = "GABAergic",
-    "GABA.ergic.42" = "GABAergic", "GABA.ergic.43" = "GABAergic", "GABA.ergic.44" = "GABAergic",
-    "GABA.ergic.45" = "GABAergic", "GABA.ergic.46" = "GABAergic", "GABA.ergic.47" = "GABAergic",
-    "GABA.ergic.48" = "GABAergic", "GABA.ergic.49" = "GABAergic", "GABA.ergic.50" = "GABAergic",
-    "GABA.ergic.51" = "GABAergic", "GABA.ergic.52" = "GABAergic", "GABA.ergic.53" = "GABAergic",
-    "GABA.ergic.54" = "GABAergic", "GABA.ergic.55" = "GABAergic", "GABA.ergic.56" = "GABAergic",
-    "GABA.ergic.57" = "GABAergic", "GABA.ergic.58" = "GABAergic", "GABA.ergic.59" = "GABAergic",
-    "GABA.ergic.60" = "GABAergic", "GABA.ergic.61" = "GABAergic", "GABA.ergic.62" = "GABAergic",
-    "GABA.ergic.63" = "GABAergic", "GABA.ergic.64" = "GABAergic", "GABA.ergic.65" = "GABAergic",
-    "GABA.ergic.66" = "GABAergic",
-    
-    # Glutamatergic neurons
-    "Glutamatergic" = "Glutamatergic", "Glutamatergic.1" = "Glutamatergic", "Glutamatergic.2" = "Glutamatergic",
-    "Glutamatergic.3" = "Glutamatergic", "Glutamatergic.4" = "Glutamatergic", "Glutamatergic.5" = "Glutamatergic",
-    "Glutamatergic.6" = "Glutamatergic", "Glutamatergic.7" = "Glutamatergic", "Glutamatergic.8" = "Glutamatergic",
-    "Glutamatergic.9" = "Glutamatergic", "Glutamatergic.10" = "Glutamatergic", "Glutamatergic.11" = "Glutamatergic",
-    "Glutamatergic.12" = "Glutamatergic", "Glutamatergic.13" = "Glutamatergic", "Glutamatergic.14" = "Glutamatergic",
-    "Glutamatergic.15" = "Glutamatergic", "Glutamatergic.16" = "Glutamatergic", "Glutamatergic.17" = "Glutamatergic",
-    "Glutamatergic.18" = "Glutamatergic", "Glutamatergic.19" = "Glutamatergic", "Glutamatergic.20" = "Glutamatergic",
-    "Glutamatergic.21" = "Glutamatergic", "Glutamatergic.22" = "Glutamatergic", "Glutamatergic.23" = "Glutamatergic",
-    "Glutamatergic.24" = "Glutamatergic", "Glutamatergic.25" = "Glutamatergic", "Glutamatergic.26" = "Glutamatergic",
-    "Glutamatergic.27" = "Glutamatergic", "Glutamatergic.28" = "Glutamatergic", "Glutamatergic.29" = "Glutamatergic",
-    "Glutamatergic.30" = "Glutamatergic", "Glutamatergic.31" = "Glutamatergic", "Glutamatergic.32" = "Glutamatergic",
-    "Glutamatergic.33" = "Glutamatergic", "Glutamatergic.34" = "Glutamatergic", "Glutamatergic.35" = "Glutamatergic",
-    "Glutamatergic.36" = "Glutamatergic", "Glutamatergic.37" = "Glutamatergic", "Glutamatergic.38" = "Glutamatergic",
-    "Glutamatergic.39" = "Glutamatergic", "Glutamatergic.40" = "Glutamatergic", "Glutamatergic.41" = "Glutamatergic",
-    
-    # Astrocytes
-    "Astrocytes" = "Astrocytes", "Astrocytes.1" = "Astrocytes", "Astrocytes.2" = "Astrocytes",
-    "Astrocytes.3" = "Astrocytes", "Astrocytes.4" = "Astrocytes",
-    
-    # Oligodendrocytes and their precursors
-    "Oligodendrocyte.Precursor.Cells" = "Oligodendrocyte Precursors", "Oligodendrocyte.Precursor.Cells.1" = "Oligodendrocyte Precursors",
-    "Oligodendrocytes" = "Oligodendrocytes", "Oligodendrocytes.1" = "Oligodendrocytes", "Oligodendrocytes.2" = "Oligodendrocytes",
-    "Oligodendrocytes.3" = "Oligodendrocytes",
-    
-    # Endothelial cells
-    "Endothelial.cells" = "Endothelial", "Endothelial.cells.1" = "Endothelial", "Endothelial.cells.2" = "Endothelial",
-    
-    # VLMC cells
-    "VLMC" = "VLMC", "VLMC.1" = "VLMC",
-    
-    # Microglia
-    "Microglia" = "Microglia", "Microglia.1" = "Microglia"
-)
+# Generate labels, extracting cluster names from file names
+day0_labels <- gsub('_day0_differential_expression\\.csv$', '', basename(day0_files))
+day14bc_labels <- gsub('_day14bc_differential_expression\\.csv$', '', basename(day14bc_files))
 
-# Step 2: Collapse reference data by mapping subtypes to main clusters
-reference_long <- Allen_Institute_Reference_df %>%
-    pivot_longer(-Gene, names_to = "CellType", values_to = "Expression") %>%
-    mutate(GeneralCluster = recode(CellType, !!!cluster_mapping)) %>%  # Collapse subtypes to main types
-    group_by(GeneralCluster, Gene) %>%
-    summarize(AverageExpression = mean(Expression, na.rm = TRUE)) %>%
-    pivot_wider(names_from = GeneralCluster, values_from = AverageExpression, values_fill = 0)
+# Initialize gene list
+names <- unique(c())
 
-# Convert to matrix format for SingleR
-Allen_Institute_Reference_matrix <- as.matrix(reference_long[,-1])
-rownames(Allen_Institute_Reference_matrix) <- reference_long$Gene
-
-# Step 3: Run SingleR for cluster assignment on Seurat_d14BC
-counts_layer <- GetAssayData(Seurat_d14BC, slot = "data")
-common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
-
-# Subset and reorder rows in both matrices for consistent gene order
-reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
-counts_layer <- counts_layer[match(common_genes, rownames(counts_layer)), ]
-
-# Perform SingleR prediction and map to main cell types
-predict_clusters <- SingleR(test = as(counts_layer, "dgCMatrix"), ref = as(reference_sub, "dgCMatrix"), labels = colnames(reference_sub))
-main_cluster_labels <- recode(predict_clusters$labels, !!!cluster_mapping)  # Collapse SingleR predictions to main types
-
-# Add main cluster labels as metadata in Seurat_d14BC
-Seurat_d14BC$singleR.labels <- main_cluster_labels
-
-# Step 4: Run differential expression for each main cell type and save results as CSVs
-all_de_genes <- list()
-
-for (cluster in unique(Seurat_d14BC$singleR.labels)) {
-    # Perform differential expression using FindMarkers
-    markers <- FindMarkers(Seurat_d14BC, ident.1 = cluster, group.by = "singleR.labels",
-                           logfc.threshold = 0.25, test.use = "wilcox")
-    
-    # Add Benjamini-Hochberg adjusted p-value
-    markers$adj_p_val <- p.adjust(markers$p_val, method = "BH")
-    
-    # Filter for significant genes (adj_p_val < 0.05)
-    significant_markers <- markers %>% filter(adj_p_val < 0.05)
-    
-    # Convert row names (Ensembl IDs) to a column
-    significant_markers <- significant_markers %>%
-        rownames_to_column(var = "Ensembl_ID")
-    
-    # Format columns and save results to CSV
-    cluster_genes <- significant_markers %>%
-        mutate(
-            Feature_Name = rownames(Seurat_d14BC)[match(significant_markers$Ensembl_ID, rownames(Seurat_d14BC))]
-        ) %>%
-        select(Ensembl_ID, Feature_Name, avg_log2FC, adj_p_val) %>%
-        rename(
-            Average_Expression = avg_log2FC,
-            Log2_Fold_Change = avg_log2FC,
-            Adjusted_P_Value = adj_p_val
-        )
-    
-    # Save to CSV with 'day14bc' in filename
-    write.csv(cluster_genes, file.path(input_path, paste0(cluster, "_day14bc_differential_expression.csv")), row.names = FALSE)
+# Read all Gene names from both Day 14 BC and Day 0 files
+for (file in c(day14bc_files, day0_files)) {
+    T <- read_csv(file, col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    names <- unique(c(names, gene_names))
 }
+
+# Ensure matrices have correct dimensions
+nDay14BC <- length(day14bc_files)
+nDay0 <- length(day0_files)
+GL <- matrix(NA, nrow = length(names), ncol = nDay14BC + nDay0) # Log2 fold change
+
+# Load Day 14 BC files and extract log2 fold change (row 3), ensuring numeric values
+for (i in seq_along(day14bc_files)) {
+    T <- read_csv(day14bc_files[i], col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    idx <- match(gene_names, names)
+    if (any(!is.na(idx))) {
+        GL[idx, i] <- log2_fold_change[!is.na(idx)]
+    }
+}
+
+# Load Day 0 files and extract log2 fold change (row 3), ensuring numeric values
+for (i in seq_along(day0_files)) {
+    T <- read_csv(day0_files[i], col_names = FALSE)
+    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    idx <- match(gene_names, names)
+    if (any(!is.na(idx))) {
+        GL[idx, nDay14BC + i] <- log2_fold_change[!is.na(idx)]
+    }
+}
+
+# Calculate correlations based on log2 fold change values
+CL <- matrix(NA, nrow = nDay14BC, ncol = nDay0) # Log2 fold change correlation
+
+for (i in 1:nDay14BC) {
+    for (j in 1:nDay0) {
+        a <- GL[, i]
+        b <- GL[, nDay14BC + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        }
+    }
+}
+
+# Convert row and column names
+rownames(CL) <- day14bc_labels
+colnames(CL) <- day0_labels
+
+# Plot heatmap for log2 fold change correlations
+breaks_log2 <- seq(-1, 1, length.out = 100)
+pheatmap(CL, cluster_rows = FALSE, cluster_cols = FALSE,
+         labels_row = day14bc_labels, labels_col = day0_labels,
+         display_numbers = TRUE, main = "Log2 Fold Change Correlation",
+         breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
+
+# Write to CSV (Optional)
+write.csv(CL, file.path(F, 'corrLog2_day14BC_vs_day0.csv'), row.names = TRUE)
