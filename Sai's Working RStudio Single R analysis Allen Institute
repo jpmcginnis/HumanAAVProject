@@ -1,0 +1,381 @@
+#Load the libraries
+library(Seurat)
+library(tidyverse)
+library(pheatmap)
+library(hdf5r)
+library(viridis)
+library(SingleR)
+library(Matrix)
+library(cowplot)
+library(patchwork)
+library(grid)
+
+
+# Step 1: Loading datasets and normalizing
+# Load the datasets
+d0 <- Read10X_h5('/Users/arenkiellab/Downloads/5-6-24 TCH d0_feature_bc_matrix.h5', use.names = TRUE, unique.features = TRUE)
+d14u <- Read10X_h5('/Users/arenkiellab/Downloads/5-6-24 TCH d14_untransduced_feature_bc_matrix.h5', use.names = TRUE, unique.features = TRUE)
+d14BC <- Read10X_h5('/Users/arenkiellab/Downloads/5-6-24 TCH d14 BC feature_bc_matrix.h5', use.names = TRUE, unique.features = TRUE)
+
+# Have to remove underscores
+rownames(d0) <- gsub("_", "-", rownames(d0))
+rownames(d14u) <- gsub("_", "-", rownames(d14u))
+rownames(d14BC) <- gsub("_", "-", rownames(d14BC))
+
+# Create Seurat objects for each day
+Seurat_d0 <- CreateSeuratObject(counts = d0, project = "D0")
+Seurat_d14u <- CreateSeuratObject(counts = d14u, project = "D14u")
+Seurat_d14BC <- CreateSeuratObject(counts = d14BC, project = "D14BC")
+
+# Normalization
+Seurat_d0 <- NormalizeData(Seurat_d0) %>% FindVariableFeatures()
+Seurat_d14u <- NormalizeData(Seurat_d14u) %>% FindVariableFeatures()
+Seurat_d14BC <- NormalizeData(Seurat_d14BC) %>% FindVariableFeatures()
+
+# Step 2: Find integration anchors
+# Define a list of Seurat objects to integrate
+seurat_list <- list(Seurat_d0, Seurat_d14u, Seurat_d14BC)
+
+anchors <- FindIntegrationAnchors(object.list = seurat_list, dims = 1:30)
+Combined_Seurat <- IntegrateData(anchorset = anchors, dims = 1:30)
+
+# Step 3: Scale, PCA, clustering, and UMAP of the integrated dataset
+DefaultAssay(Combined_Seurat) <- "integrated"
+Combined_Seurat <- ScaleData(Combined_Seurat) %>%
+  RunPCA() %>%
+  FindNeighbors(dims = 1:10) %>%
+  FindClusters() %>%
+  RunUMAP(dims = 1:10)
+
+# Step 4: Uploading Allen Institute reference data 
+Allen_Institute_Reference <- read.csv('/Users/arenkiellab/Downloads/medians 2.csv', row.names = 1)
+# Transpose the dataset to match SingleR format (genes as rows, cell types as columns)
+Allen_Institute_Reference <- as.matrix(Allen_Institute_Reference)
+# Convert to long format
+Allen_Institute_Reference_df <- as.data.frame(Allen_Institute_Reference)
+Allen_Institute_Reference_df$Gene <- rownames(Allen_Institute_Reference_df)  # Create a column for gene names
+
+reference_long <- Allen_Institute_Reference_df %>%
+  pivot_longer(-Gene, names_to = "CellType", values_to = "Expression")
+
+# Define subtypes to general clusters
+cluster_mapping <- c(
+  "Astrocytes" = "Astrocytes",
+  "Astrocytes.1" = "Astrocytes",
+  "Astrocytes.2" = "Astrocytes",
+  "Astrocytes.3" = "Astrocytes",
+  "Astrocytes.4" = "Astrocytes",
+  
+  "Endothelial.cells" = "Endothelial",
+  "Endothelial.cells.1" = "Endothelial",
+  "Endothelial.cells.2" = "Endothelial",
+  
+  "GABA.ergic" = "GABAergic",
+  "GABA.ergic.1" = "GABAergic",
+  "GABA.ergic.2" = "GABAergic",
+  "GABA.ergic.3" = "GABAergic",
+  "GABA.ergic.4" = "GABAergic",
+  "GABA.ergic.5" = "GABAergic",
+  "GABA.ergic.6" = "GABAergic",
+  "GABA.ergic.7" = "GABAergic",
+  "GABA.ergic.8" = "GABAergic",
+  "GABA.ergic.9" = "GABAergic",
+  "GABA.ergic.10" = "GABAergic",
+  "GABA.ergic.11" = "GABAergic",
+  "GABA.ergic.12" = "GABAergic",
+  "GABA.ergic.13" = "GABAergic",
+  "GABA.ergic.14" = "GABAergic",
+  "GABA.ergic.15" = "GABAergic",
+  "GABA.ergic.16" = "GABAergic",
+  "GABA.ergic.17" = "GABAergic",
+  "GABA.ergic.18" = "GABAergic",
+  "GABA.ergic.19" = "GABAergic",
+  "GABA.ergic.20" = "GABAergic",
+  "GABA.ergic.21" = "GABAergic",
+  "GABA.ergic.22" = "GABAergic",
+  "GABA.ergic.23" = "GABAergic",
+  "GABA.ergic.24" = "GABAergic",
+  "GABA.ergic.25" = "GABAergic",
+  "GABA.ergic.26" = "GABAergic",
+  "GABA.ergic.27" = "GABAergic",
+  "GABA.ergic.28" = "GABAergic",
+  "GABA.ergic.29" = "GABAergic",
+  "GABA.ergic.30" = "GABAergic",
+  "GABA.ergic.31" = "GABAergic",
+  "GABA.ergic.32" = "GABAergic",
+  "GABA.ergic.33" = "GABAergic",
+  "GABA.ergic.34" = "GABAergic",
+  "GABA.ergic.35" = "GABAergic",
+  "GABA.ergic.36" = "GABAergic",
+  "GABA.ergic.37" = "GABAergic",
+  "GABA.ergic.38" = "GABAergic",
+  "GABA.ergic.39" = "GABAergic",
+  "GABA.ergic.40" = "GABAergic",
+  "GABA.ergic.41" = "GABAergic",
+  "GABA.ergic.42" = "GABAergic",
+  "GABA.ergic.43" = "GABAergic",
+  "GABA.ergic.44" = "GABAergic",
+  "GABA.ergic.45" = "GABAergic",
+  "GABA.ergic.46" = "GABAergic",
+  "GABA.ergic.47" = "GABAergic",
+  "GABA.ergic.48" = "GABAergic",
+  "GABA.ergic.49" = "GABAergic",
+  "GABA.ergic.50" = "GABAergic",
+  "GABA.ergic.51" = "GABAergic",
+  "GABA.ergic.52" = "GABAergic",
+  "GABA.ergic.53" = "GABAergic",
+  "GABA.ergic.54" = "GABAergic",
+  "GABA.ergic.55" = "GABAergic",
+  "GABA.ergic.56" = "GABAergic",
+  "GABA.ergic.57" = "GABAergic",
+  "GABA.ergic.58" = "GABAergic",
+  "GABA.ergic.59" = "GABAergic",
+  "GABA.ergic.60" = "GABAergic",
+  "GABA.ergic.61" = "GABAergic",
+  "GABA.ergic.62" = "GABAergic",
+  "GABA.ergic.63" = "GABAergic",
+  "GABA.ergic.64" = "GABAergic",
+  "GABA.ergic.65" = "GABAergic",
+  "GABA.ergic.66" = "GABAergic",
+  
+  "Glutamatergic" = "Glutamatergic",
+  "Glutamatergic.1" = "Glutamatergic",
+  "Glutamatergic.2" = "Glutamatergic",
+  "Glutamatergic.3" = "Glutamatergic",
+  "Glutamatergic.4" = "Glutamatergic",
+  "Glutamatergic.5" = "Glutamatergic",
+  "Glutamatergic.6" = "Glutamatergic",
+  "Glutamatergic.7" = "Glutamatergic",
+  "Glutamatergic.8" = "Glutamatergic",
+  "Glutamatergic.9" = "Glutamatergic",
+  "Glutamatergic.10" = "Glutamatergic",
+  "Glutamatergic.11" = "Glutamatergic",
+  "Glutamatergic.12" = "Glutamatergic",
+  "Glutamatergic.13" = "Glutamatergic",
+  "Glutamatergic.14" = "Glutamatergic",
+  "Glutamatergic.15" = "Glutamatergic",
+  "Glutamatergic.16" = "Glutamatergic",
+  "Glutamatergic.17" = "Glutamatergic",
+  "Glutamatergic.18" = "Glutamatergic",
+  "Glutamatergic.19" = "Glutamatergic",
+  "Glutamatergic.20" = "Glutamatergic",
+  "Glutamatergic.21" = "Glutamatergic",
+  "Glutamatergic.22" = "Glutamatergic",
+  "Glutamatergic.23" = "Glutamatergic",
+  "Glutamatergic.24" = "Glutamatergic",
+  "Glutamatergic.25" = "Glutamatergic",
+  "Glutamatergic.26" = "Glutamatergic",
+  "Glutamatergic.27" = "Glutamatergic",
+  "Glutamatergic.28" = "Glutamatergic",
+  "Glutamatergic.29" = "Glutamatergic",
+  "Glutamatergic.30" = "Glutamatergic",
+  "Glutamatergic.31" = "Glutamatergic",
+  "Glutamatergic.32" = "Glutamatergic",
+  "Glutamatergic.33" = "Glutamatergic",
+  "Glutamatergic.34" = "Glutamatergic",
+  "Glutamatergic.35" = "Glutamatergic",
+  "Glutamatergic.36" = "Glutamatergic",
+  "Glutamatergic.37" = "Glutamatergic",
+  "Glutamatergic.38" = "Glutamatergic",
+  "Glutamatergic.39" = "Glutamatergic",
+  "Glutamatergic.40" = "Glutamatergic",
+  "Glutamatergic.41" = "Glutamatergic",
+  
+  "Microglia" = "Microglia",
+  "Microglia.1" = "Microglia",
+  
+  "Oligodendrocyte.Precursor.Cells" = "Oligodendrocyte Precursors",
+  "Oligodendrocyte.Precursor.Cells.1" = "Oligodendrocyte Precursors",
+  "Oligodendrocytes" = "Oligodendrocytes",
+  "Oligodendrocytes.1" = "Oligodendrocytes",
+  "Oligodendrocytes.2" = "Oligodendrocytes",
+  "Oligodendrocytes.3" = "Oligodendrocytes",
+  
+  "VLMC" = "VLMC",
+  "VLMC.1" = "VLMC"
+)
+reference_long <- reference_long %>%
+  mutate(GeneralCluster = recode(CellType, !!!cluster_mapping)) %>%
+  group_by(GeneralCluster, Gene) %>%
+  summarize(AverageExpression = mean(Expression, na.rm = TRUE))
+
+# Now proceed to widen the dataset again
+reference_wide <- reference_long %>%
+  pivot_wider(names_from = GeneralCluster, values_from = AverageExpression, values_fill = 0)
+
+# Convert to matrix for SingleR
+Allen_Institute_Reference_matrix <- as.matrix(reference_wide[,-1])  # Exclude the Gene column
+rownames(Allen_Institute_Reference_matrix) <- reference_wide$Gene
+
+# Assuming each Seurat object is already integrated and stored in each_day_analysis
+each_day_analysis <- list(Day0 = Seurat_d0, Day14u = Seurat_d14u, Day14BC = Seurat_d14BC)
+heatmap_list <- list()
+# Iterate through each sample
+for (sample_name in names(each_day_analysis)) {
+  sample <- each_day_analysis[[sample_name]]
+  
+  # Get data from the assay and find common genes with the reference
+  counts_layer <- GetAssayData(sample, slot = "data")
+  common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
+  
+  # Subset and reorder rows in both matrices according to a consistent order
+  reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
+  counts_layer <- counts_layer[match(common_genes, rownames(counts_layer)), ]
+  
+  # Perform SingleR prediction
+  predict_clusters <- SingleR(test = as(counts_layer, "dgCMatrix"), ref = as(reference_sub, "dgCMatrix"), labels = colnames(reference_sub))
+  
+  # Generate the heatmap and add it to the list as a grob
+  heat_map <- plotScoreHeatmap(predict_clusters)
+  heatmap_grob <- grid::grid.grabExpr({
+    print(heat_map)
+    grid::grid.text(paste("Heatmap with SingleR Labels -", sample_name), y = 0.95, gp = grid::gpar(fontsize = 14))
+  })
+  
+  # Store the grob in the list
+  heatmap_list[[sample_name]] <- heatmap_grob
+}
+
+# Display all heatmaps in a grid layout
+cowplot::plot_grid(plotlist = heatmap_list, ncol = 2)
+# Step 5: Annotate cell types with SingleR on the integrated data
+# Retrieve counts for the integrated object
+DefaultAssay(Combined_Seurat) <- "integrated"
+counts_layer <- GetAssayData(Combined_Seurat, slot = "data")
+common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
+reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
+counts_layer <- counts_layer[common_genes, ]
+
+# Perform SingleR classification
+predict_clusters <- SingleR(test = as(counts_layer, "dgCMatrix"), ref = as(reference_sub, "dgCMatrix"), labels = colnames(reference_sub))
+Combined_Seurat$singleR.labels <- predict_clusters$labels[match(colnames(counts_layer), colnames(Combined_Seurat))]
+
+# Step 6: Create UMAP plots for each condition
+# Split integrated dataset by time points (based on cell IDs or metadata)
+
+umap_plot_combined <- DimPlot(Combined_Seurat, reduction = 'umap', group.by = 'singleR.labels') + 
+  ggtitle("Integrated UMAP with SingleR Labels - All Days")
+umap_plots_by_day <- list()
+
+# Define mapping for day labels
+day_labels <- c("_1" = "Day 0", "_2" = "Day 14 untransduced", "_3" = "Day 14 BC")
+
+
+# Generate UMAP for each day with custom titles
+for (day in names(day_labels)) {
+  # Subset the data by day
+  subset_day <- subset(Combined_Seurat, cells = grep(day, colnames(Combined_Seurat), value = TRUE))
+  
+  # UMAP plot (this part remains the same)
+  day_umap_plot <- DimPlot(subset_day, reduction = 'umap', group.by = 'singleR.labels') + 
+    ggtitle(paste("UMAP with SingleR Labels -", day_labels[day]))
+  umap_plots_by_day[[day]] <- day_umap_plot
+  
+}
+
+
+# Step 7: Display the plots
+plot_grid(plotlist = c(list(umap_plot_combined), umap_plots_by_day), ncol = 2)
+
+#Step 8: Serotype identification
+
+# KEEEP THIS TO SEE IF CERTAIN SIMILAR VIRUSES ENTER SAME CELLS Step 7: Load the viral gene reference from the CSV
+virus_ref <- read.csv('/Users/arenkiellab/Desktop/virus_reference.csv')
+
+# Identify which cells contain these viral genes
+viral_genes <- virus_ref$Viral_gene
+gene_to_virus <- setNames(virus_ref$Virus_type, virus_ref$Viral_gene)  # Map genes to virus types
+gene_names <- rownames(Combined_Seurat)
+# Subset the integrated data to focus only on viral genes
+DefaultAssay(Combined_Seurat) <- "RNA"  # Use raw counts for gene presence
+matching_genes <- intersect(viral_genes, gene_names)
+expression_data <- FetchData(Combined_Seurat, vars = matching_genes)
+
+# Identify cells where multiple viral genes are expressed clustered together (non-zero expression)
+virus_labels <- apply(expression_data, 1, function(row) {
+  expressed_genes <- names(row)[row > 0]  # Viral genes expressed in the cell
+  if (length(expressed_genes) > 0) {
+    virus_types <- unique(gene_to_virus[expressed_genes])  # Get corresponding virus types
+    paste(virus_types, collapse = ", ")  # Concatenate if multiple viruses
+  } else {
+    "None"
+  }
+})
+
+# Add the virus labels as metadata to the Seurat object
+Combined_Seurat$virus_label <- virus_labels
+# Step 8: Generate UMAP plot using viral gene labels
+umap_plot_viral <- DimPlot(Combined_Seurat, reduction = 'umap', group.by = 'virus_label') + 
+  ggtitle("UMAP Plot - Viral Gene Presence")
+
+# Step 9: Display the plot
+print(umap_plot_viral)
+#KEEP KEEP KEEP KEEP KEEP 
+# Step 8: Identifying which cells have which serotypes
+#Load viral reference data
+virus_ref <- read.csv('/Users/arenkiellab/Desktop/virus_reference.csv')
+
+# Identify which cells contain these viral genes
+viral_genes <- virus_ref$Viral_gene
+gene_to_virus <- setNames(virus_ref$Virus_type, virus_ref$Viral_gene)  # Map genes to virus types
+
+# Set the correct assay
+DefaultAssay(Combined_Seurat) <- "RNA"
+
+# Identify matching genes
+matching_genes <- intersect(viral_genes, rownames(Combined_Seurat))
+
+# Fetch expression data for these viral genes
+expression_data <- FetchData(Combined_Seurat, vars = matching_genes)
+
+# Flatten virus labels to include all virus types per cell
+virus_labels <- apply(expression_data, 1, function(row) {
+  expressed_genes <- names(row)[row > 0]  # Get expressed viral genes
+  if (length(expressed_genes) > 0) {
+    virus_types <- unique(gene_to_virus[expressed_genes])  # Get corresponding virus types
+    return(virus_types)  # Return the list of virus types
+  } else {
+    return(NA)  # No virus detected
+  }
+})
+
+virus_labels_str <- sapply(virus_labels, function(x) {
+  if (all(is.na(x))) {
+    return("None")
+  } else {
+    return(paste(x, collapse = ", "))
+  }
+})
+# Add the virus labels as a string to the metadata
+Combined_Seurat <- AddMetaData(Combined_Seurat, metadata = virus_labels_str, col.name = "virus_label")
+
+# Generate UMAP plots for each individual virus type
+serotype_umap_plots <- list()
+
+for (virus in virus_ref$Virus_type) {
+  # Subset cells that contain the current virus type
+  subset_cells <- rownames(Combined_Seurat@meta.data)[grepl(virus, Combined_Seurat$virus_label)]
+  
+  # Generate the UMAP plot without legend
+  serotype_umap_plot <- DimPlot(
+    Combined_Seurat, reduction = 'umap', cells.highlight = subset_cells,
+    cols = c("lightgrey", "blue"), group.by = NULL
+  ) + scale_color_manual(values = c("lightgrey", "blue")) + ggtitle(paste("UMAP of Serotype:", virus)) +
+    theme(legend.position = "none") # Fully remove legend for each plot
+  
+  # Add the plot to the list
+  serotype_umap_plots[[virus]] <- serotype_umap_plot
+}
+
+# Combine plots into a grid without legends
+plot_grid(plotlist = serotype_umap_plots[1:4], ncol = 2, nrow = 2)
+
+# All data below
+# UMAPs
+plot_grid(plotlist = c(list(umap_plot_combined), umap_plots_by_day), ncol = 2)
+
+# Heatmaps
+cowplot::plot_grid(plotlist = heatmap_list, ncol = 2)
+
+# Serotype UMAPs
+plot_grid(plotlist = serotype_umap_plots[1:4], ncol = 2, nrow = 2)
