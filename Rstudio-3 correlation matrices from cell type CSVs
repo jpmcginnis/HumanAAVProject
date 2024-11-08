@@ -1,0 +1,94 @@
+# Load necessary libraries
+library(readr)    # For read_csv
+library(dplyr)    # For data manipulation
+library(tidyr)    # For data tidying
+library(pheatmap) # For plotting heatmaps
+
+# Path setup
+F <- '/Users/arenkiellab/Desktop/JP work'
+
+# Helper function to load files based on a pattern
+load_files <- function(pattern) {
+  files <- list.files(path = F, pattern = pattern, full.names = TRUE)
+  labels <- gsub(pattern, '', basename(files))
+  return(list(files = files, labels = labels))
+}
+
+# Helper function to create the gene matrix
+create_gene_matrix <- function(file_list, names) {
+  nFiles <- length(file_list$files)
+  GL <- matrix(NA, nrow = length(names), ncol = nFiles) # avg_log2FC matrix
+  
+  for (i in seq_along(file_list$files)) {
+    T <- read_csv(file_list$files[i], col_names = TRUE)
+    gene_names <- T$Ensembl_ID
+    avg_log2FC <- as.numeric(T$avg_log2FC)
+    idx <- match(gene_names, names)
+    if (any(!is.na(idx))) {
+      GL[idx, i] <- avg_log2FC[!is.na(idx)]
+    }
+  }
+  return(GL)
+}
+
+# Helper function to calculate correlations and generate heatmaps
+generate_correlation <- function(GL1, GL2, labels1, labels2, title, output_filename) {
+  n1 <- ncol(GL1)
+  n2 <- ncol(GL2)
+  CL <- matrix(NA, nrow = n1, ncol = n2) # avg_log2FC correlation matrix
+  
+  for (i in 1:n1) {
+    for (j in 1:n2) {
+      a <- GL1[, i]
+      b <- GL2[, j]
+      rm <- is.na(a) | is.na(b)
+      a <- a[!rm]
+      b <- b[!rm]
+      
+      if (length(a) > 1 && length(b) > 1) {
+        CL[i, j] <- cor(a, b, use = "complete.obs")
+      }
+    }
+  }
+  
+  # Set row and column names
+  rownames(CL) <- paste0(labels1, " (Day 14)")
+  colnames(CL) <- paste0(labels2, " (Day 0)")
+  
+  # Plot heatmap
+  breaks_log2 <- seq(-1, 1, length.out = 100)
+  pheatmap(CL, cluster_rows = FALSE, cluster_cols = FALSE,
+           labels_row = labels1, labels_col = labels2,
+           display_numbers = TRUE, main = title,
+           breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
+  
+  # Write to CSV
+  write.csv(CL, file.path(F, output_filename), row.names = TRUE)
+}
+
+# Load all files by type
+day0 <- load_files('_day0_differential_expression_raw\\.csv$')
+day14bc <- load_files('_day14bc_differential_expression_raw\\.csv$')
+day14u <- load_files('_day14u_differential_expression_raw\\.csv$')
+
+# Compile a unique list of gene names across all files
+names <- unique(c(
+  unlist(lapply(day0$files, function(f) read_csv(f, col_names = TRUE)$Ensembl_ID)),
+  unlist(lapply(day14bc$files, function(f) read_csv(f, col_names = TRUE)$Ensembl_ID)),
+  unlist(lapply(day14u$files, function(f) read_csv(f, col_names = TRUE)$Ensembl_ID))
+))
+
+# Create gene matrices
+GL_day0 <- create_gene_matrix(day0, names)
+GL_day14bc <- create_gene_matrix(day14bc, names)
+GL_day14u <- create_gene_matrix(day14u, names)
+
+# Run correlations and generate outputs
+generate_correlation(GL_day14bc, GL_day0, day14bc$labels, day0$labels, 
+                     "avg_log2FC Correlation: Day 14 BC vs Day 0", "corr_avg_log2FC_day14BC_vs_day0.csv")
+
+generate_correlation(GL_day14bc, GL_day14u, day14bc$labels, day14u$labels, 
+                     "avg_log2FC Correlation: Day 14 BC vs Day 14 Untransduced", "corr_avg_log2FC_day14BC_vs_day14u.csv")
+
+generate_correlation(GL_day0, GL_day14u, day0$labels, day14u$labels, 
+                     "avg_log2FC Correlation: Day 0 vs Day 14 Untransduced", "corr_avg_log2FC_day0_vs_day14u.csv")
