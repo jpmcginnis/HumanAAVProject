@@ -5,58 +5,58 @@ library(tidyr)    # For data tidying
 library(pheatmap) # For plotting heatmaps
 
 # Path setup
-F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis'
+F <- '/Users/arenkiellab/Desktop/JP work'
 
 # File processing
-files <- list.files(path = F, pattern = '\\.csv$', full.names = TRUE)
+files <- list.files(path = F, pattern = '_differential_expression_raw\\.csv$', full.names = TRUE)
 
 # Separate files by matching day14bc and day0 in the filenames
-day14bc_files <- files[grep('_day14bc_differential_expression\\.csv$', files)]
-day0_files <- files[grep('_day0_differential_expression\\.csv$', files)]
+day14bc_files <- files[grep('_day14bc_differential_expression_raw\\.csv$', files)]
+day0_files <- files[grep('_day0_differential_expression_raw\\.csv$', files)]
 
 # Generate labels, extracting cluster names from file names
-day0_labels <- paste0(gsub('_day0_differential_expression\\.csv$', '', basename(day0_files)), " (Day 0)")
-day14bc_labels <- paste0(gsub('_day14bc_differential_expression\\.csv$', '', basename(day14bc_files)), " (Day 14 BC)")
+day0_labels <- paste0(gsub('_day0_differential_expression_raw\\.csv$', '', basename(day0_files)), " (Day 0)")
+day14bc_labels <- paste0(gsub('_day14bc_differential_expression_raw\\.csv$', '', basename(day14bc_files)), " (Day 14 BC)")
 
 # Initialize gene list
 names <- unique(c())
 
-# Read all Gene names from both Day 14 BC and Day 0 files
+# Read all Ensembl_ID names from both Day 14 BC and Day 0 files
 for (file in c(day14bc_files, day0_files)) {
-    T <- read_csv(file, col_names = FALSE)
-    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
+    T <- read_csv(file, col_names = TRUE)
+    gene_names <- T$Ensembl_ID
     names <- unique(c(names, gene_names))
 }
 
 # Ensure matrices have correct dimensions
 nDay14BC <- length(day14bc_files)
 nDay0 <- length(day0_files)
-GL <- matrix(NA, nrow = length(names), ncol = nDay14BC + nDay0) # Log2 fold change
+GL <- matrix(NA, nrow = length(names), ncol = nDay14BC + nDay0) # avg_log2FC matrix
 
-# Load Day 14 BC files and extract log2 fold change (row 3), ensuring numeric values
+# Load Day 14 BC files and extract avg_log2FC
 for (i in seq_along(day14bc_files)) {
-    T <- read_csv(day14bc_files[i], col_names = FALSE)
-    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
-    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    T <- read_csv(day14bc_files[i], col_names = TRUE)
+    gene_names <- T$Ensembl_ID
+    avg_log2FC <- as.numeric(T$avg_log2FC)
     idx <- match(gene_names, names)
     if (any(!is.na(idx))) {
-        GL[idx, i] <- log2_fold_change[!is.na(idx)]
+        GL[idx, i] <- avg_log2FC[!is.na(idx)]
     }
 }
 
-# Load Day 0 files and extract log2 fold change (row 3), ensuring numeric values
+# Load Day 0 files and extract avg_log2FC
 for (i in seq_along(day0_files)) {
-    T <- read_csv(day0_files[i], col_names = FALSE)
-    gene_names <- T[[1]][-c(1, 2)]  # Ignoring the first two rows
-    log2_fold_change <- as.numeric(T[[3]][-c(1, 2)])  # Convert to numeric
+    T <- read_csv(day0_files[i], col_names = TRUE)
+    gene_names <- T$Ensembl_ID
+    avg_log2FC <- as.numeric(T$avg_log2FC)
     idx <- match(gene_names, names)
     if (any(!is.na(idx))) {
-        GL[idx, nDay14BC + i] <- log2_fold_change[!is.na(idx)]
+        GL[idx, nDay14BC + i] <- avg_log2FC[!is.na(idx)]
     }
 }
 
-# Calculate correlations based on log2 fold change values
-CL <- matrix(NA, nrow = nDay14BC, ncol = nDay0) # Log2 fold change correlation
+# Calculate correlations based on avg_log2FC values
+CL <- matrix(NA, nrow = nDay14BC, ncol = nDay0) # avg_log2FC correlation
 
 for (i in 1:nDay14BC) {
     for (j in 1:nDay0) {
@@ -76,12 +76,12 @@ for (i in 1:nDay14BC) {
 rownames(CL) <- day14bc_labels
 colnames(CL) <- day0_labels
 
-# Plot heatmap for log2 fold change correlations
+# Plot heatmap for avg_log2FC correlations
 breaks_log2 <- seq(-1, 1, length.out = 100)
 pheatmap(CL, cluster_rows = FALSE, cluster_cols = FALSE,
          labels_row = day14bc_labels, labels_col = day0_labels,
-         display_numbers = TRUE, main = "Log2 Fold Change Correlation",
+         display_numbers = TRUE, main = "avg_log2FC Correlation",
          breaks = breaks_log2, color = colorRampPalette(c("blue", "white", "red"))(100))
 
 # Write to CSV (Optional)
-write.csv(CL, file.path(F, 'corrLog2_day14BC_vs_day0.csv'), row.names = TRUE)
+write.csv(CL, file.path(F, 'corr_avg_log2FC_day14BC_vs_day0.csv'), row.names = TRUE)
