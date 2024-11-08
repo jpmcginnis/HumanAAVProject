@@ -138,3 +138,25 @@ for (cluster in unique(Seurat_d14BC$singleR.labels)) {
     # Save to CSV with 'day14bc' in filename
     write.csv(cluster_genes, file.path(input_path, paste0(cluster, "_day14bc_differential_expression.csv")), row.names = FALSE)
 }
+
+### Remove all # below and use it to replace Step 4 if the above not working
+
+# Define input path outside the loop
+#input_path <- '/Users/arenkiellab/Desktop/JP work'
+
+for (cluster in unique(Seurat_d14BC$singleR.labels)) {
+    # Perform differential expression using FindMarkers
+    #markers <- FindMarkers(Seurat_d14BC, ident.1 = cluster, group.by = "singleR.labels",
+                           logfc.threshold = 0.25, test.use = "wilcox")
+    
+    # Convert rownames to column
+   # markers <- markers %>%
+        #rownames_to_column(var = "Ensembl_ID")
+    
+    # Save markers output to CSV for this cluster
+   # write.csv(markers, file.path(input_path, paste0(cluster, "_day14bc_differential_expression_raw.csv")), row.names = FALSE)
+    
+    # Print a message confirming save completion
+   # print(paste("Saved markers for cluster:", cluster))
+}
+
