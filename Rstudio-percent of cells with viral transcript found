@@ -1,0 +1,76 @@
+# Load CSV file with variant and barcode information
+file_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis/viral reference.csv"
+variant_data <- read.csv(file_path)
+
+# Preview the data to confirm it loaded correctly
+head(variant_data)
+
+# Initialize an empty data frame to store results
+variant_counts <- data.frame()
+
+# Calculate the total number of cells for each cell type in the dataset
+total_cells_per_type <- table(Seurat_d14BC_56$singleR.labels)
+
+# Loop through each row in the variant_data
+for (i in 1:nrow(variant_data)) {
+    barcode <- variant_data$Barcode[i]
+    variant <- variant_data$Variant[i]
+    
+    # Check if the barcode exists in the Seurat object
+    if (barcode %in% rownames(GetAssayData(Seurat_d14BC_56, slot = "data"))) {
+        
+        # Fetch expression data for this barcode
+        barcode_expression <- FetchData(Seurat_d14BC_56, vars = barcode)
+        
+        # Determine which cells express the barcode (non-zero expression)
+        expressed_cells <- barcode_expression[[barcode]] > 0
+        
+        # Get the cell type labels for cells that express the barcode
+        cell_types <- Seurat_d14BC_56$singleR.labels[expressed_cells]
+        
+        # Count the total cells and cells by cell type
+        total_count <- sum(expressed_cells)
+        cell_type_counts <- table(cell_types)
+        
+        # Calculate the percentage of each cell type that contains the variant
+        for (cell_type in names(cell_type_counts)) {
+            cells_in_type <- cell_type_counts[cell_type]
+            percent_in_type <- (cells_in_type / total_cells_per_type[cell_type]) * 100
+            
+            # Store the results in the variant_counts data frame
+            variant_counts <- rbind(
+                variant_counts,
+                data.frame(
+                    Variant = variant,
+                    Barcode = barcode,
+                    Total_Expressing_Cells = total_count,
+                    Cell_Type = cell_type,
+                    Cells_Per_Cell_Type = as.numeric(cells_in_type),
+                    Percent_of_Cell_Type = percent_in_type
+                )
+            )
+        }
+    } else {
+        # If the barcode is not found, record 0 counts
+        variant_counts <- rbind(
+            variant_counts,
+            data.frame(
+                Variant = variant,
+                Barcode = barcode,
+                Total_Expressing_Cells = 0,
+                Cell_Type = NA,
+                Cells_Per_Cell_Type = 0,
+                Percent_of_Cell_Type = 0
+            )
+        )
+    }
+}
+
+# Define output file path
+output_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis/variant_counts_summary.csv"
+
+# Save the variant_counts data frame to a CSV file
+write.csv(variant_counts, file = output_path, row.names = FALSE)
+
+# Confirmation message
+print(paste("Variant counts saved to:", output_path))
