@@ -1,0 +1,45 @@
+# Initialize a vector to count the number of distinct variants per cell
+cell_variant_counts <- integer(ncol(Seurat_d14BC_56))
+names(cell_variant_counts) <- colnames(Seurat_d14BC_56)
+
+# Loop through each barcode in `variant_data`
+for (i in 1:nrow(variant_data)) {
+    barcode <- variant_data$Barcode[i]
+    variant <- variant_data$Variant[i]
+    
+    # Check if the barcode exists in the Seurat object
+    if (barcode %in% rownames(GetAssayData(Seurat_d14BC_56, slot = "counts"))) {
+        
+        # Fetch UMI counts for this barcode
+        barcode_counts <- FetchData(Seurat_d14BC_56, vars = barcode, slot = "counts")
+        
+        # Identify cells with non-zero UMI counts for this barcode
+        cells_with_variant <- barcode_counts[[barcode]] > 0
+        
+        # Increment variant count for each cell that has this variant
+        cell_variant_counts[cells_with_variant] <- cell_variant_counts[cells_with_variant] + 1
+    }
+}
+
+# Identify cells with two or more variants
+cells_with_multiple_variants <- names(cell_variant_counts)[cell_variant_counts >= 2]
+
+# Output the result
+print(paste("Number of cells with multiple variants:", length(cells_with_multiple_variants)))
+print("Cells with multiple variants:")
+print(head(cells_with_multiple_variants, 10))  # Display first 10 cells as a sample
+
+
+# Create a subset of Seurat_d14BC_56 with only the cells containing multiple variants
+Seurat_d14BC_56_multiple_variants <- subset(Seurat_d14BC_56, cells = cells_with_multiple_variants)
+
+# Specify the output path for saving the subsetted object
+output_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/Sai analysis/Seurat_d14BC_56_multiple_variants.rds"
+
+# Save the new Seurat object
+saveRDS(Seurat_d14BC_56_multiple_variants, file = output_path)
+
+# Confirm the save
+print(paste("Subsetted Seurat object with multiple variants saved to:", output_path))
+
+
