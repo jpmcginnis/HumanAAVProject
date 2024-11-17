@@ -1,0 +1,44 @@
+# Load the required libraries
+library(Seurat)
+library(hdf5r)
+
+# Define the file path
+file_path <- "/Users/camila/Desktop/5:13 analysis/sample_filtered_feature_bc_matrix.h5"
+
+# Read the HDF5 file
+data <- Read10X_h5(file_path)
+
+# Create the Seurat object
+seurat_obj <- CreateSeuratObject(counts = data)
+
+# Print the Seurat object to verify
+print(seurat_obj)
+
+# Step 1: Normalize the Data
+seurat_obj <- NormalizeData(seurat_obj)
+
+# Step 2: Identify Variable Features
+seurat_obj <- FindVariableFeatures(seurat_obj)
+
+# View the top 10 variable features
+head(VariableFeatures(seurat_obj), 10)
+
+# Step 3: Scale the Data
+seurat_obj <- ScaleData(seurat_obj)
+
+# Step 4: Perform Dimensionality Reduction (PCA)
+seurat_obj <- RunPCA(seurat_obj)
+
+# Visualize PCA results
+DimPlot(seurat_obj, reduction = "pca")
+
+# Step 5: Clustering
+seurat_obj <- FindNeighbors(seurat_obj, dims = 1:10)
+seurat_obj <- FindClusters(seurat_obj, resolution = 0.5)
+
+# Step 6: Visualize with UMAP
+seurat_obj <- RunUMAP(seurat_obj, dims = 1:10)
+DimPlot(seurat_obj, reduction = "umap")
+
+# Step 7: Save the Processed Seurat Object
+saveRDS(seurat_obj, file = "/Users/camila/Desktop/seurat_obj_processed.rds")
