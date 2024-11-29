@@ -1,0 +1,55 @@
+# Load necessary library
+library(dplyr)
+
+# Define the folder path
+folder_path <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/organotypic culture paper/1-29-24 cell type DEGs"
+
+# Set the p-value threshold
+p_value_threshold <- 0.05
+
+# Initialize a list to store results by cell type
+results <- list()
+
+# List CSV files in the folder
+files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+
+# Loop through each file
+for (file in files) {
+  # Extract the cell type name (ignore dates, take the part before "_day" or similar pattern)
+  cell_type <- sub("_day.*", "", basename(file))
+
+  # Read the file
+  df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+
+  # Check for numeric columns containing "P.Value"
+  p_value_columns <- sapply(df, is.numeric) & grepl("P.Value", colnames(df))
+
+  # If there are p-value columns, filter for rows where P-value < threshold
+  if (any(p_value_columns)) {
+    p_value_names <- colnames(df)[p_value_columns]
+    significant_genes <- df %>%
+      filter(rowSums(df[p_value_names] < p_value_threshold) > 0)
+
+    # Add the significant genes to the results list
+    if (nrow(significant_genes) > 0) {
+      if (!is.null(results[[cell_type]])) {
+        # Append to existing results for the cell type
+        results[[cell_type]] <- bind_rows(results[[cell_type]], significant_genes)
+      } else {
+        # Initialize a new entry for the cell type
+        results[[cell_type]] <- significant_genes
+      }
+    }
+  }
+}
+
+# Save results to CSV files by cell type
+output_path <- folder_path  # Save output in the same folder as input
+for (cell_type in names(results)) {
+  output_file <- file.path(output_path, paste0(cell_type, "_significant_genes.csv"))
+  write.csv(results[[cell_type]], output_file, row.names = FALSE)
+  cat("Saved significant genes for cell type:", cell_type, "to", output_file, "\n")
+}
+
+# Print completion message
+cat("Significant genes compiled and saved for all cell types.\n")
