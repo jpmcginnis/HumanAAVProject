@@ -12,13 +12,17 @@ folder_paths <- list(
   file.path(parent_folder, "5-13-24 STL cell type DEGs")
 )
 
-# Initialize a vector to store all gene names
+# Initialize vectors to store gene names and corresponding folder names
 all_genes <- c()
+all_folders <- c()
 
 # Loop through each folder
 for (folder_path in folder_paths) {
-  # List all files with "Astrocytes upregulated" in the file name
-  files <- list.files(folder_path, pattern = "Astrocytes upregulated.*\\.csv$", full.names = TRUE)
+  # Extract the terminal folder name
+  terminal_folder <- basename(folder_path)
+  
+  # List all files with "astrocytes downregulated" in the file name (case-insensitive)
+  files <- list.files(folder_path, pattern = "(?i)astrocytes downregulated.*\\.csv$", full.names = TRUE)
   
   # Loop through each file
   for (file in files) {
@@ -27,24 +31,29 @@ for (folder_path in folder_paths) {
     
     # Ensure the "FeatureName" column exists
     if ("FeatureName" %in% colnames(df)) {
-      # Add the FeatureName values to the vector
+      # Add the FeatureName values and the folder name to the vectors
       all_genes <- c(all_genes, df$FeatureName)
+      all_folders <- c(all_folders, rep(terminal_folder, length(df$FeatureName)))
     }
   }
 }
 
-# Count occurrences of each gene
-gene_counts <- table(all_genes)
+# Create a data frame with all genes and their folder appearances
+gene_folder_df <- data.frame(FeatureName = all_genes, Folder = all_folders)
 
-# Convert to a data frame and sort by frequency
-gene_counts_df <- as.data.frame(gene_counts)
-colnames(gene_counts_df) <- c("FeatureName", "Count")
-gene_counts_df <- gene_counts_df[order(-gene_counts_df$Count), ]
+# Count the occurrences of each gene
+gene_counts <- gene_folder_df %>%
+  group_by(FeatureName) %>%
+  summarise(
+    Count = n(), # Total occurrences
+    Folders = paste(unique(Folder), collapse = ";") # Unique folder list
+  ) %>%
+  arrange(desc(Count)) # Sort by Count in descending order
 
-# Print the top genes
-print(head(gene_counts_df, 10))
+# Print the top rows
+print(head(gene_counts, 10))
 
 # Save the results to a CSV
-output_file <- file.path(parent_folder, "Astrocytes_upregulated_FeatureName_counts.csv")
-write.csv(gene_counts_df, output_file, row.names = FALSE)
+output_file <- file.path(parent_folder, "Astrocytes_downregulated_FeatureName_counts_with_folders.csv")
+write.csv(gene_counts, output_file, row.names = FALSE)
 cat("Gene counts saved to:", output_file, "\n")
