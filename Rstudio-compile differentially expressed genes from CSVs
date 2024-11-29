@@ -1,0 +1,50 @@
+# Load necessary library
+library(dplyr)
+
+# Define the folder paths
+parent_folder <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/organotypic culture paper"
+folder_paths <- list(
+  file.path(parent_folder, "1-29-24 cell type DEGs"),
+  file.path(parent_folder, "5-6-24 cell type DEGs"),
+  file.path(parent_folder, "6-20-24 STL cell type DEGs"),
+  file.path(parent_folder, "2-19-24 STL cell type DEGs"),
+  file.path(parent_folder, "5-15-24 STL cell type DEGs"),
+  file.path(parent_folder, "5-13-24 STL cell type DEGs")
+)
+
+# Initialize a vector to store all gene names
+all_genes <- c()
+
+# Loop through each folder
+for (folder_path in folder_paths) {
+  # List all files with "Astrocytes upregulated" in the file name
+  files <- list.files(folder_path, pattern = "Astrocytes upregulated.*\\.csv$", full.names = TRUE)
+  
+  # Loop through each file
+  for (file in files) {
+    # Read the file
+    df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+    
+    # Ensure the "FeatureName" column exists
+    if ("FeatureName" %in% colnames(df)) {
+      # Add the FeatureName values to the vector
+      all_genes <- c(all_genes, df$FeatureName)
+    }
+  }
+}
+
+# Count occurrences of each gene
+gene_counts <- table(all_genes)
+
+# Convert to a data frame and sort by frequency
+gene_counts_df <- as.data.frame(gene_counts)
+colnames(gene_counts_df) <- c("FeatureName", "Count")
+gene_counts_df <- gene_counts_df[order(-gene_counts_df$Count), ]
+
+# Print the top genes
+print(head(gene_counts_df, 10))
+
+# Save the results to a CSV
+output_file <- file.path(parent_folder, "Astrocytes_upregulated_FeatureName_counts.csv")
+write.csv(gene_counts_df, output_file, row.names = FALSE)
+cat("Gene counts saved to:", output_file, "\n")
