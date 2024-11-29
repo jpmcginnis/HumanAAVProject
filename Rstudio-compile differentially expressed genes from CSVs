@@ -12,48 +12,75 @@ folder_paths <- list(
   file.path(parent_folder, "5-13-24 STL cell type DEGs")
 )
 
-# Initialize vectors to store gene names and corresponding folder names
-all_genes <- c()
-all_folders <- c()
+# Define the combinations of cell types and regulation statuses
+combinations <- list(
+  c("Excitatory neurons", "downregulated"),
+  c("Inhibitory neurons", "upregulated"),
+  c("Inhibitory neurons", "downregulated"),
+  c("Fibroblasts", "upregulated"),
+  c("Fibroblasts", "downregulated"),
+  c("Oligodendrocytes", "upregulated"),
+  c("Oligodendrocytes", "downregulated"),
+  c("Myeloid", "upregulated"),
+  c("Myeloid", "downregulated"),
+  c("GBM tumor cells", "upregulated"),
+  c("GBM tumor cells", "downregulated"),
+  c("Pericytes", "upregulated"),
+  c("Pericytes", "downregulated")
+)
 
-# Loop through each folder
-for (folder_path in folder_paths) {
-  # Extract the terminal folder name
-  terminal_folder <- basename(folder_path)
+# Function to process files for a specific cell type and regulation status
+process_cell_type <- function(cell_type, regulation) {
+  # Initialize vectors to store gene names and corresponding folder names
+  all_genes <- c()
+  all_folders <- c()
   
-  # List all files with "astrocytes downregulated" in the file name (case-insensitive)
-  files <- list.files(folder_path, pattern = "(?i)astrocytes downregulated.*\\.csv$", full.names = TRUE)
+  # Define the search pattern
+  search_pattern <- paste0("(?i)", cell_type, " ", regulation, ".*\\.csv$")
   
-  # Loop through each file
-  for (file in files) {
-    # Read the file
-    df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+  # Loop through each folder
+  for (folder_path in folder_paths) {
+    # Extract the terminal folder name
+    terminal_folder <- basename(folder_path)
     
-    # Ensure the "FeatureName" column exists
-    if ("FeatureName" %in% colnames(df)) {
-      # Add the FeatureName values and the folder name to the vectors
-      all_genes <- c(all_genes, df$FeatureName)
-      all_folders <- c(all_folders, rep(terminal_folder, length(df$FeatureName)))
+    # List all files matching the search pattern
+    files <- list.files(folder_path, pattern = search_pattern, full.names = TRUE)
+    
+    # Loop through each file
+    for (file in files) {
+      # Read the file
+      df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+      
+      # Ensure the "FeatureName" column exists
+      if ("FeatureName" %in% colnames(df)) {
+        # Add the FeatureName values and the folder name to the vectors
+        all_genes <- c(all_genes, df$FeatureName)
+        all_folders <- c(all_folders, rep(terminal_folder, length(df$FeatureName)))
+      }
     }
   }
+  
+  # Create a data frame with all genes and their folder appearances
+  gene_folder_df <- data.frame(FeatureName = all_genes, Folder = all_folders)
+  
+  # Count the occurrences of each gene
+  gene_counts <- gene_folder_df %>%
+    group_by(FeatureName) %>%
+    summarise(
+      Count = n(), # Total occurrences
+      Folders = paste(unique(Folder), collapse = ";") # Unique folder list
+    ) %>%
+    arrange(desc(Count)) # Sort by Count in descending order
+  
+  # Save the results to a CSV
+  output_file <- file.path(parent_folder, paste0(cell_type, "_", regulation, "_FeatureName_counts_with_folders.csv"))
+  write.csv(gene_counts, output_file, row.names = FALSE)
+  cat("Gene counts saved for", cell_type, regulation, "to:", output_file, "\n")
 }
 
-# Create a data frame with all genes and their folder appearances
-gene_folder_df <- data.frame(FeatureName = all_genes, Folder = all_folders)
+# Loop through all combinations
+for (combo in combinations) {
+  process_cell_type(combo[[1]], combo[[2]])
+}
 
-# Count the occurrences of each gene
-gene_counts <- gene_folder_df %>%
-  group_by(FeatureName) %>%
-  summarise(
-    Count = n(), # Total occurrences
-    Folders = paste(unique(Folder), collapse = ";") # Unique folder list
-  ) %>%
-  arrange(desc(Count)) # Sort by Count in descending order
-
-# Print the top rows
-print(head(gene_counts, 10))
-
-# Save the results to a CSV
-output_file <- file.path(parent_folder, "Astrocytes_downregulated_FeatureName_counts_with_folders.csv")
-write.csv(gene_counts, output_file, row.names = FALSE)
-cat("Gene counts saved to:", output_file, "\n")
+cat("Processing completed for all cell types and regulation statuses.\n")
