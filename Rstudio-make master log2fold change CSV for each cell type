@@ -1,0 +1,148 @@
+library(tidyverse)
+
+# Base directory containing the subfolders
+base_dir <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio_work/organotypic culture paper"
+
+# Specific folders to process
+folders <- c(
+  "1-29-24 cell type DEGs",
+  "5-6-24 cell type DEGs",
+  "6-20-24 STL cell type DEGs",
+  "2-19-24 STL cell type DEGs",
+  "5-15-24 STL cell type DEGs",
+  "5-13-24 STL cell type DEGs"
+) %>%
+  file.path(base_dir, .)
+
+# Initialize an empty list to store data for each cell type
+all_cell_types <- list()
+
+# Track skipped files
+skipped_files <- list()
+
+# Loop through each folder
+for (folder in folders) {
+  # List all CSV files in the folder
+  csv_files <- list.files(folder, pattern = "\\.csv$", full.names = TRUE)
+  print(paste("Processing folder:", folder, "- Found files:", length(csv_files)))
+  
+  # Process each CSV file
+  for (csv_file in csv_files) {
+    print(paste("Processing file:", csv_file))
+    
+    # Extract the cell type and direction (upregulated or downregulated)
+    file_info <- str_extract(basename(csv_file), "(.*)\\s(upregulated|downregulated)_significant")
+    if (is.na(file_info)) {
+      warning("Skipping file (invalid name): ", csv_file)
+      skipped_files <- append(skipped_files, list(list(file = csv_file, reason = "Invalid file name")))
+      next
+    }
+    
+    # Split the file info to get cell type and direction
+    split_info <- str_split(file_info, "\\s", simplify = TRUE)
+    cell_type <- str_remove(file_info, "\\s(upregulated|downregulated)_significant")
+    direction <- str_extract(file_info, "(upregulated|downregulated)")
+    
+    # Read the CSV
+    df <- tryCatch({
+      read_csv(csv_file, col_names = TRUE)
+    }, error = function(e) {
+      warning("Failed to read file: ", csv_file, " - Error: ", e$message)
+      skipped_files <- append(skipped_files, list(list(file = csv_file, reason = "Read error")))
+      return(NULL)
+    })
+    
+    if (is.null(df)) next
+    
+    # Debug: Print column names
+    print(paste("Column names for:", csv_file))
+    print(names(df))
+    
+    # Check if the file has at least 7 columns
+    if (ncol(df) < 7) {
+      warning("File skipped (not enough columns): ", csv_file)
+      skipped_files <- append(skipped_files, list(list(file = csv_file, reason = "Insufficient columns")))
+      next
+    }
+    
+    # Dynamically identify the seventh column name
+    col_7 <- names(df)[7]
+    print(paste("Identified 7th column:", col_7))
+    
+    # Extract relevant columns: FeatureName and the 7th column for log2 fold change
+    tryCatch({
+      df <- df %>%
+        select(
+          FeatureName,  # Second column
+          Log2FoldChange = all_of(col_7)  # Dynamically named 7th column
+        ) %>%
+        mutate(
+          cell_type = cell_type,  # Add cell type
+          patient = basename(folder)  # Add patient ID from folder name
+        )
+    }, error = function(e) {
+      warning("Failed to process file: ", csv_file, " - Error: ", e$message)
+      skipped_files <- append(skipped_files, list(list(file = csv_file, reason = "Processing error")))
+      next
+    })
+    
+    # Debug: Check after processing
+    print(paste("Processed data for:", cell_type))
+    print(head(df))
+    
+    # Append data for the cell type
+    if (!is.null(all_cell_types[[cell_type]])) {
+      all_cell_types[[cell_type]] <- bind_rows(all_cell_types[[cell_type]], df)
+    } else {
+      all_cell_types[[cell_type]] <- df
+    }
+  }
+}
+
+# Check skipped files
+if (length(skipped_files) > 0) {
+  print("Skipped files:")
+  print(skipped_files)
+}
+
+# Check if any data was successfully processed
+if (length(all_cell_types) == 0) {
+  stop("No valid data was processed. Check your input files.")
+}
+
+# Combine data for all cell types into a single DataFrame
+combined_data <- bind_rows(all_cell_types, .id = "cell_type")
+
+# Debug: Check combined dataset structure
+print("Combined dataset structure:")
+print(head(combined_data))
+
+# Ensure combined data has required columns
+required_columns <- c("cell_type", "FeatureName", "Log2FoldChange")
+if (!all(required_columns %in% colnames(combined_data))) {
+  stop("Combined data does not have the required columns: ", paste(required_columns, collapse = ", "))
+}
+
+# Filter genes that appear in at least two patients for each cell type
+filtered_genes <- combined_data %>%
+  group_by(cell_type, FeatureName) %>%
+  summarize(
+    occurrence = n_distinct(patient),
+    avg_log2FC = mean(Log2FoldChange, na.rm = TRUE)  # Compute average log2 fold change
+  ) %>%
+  filter(occurrence >= 2) %>%  # Keep genes appearing in 2+ patients for a cell type
+  arrange(cell_type, desc(avg_log2FC))  # Sort by cell type and log2 fold change
+
+# Save one master CSV per cell type
+output_dir <- base_dir
+dir.create(output_dir, showWarnings = FALSE)
+
+filtered_genes %>%
+  group_split(cell_type) %>%
+  walk(~ {
+    cell_type_name <- unique(.x$cell_type)
+    write_csv(.x %>% select(FeatureName, avg_log2FC), 
+              file.path(output_dir, paste0(cell_type_name, "_master.csv")))
+  })
+
+message("Master CSV files have been saved to: ", output_dir)
