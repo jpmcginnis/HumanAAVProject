@@ -1,0 +1,121 @@
+# Load necessary libraries
+library(readr)
+library(dplyr)
+library(tidyr)
+library(pheatmap)
+
+# Path setup
+F <- '/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio work/organotypic culture paper/against day 0/6-20 STL against day 0'
+
+# List all files in the directory
+files <- list.files(path = F, full.names = TRUE)
+print("All files in directory:")
+print(files)
+
+# Match files with "day 0.csv" and "day 14.csv"
+day0_files <- files[grep(' day 0\\.csv$', files)]
+day14_files <- files[grep(' day 14\\.csv$', files)]  # Match any "day 14" files
+
+# Extract cell type names by removing suffixes
+day0_clusters <- gsub(' day 0\\.csv$', '', basename(day0_files))
+day14_clusters <- gsub(' day 14\\.csv$', '', basename(day14_files))
+
+# Find matching cell types
+matching_clusters <- intersect(day0_clusters, day14_clusters)
+print("Matching clusters:")
+print(matching_clusters)
+
+# Filter files to include only matching cell types
+day0_files <- day0_files[day0_clusters %in% matching_clusters]
+day14_files <- day14_files[day14_clusters %in% matching_clusters]
+
+# Generate labels
+day0_labels <- paste0(gsub(' day 0\\.csv$', '', basename(day0_files)), " (Day 0)")
+day14_labels <- paste0(gsub(' day 14\\.csv$', '', basename(day14_files)), " (Day 14)")
+
+# Initialize gene list
+names <- unique(c())
+
+# Collect all unique FeatureIDs (genes) from both Day 14 and Day 0 files
+for (file in c(day14_files, day0_files)) {
+    T <- read_csv(file, col_names = TRUE)
+    gene_names <- T$FeatureID  # Use FeatureID for gene identifiers
+    names <- unique(c(names, gene_names))
+}
+
+# Ensure matrices have correct dimensions
+nDay14 <- length(day14_files)
+nDay0 <- length(day0_files)
+if (nDay14 == 0 || nDay0 == 0) {
+    stop("No matching clusters found between Day 0 and Day 14.")
+}
+GL <- matrix(NA, nrow = length(names), ncol = nDay14 + nDay0) # Log2_Fold_Change matrix
+
+# Load Day 14 files and populate GL matrix
+for (i in seq_along(day14_files)) {
+    print(paste("Processing Day 14 file:", day14_files[i]))
+    T <- read_csv(day14_files[i], col_names = TRUE)
+    gene_names <- T$FeatureID
+    log2_fc <- as.numeric(T$Log2_Fold_Change)
+    
+    idx <- match(gene_names, names)
+    if (!all(is.na(idx))) {
+        GL[idx[!is.na(idx)], i] <- log2_fc[!is.na(idx)]
+    }
+}
+
+# Load Day 0 files and populate GL matrix
+for (i in seq_along(day0_files)) {
+    print(paste("Processing Day 0 file:", day0_files[i]))
+    T <- read_csv(day0_files[i], col_names = TRUE)
+    gene_names <- T$FeatureID
+    log2_fc <- as.numeric(T$Log2_Fold_Change)
+    
+    idx <- match(gene_names, names)
+    if (!all(is.na(idx))) {
+        GL[idx[!is.na(idx)], nDay14 + i] <- log2_fc[!is.na(idx)]
+    }
+}
+
+# Calculate correlations between Day 14 and Day 0 cell types
+CL <- matrix(NA, nrow = nDay14, ncol = nDay0) # Log2_Fold_Change correlation matrix
+
+for (i in 1:nDay14) {
+    for (j in 1:nDay0) {
+        a <- GL[, i]
+        b <- GL[, nDay14 + j]
+        rm <- is.na(a) | is.na(b)
+        a <- a[!rm]
+        b <- b[!rm]
+        
+        if (length(a) > 1 && length(b) > 1) {
+            CL[i, j] <- cor(a, b, use = "complete.obs")
+        } else {
+            CL[i, j] <- NA  # Assign NA for insufficient data
+        }
+    }
+}
+
+# Set row and column names for the correlation matrix
+rownames(CL) <- day14_labels
+colnames(CL) <- day0_labels
+
+# Plot the correlation heatmap with larger font sizes
+breaks_log2 <- seq(-1, 1, length.out = 100)
+pheatmap(CL, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE,
+         labels_row = day14_labels, 
+         labels_col = day0_labels,
+         display_numbers = TRUE, 
+         main = "Log2 Fold Change Correlation",
+         breaks = breaks_log2, 
+         color = colorRampPalette(c("blue", "white", "red"))(100),
+         fontsize_row = 16,  # Increase font size for row labels
+         fontsize_col = 16,  # Increase font size for column labels
+         fontsize_number = 14)  # Increase font size for cell coefficients
+
+# Save the correlation matrix to a CSV file
+output_file <- file.path(F, 'corr_Log2_Fold_Change_day14_vs_day0.csv')
+write.csv(CL, file = output_file, row.names = TRUE)
+print(paste("Correlation matrix saved to:", output_file))
