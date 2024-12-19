@@ -1,0 +1,69 @@
+# Load necessary libraries
+library(tidyverse)
+
+# Define the directory containing the files
+input_directory <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/RStudio work/organotypic culture paper/against day 0/5-13 STL against day 0"
+
+# List all files in the directory starting with "Day 14"
+file_list <- list.files(path = input_directory, pattern = "^Day 14.*\\.csv$", full.names = TRUE)
+
+# Iterate over each file
+for (input_file in file_list) {
+    # Define the output directory based on the input file path
+    output_directory <- dirname(input_file)
+    
+    # Read the CSV file
+    data <- read.csv(input_file, check.names = FALSE)
+    
+    # Clean column names to avoid issues with extra spaces
+    colnames(data) <- trimws(colnames(data))
+    
+    # Print the column names to inspect (for debugging)
+    print(paste("Processing file:", input_file))
+    print(colnames(data))
+    
+    # Get the first two columns (FeatureID and FeatureName)
+    first_two_columns <- data[, 1:2]
+    
+    # Extract the original file name without extension
+    original_file_name <- tools::file_path_sans_ext(basename(input_file))
+    
+    # Identify clusters (cell types) based on patterns in the column names
+    cluster_names <- unique(gsub(" ?day.*$", "", colnames(data[, -c(1, 2)])))
+    
+    # Iterate over each cluster and create a separate CSV file for each
+    for (cluster in cluster_names) {
+        # Clean the cluster name for the output file (remove commas and extra spaces)
+        cleaned_cluster_name <- gsub("[,]", "", cluster)  # Remove commas
+        cleaned_cluster_name <- gsub(" +", " ", cleaned_cluster_name)  # Remove extra spaces
+        cleaned_cluster_name <- trimws(cleaned_cluster_name)  # Trim leading/trailing whitespace
+        
+        # Dynamically construct the expected column names based on the cluster name
+        avg_col <- grep(paste0(cleaned_cluster_name, ".*Average"), colnames(data), value = TRUE)
+        log2_col <- grep(paste0(cleaned_cluster_name, ".*Log2 Fold Change"), colnames(data), value = TRUE)
+        pvalue_col <- grep(paste0(cleaned_cluster_name, ".*P-Value"), colnames(data), value = TRUE)
+        
+        # Check if all required columns exist in the dataset
+        if (length(avg_col) == 1 && length(log2_col) == 1 && length(pvalue_col) == 1) {
+            # Combine the first two columns with the cluster-specific columns
+            output_data <- data.frame(
+                first_two_columns,
+                Average = data[[avg_col]],
+                Log2_Fold_Change = data[[log2_col]],
+                P_Value = data[[pvalue_col]]
+            )
+            
+            # Create the output file name, appending the original file name
+            output_file <- file.path(output_directory, paste0("Processed_", original_file_name, "_", cleaned_cluster_name, ".csv"))
+            
+            # Save the output CSV
+            write.csv(output_data, file = output_file, row.names = FALSE)
+            
+            # Print a success message
+            print(paste("Processed and saved:", output_file))
+        } else {
+            # Print a message if the expected columns are missing
+            print(paste("Required columns not found for cluster:", cleaned_cluster_name))
+        }
+    }
+}
