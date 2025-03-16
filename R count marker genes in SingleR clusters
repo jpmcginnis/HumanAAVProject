@@ -1,0 +1,502 @@
+DimPlot(Combined_Seurat, reduction = "umap", group.by = "seurat_clusters") + 
+  ggtitle("UMAP of Combined_Seurat Clusters")
+
+# Step 4: Uploading Allen Institute reference data 
+Allen_Institute_Reference <- read.csv('/Users/arenk/JP/medians 2.csv', row.names = 1)
+# Transpose the dataset to match SingleR format (genes as rows, cell types as columns)
+Allen_Institute_Reference <- as.matrix(Allen_Institute_Reference)
+# Convert to long format
+Allen_Institute_Reference_df <- as.data.frame(Allen_Institute_Reference)
+Allen_Institute_Reference_df$Gene <- rownames(Allen_Institute_Reference_df)  # Create a column for gene names
+
+reference_long <- Allen_Institute_Reference_df %>%
+  pivot_longer(-Gene, names_to = "CellType", values_to = "Expression")
+
+# Define subtypes to general clusters
+cluster_mapping <- c(
+  "Astrocytes" = "Astrocytes",
+  "Astrocytes.1" = "Astrocytes",
+  "Astrocytes.2" = "Astrocytes",
+  "Astrocytes.3" = "Astrocytes",
+  "Astrocytes.4" = "Astrocytes",
+  
+  "Endothelial.cells" = "Endothelial Cells",
+  "Endothelial.cells.1" = "Endothelial Cells",
+  "Endothelial.cells.2" = "Endothelial Cells",
+  
+  "GABA.ergic" = "GABAergic Neurons",
+  "GABA.ergic.1" = "GABAergic Neurons",
+  "GABA.ergic.2" = "GABAergic Neurons",
+  "GABA.ergic.3" = "GABAergic Neurons",
+  "GABA.ergic.4" = "GABAergic Neurons",
+  "GABA.ergic.5" = "GABAergic Neurons",
+  "GABA.ergic.6" = "GABAergic Neurons",
+  "GABA.ergic.7" = "GABAergic Neurons",
+  "GABA.ergic.8" = "GABAergic Neurons",
+  "GABA.ergic.9" = "GABAergic Neurons",
+  "GABA.ergic.10" = "GABAergic Neurons",
+  "GABA.ergic.11" = "GABAergic Neurons",
+  "GABA.ergic.12" = "GABAergic Neurons",
+  "GABA.ergic.13" = "GABAergic Neurons",
+  "GABA.ergic.14" = "GABAergic Neurons",
+  "GABA.ergic.15" = "GABAergic Neurons",
+  "GABA.ergic.16" = "GABAergic Neurons",
+  "GABA.ergic.17" = "GABAergic Neurons",
+  "GABA.ergic.18" = "GABAergic Neurons",
+  "GABA.ergic.19" = "GABAergic Neurons",
+  "GABA.ergic.20" = "GABAergic Neurons",
+  "GABA.ergic.21" = "GABAergic Neurons",
+  "GABA.ergic.22" = "GABAergic Neurons",
+  "GABA.ergic.23" = "GABAergic Neurons",
+  "GABA.ergic.24" = "GABAergic Neurons",
+  "GABA.ergic.25" = "GABAergic Neurons",
+  "GABA.ergic.26" = "GABAergic Neurons",
+  "GABA.ergic.27" = "GABAergic Neurons",
+  "GABA.ergic.28" = "GABAergic Neurons",
+  "GABA.ergic.29" = "GABAergic Neurons",
+  "GABA.ergic.30" = "GABAergic Neurons",
+  "GABA.ergic.31" = "GABAergic Neurons",
+  "GABA.ergic.32" = "GABAergic Neurons",
+  "GABA.ergic.33" = "GABAergic Neurons",
+  "GABA.ergic.34" = "GABAergic Neurons",
+  "GABA.ergic.35" = "GABAergic Neurons",
+  "GABA.ergic.36" = "GABAergic Neurons",
+  "GABA.ergic.37" = "GABAergic Neurons",
+  "GABA.ergic.38" = "GABAergic Neurons",
+  "GABA.ergic.39" = "GABAergic Neurons",
+  "GABA.ergic.40" = "GABAergic Neurons",
+  "GABA.ergic.41" = "GABAergic Neurons",
+  "GABA.ergic.42" = "GABAergic Neurons",
+  "GABA.ergic.43" = "GABAergic Neurons",
+  "GABA.ergic.44" = "GABAergic Neurons",
+  "GABA.ergic.45" = "GABAergic Neurons",
+  "GABA.ergic.46" = "GABAergic Neurons",
+  "GABA.ergic.47" = "GABAergic Neurons",
+  "GABA.ergic.48" = "GABAergic Neurons",
+  "GABA.ergic.49" = "GABAergic Neurons",
+  "GABA.ergic.50" = "GABAergic Neurons",
+  "GABA.ergic.51" = "GABAergic Neurons",
+  "GABA.ergic.52" = "GABAergic Neurons",
+  "GABA.ergic.53" = "GABAergic Neurons",
+  "GABA.ergic.54" = "GABAergic Neurons",
+  "GABA.ergic.55" = "GABAergic Neurons",
+  "GABA.ergic.56" = "GABAergic Neurons",
+  "GABA.ergic.57" = "GABAergic Neurons",
+  "GABA.ergic.58" = "GABAergic Neurons",
+  "GABA.ergic.59" = "GABAergic Neurons",
+  "GABA.ergic.60" = "GABAergic Neurons",
+  "GABA.ergic.61" = "GABAergic Neurons",
+  "GABA.ergic.62" = "GABAergic Neurons",
+  "GABA.ergic.63" = "GABAergic Neurons",
+  "GABA.ergic.64" = "GABAergic Neurons",
+  "GABA.ergic.65" = "GABAergic Neurons",
+  "GABA.ergic.66" = "GABAergic Neurons",
+  
+  "Glutamatergic" = "Glutamatergic Neurons",
+  "Glutamatergic.1" = "Glutamatergic Neurons",
+  "Glutamatergic.2" = "Glutamatergic Neurons",
+  "Glutamatergic.3" = "Glutamatergic Neurons",
+  "Glutamatergic.4" = "Glutamatergic Neurons",
+  "Glutamatergic.5" = "Glutamatergic Neurons",
+  "Glutamatergic.6" = "Glutamatergic Neurons",
+  "Glutamatergic.7" = "Glutamatergic Neurons",
+  "Glutamatergic.8" = "Glutamatergic Neurons",
+  "Glutamatergic.9" = "Glutamatergic Neurons",
+  "Glutamatergic.10" = "Glutamatergic Neurons",
+  "Glutamatergic.11" = "Glutamatergic Neurons",
+  "Glutamatergic.12" = "Glutamatergic Neurons",
+  "Glutamatergic.13" = "Glutamatergic Neurons",
+  "Glutamatergic.14" = "Glutamatergic Neurons",
+  "Glutamatergic.15" = "Glutamatergic Neurons",
+  "Glutamatergic.16" = "Glutamatergic Neurons",
+  "Glutamatergic.17" = "Glutamatergic Neurons",
+  "Glutamatergic.18" = "Glutamatergic Neurons",
+  "Glutamatergic.19" = "Glutamatergic Neurons",
+  "Glutamatergic.20" = "Glutamatergic Neurons",
+  "Glutamatergic.21" = "Glutamatergic Neurons",
+  "Glutamatergic.22" = "Glutamatergic Neurons",
+  "Glutamatergic.23" = "Glutamatergic Neurons",
+  "Glutamatergic.24" = "Glutamatergic Neurons",
+  "Glutamatergic.25" = "Glutamatergic Neurons",
+  "Glutamatergic.26" = "Glutamatergic Neurons",
+  "Glutamatergic.27" = "Glutamatergic Neurons",
+  "Glutamatergic.28" = "Glutamatergic Neurons",
+  "Glutamatergic.29" = "Glutamatergic Neurons",
+  "Glutamatergic.30" = "Glutamatergic Neurons",
+  "Glutamatergic.31" = "Glutamatergic Neurons",
+  "Glutamatergic.32" = "Glutamatergic Neurons",
+  "Glutamatergic.33" = "Glutamatergic Neurons",
+  "Glutamatergic.34" = "Glutamatergic Neurons",
+  "Glutamatergic.35" = "Glutamatergic Neurons",
+  "Glutamatergic.36" = "Glutamatergic Neurons",
+  "Glutamatergic.37" = "Glutamatergic Neurons",
+  "Glutamatergic.38" = "Glutamatergic Neurons",
+  "Glutamatergic.39" = "Glutamatergic Neurons",
+  "Glutamatergic.40" = "Glutamatergic Neurons",
+  "Glutamatergic.41" = "Glutamatergic Neurons",
+  
+  "Microglia" = "Microglia",
+  "Microglia.1" = "Microglia",
+  
+  "Oligodendrocyte.Precursor.Cells" = "Oligodendrocyte Precursor Cells",
+  "Oligodendrocyte.Precursor.Cells.1" = "Oligodendrocyte Precursor Cells",
+  "Oligodendrocytes" = "Oligodendrocytes",
+  "Oligodendrocytes.1" = "Oligodendrocytes",
+  "Oligodendrocytes.2" = "Oligodendrocytes",
+  "Oligodendrocytes.3" = "Oligodendrocytes",
+  
+  "VLMC" = "VLMC",
+  "VLMC.1" = "VLMC"
+)
+reference_long <- reference_long %>%
+  mutate(GeneralCluster = recode(CellType, !!!cluster_mapping)) %>%
+  group_by(GeneralCluster, Gene) %>%
+  summarize(AverageExpression = mean(Expression, na.rm = TRUE))
+
+
+# Now proceed to widen the dataset again
+reference_wide <- reference_long %>%
+  pivot_wider(names_from = GeneralCluster, values_from = AverageExpression, values_fill = 0)
+
+# Convert to matrix for SingleR
+Allen_Institute_Reference_matrix <- as.matrix(reference_wide[,-1])  # Exclude the Gene column
+rownames(Allen_Institute_Reference_matrix) <- reference_wide$Gene
+
+# Only keep Seurat_d14BC in the analysis
+each_day_analysis <- list(Day14BC = Seurat_d14BC)
+heatmap_list <- list()
+
+# Iterate through the single dataset (Seurat_d14BC)
+for (sample_name in names(each_day_analysis)) {
+  sample <- each_day_analysis[[sample_name]]
+  
+  # Ensure SingleR labels exist
+  if (!"singleR.labels" %in% colnames(sample@meta.data)) {
+    stop("Error: singleR.labels not found in Seurat metadata.")
+  }
+  
+  # Extract the SingleR cell type labels
+  cell_types <- sample$singleR.labels
+}
+
+  
+  # Get data from the assay and find common genes with the reference
+  counts_layer <- GetAssayData(sample, slot = "data")
+  common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
+  
+  # Subset and reorder rows in both matrices according to a consistent order
+  reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
+  counts_layer <- counts_layer[match(common_genes, rownames(counts_layer)), ]
+  
+  # Perform SingleR prediction
+  predict_clusters <- SingleR(test = as(counts_layer, "dgCMatrix"), ref = as(reference_sub, "dgCMatrix"), labels = colnames(reference_sub))
+  
+  # Generate the heatmap and add it to the list as a grob
+  heat_map <- plotScoreHeatmap(predict_clusters)
+  heatmap_grob <- grid::grid.grabExpr({
+    print(heat_map)
+    grid::grid.text(paste("Heatmap with SingleR Labels -", sample_name), y = 0.95, gp = grid::gpar(fontsize = 14))
+  })
+  
+  # Store the grob in the list
+  heatmap_list[[sample_name]] <- heatmap_grob
+}
+
+# Display all heatmaps in a grid layout
+cowplot::plot_grid(plotlist = heatmap_list, ncol = 2)
+# Step 5: Annotate cell types with SingleR on the integrated data
+# Retrieve counts for the integrated object
+DefaultAssay(Combined_Seurat) <- "integrated"
+counts_layer <- GetAssayData(Combined_Seurat, slot = "data")
+common_genes <- intersect(rownames(Allen_Institute_Reference_matrix), rownames(counts_layer))
+reference_sub <- Allen_Institute_Reference_matrix[common_genes, ]
+counts_layer <- counts_layer[common_genes, ]
+
+# Ensure we're using Seurat_d14BC
+DefaultAssay(Seurat_d14BC) <- "RNA"
+
+# Extract normalized expression data
+counts_layer <- GetAssayData(Seurat_d14BC, slot = "data")
+
+# Find common genes between Seurat data & reference
+common_genes <- intersect(rownames(counts_layer), rownames(Allen_Institute_Reference))
+counts_layer <- counts_layer[common_genes, ]
+reference_sub <- Allen_Institute_Reference[common_genes, ]
+
+# Perform SingleR classification
+predict_clusters <- SingleR(
+  test = as(counts_layer, "dgCMatrix"),
+  ref = as(reference_sub, "dgCMatrix"),
+  labels = colnames(reference_sub)
+)
+
+# Assign SingleR labels directly to Seurat_d14BC
+Seurat_d14BC$singleR.labels <- predict_clusters$labels[match(colnames(counts_layer), colnames(Seurat_d14BC))]
+
+# Save the updated Seurat object
+saveRDS(Seurat_d14BC, file = "C:/Users/arenk/JP/Seurat_d14BC_with_SingleR.rds")
+
+# Step 6: Create UMAP plots for each condition
+# Split integrated dataset by time points (based on cell IDs or metadata)
+
+umap_plot_combined <- DimPlot(Combined_Seurat, reduction = 'umap', group.by = 'singleR.labels') + 
+  ggtitle("Integrated UMAP with SingleR Labels - All Days")
+umap_plots_by_day <- list()
+
+# Define mapping for day labels
+day_labels <- c("_1" = "Day 0", "_2" = "Day 14 untransduced", "_3" = "Day 14 BC")
+
+
+# Generate UMAP for each day with custom titles
+for (day in names(day_labels)) {
+  # Subset the data by day
+  subset_day <- subset(Combined_Seurat, cells = grep(day, colnames(Combined_Seurat), value = TRUE))
+  
+  # UMAP plot (this part remains the same)
+  day_umap_plot <- DimPlot(subset_day, reduction = 'umap', group.by = 'singleR.labels') + 
+    ggtitle(paste("UMAP with SingleR Labels -", day_labels[day]))
+  umap_plots_by_day[[day]] <- day_umap_plot
+  
+}
+
+
+# Step 7: Display the plots
+plot_grid(plotlist = c(list(umap_plot_combined), umap_plots_by_day), ncol = 2)
+
+# Load required libraries
+library(Seurat)
+library(dplyr)
+library(ggplot2)
+
+# Define a mapping for general cell types
+cell_type_mapping <- c(
+  "GABA.ergic" = "GABAergic Neurons",
+  "Glutamatergic" = "Glutamatergic Neurons",
+  "Astrocytes" = "Astrocytes",
+  "Microglia" = "Microglia",
+  "Oligodendrocytes" = "Oligodendrocytes",
+  "Oligodendrocyte.Precursor.Cells" = "OPCs",
+  "Endothelial.cells" = "Endothelial Cells",
+  "VLMC" = "VLMC"
+)
+
+# Apply mapping to collapse subtypes into general clusters
+Seurat_d14BC$GeneralCluster <- Seurat_d14BC$singleR.labels
+Seurat_d14BC$GeneralCluster <- gsub("\\..*", "", Seurat_d14BC$GeneralCluster)  # Remove subtype numbers
+Seurat_d14BC$GeneralCluster <- recode(Seurat_d14BC$GeneralCluster, !!!cell_type_mapping)
+
+# Generate UMAP plot with simplified cell type labels
+umap_plot_d14BC <- DimPlot(Seurat_d14BC, reduction = 'umap', group.by = 'GeneralCluster') + 
+  ggtitle("UMAP of Seurat_d14BC with Simplified SingleR Labels")
+
+# Display the plot
+print(umap_plot_d14BC)
+
+
+
+
+
+# Extract endothelial cell indices (using the correct name)
+endothelial_cells <- which(Seurat_d14BC$GeneralCluster == "Endothelial Cells")
+
+# Extract PECAM1 UMI counts from log-normalized data
+pecam1_umi_endothelial <- GetAssayData(Seurat_d14BC, slot = "data")["PECAM1", endothelial_cells]
+
+# Compute both median and mean
+median_pecam1 <- median(pecam1_umi_endothelial, na.rm = TRUE)
+mean_pecam1 <- mean(pecam1_umi_endothelial, na.rm = TRUE)
+
+# Print both values
+print(paste("Median PECAM1 UMI:", median_pecam1))
+print(paste("Mean PECAM1 UMI:", mean_pecam1))
+
+
+
+
+
+# Define your new viral genes from the table
+viral_genes <- c(
+  "CAG-VG1", "CAG-VG2", "CAG-VG15", "CAG-VG4", 
+  "CAG-VG5", "CAG-VG6", "CAG-VG7", "CAG-VG8",
+  "CAG-VG9", "CAG-VG10", "CAG-VG11", "CAG-VG12",
+  "CAG-VG13", "CAG-VG14"
+)
+
+# Load required libraries
+library(Seurat)
+library(dplyr)
+
+# Ensure RNA assay is set
+DefaultAssay(Seurat_d14BC) <- "RNA"
+
+# Extract raw UMI counts (slot = "counts")
+umi_counts <- GetAssayData(Seurat_d14BC, slot = "counts")
+
+# Create a results table
+viral_counts_per_cluster <- data.frame(
+  Cluster = character(),
+  Num_Positive_Cells = integer(),
+  stringsAsFactors = FALSE
+)
+
+# Iterate over each cluster in Seurat_d14BC
+for (cluster_name in unique(Seurat_d14BC$GeneralCluster)) {
+  
+  # Get the cells in this cluster
+  cell_indices <- which(Seurat_d14BC$GeneralCluster == cluster_name)
+  
+  # Check which of the defined viral genes actually exist in umi_counts
+  matching_genes <- intersect(viral_genes, rownames(umi_counts))
+  
+  if (length(matching_genes) > 0 && length(cell_indices) > 0) {
+    # Subset to those genes and cells
+    viral_expression <- umi_counts[matching_genes, cell_indices, drop = FALSE]
+    
+    # Count how many cells have at least one viral gene expressed > 0
+    # colSums(...) > 0 returns TRUE if a cell has expression in any viral gene
+    positive_cells <- colSums(viral_expression > 0) > 0
+    num_positive_cells <- sum(positive_cells)
+  } else {
+    # If no matching genes or no cells, we get 0
+    num_positive_cells <- 0
+  }
+  
+  # Store the result
+  viral_counts_per_cluster <- rbind(
+    viral_counts_per_cluster,
+    data.frame(
+      Cluster = cluster_name,
+      Num_Positive_Cells = num_positive_cells
+    )
+  )
+}
+
+# Print the results
+print(viral_counts_per_cluster)
+
+# (Optional) Save to a CSV file
+write.csv(
+  viral_counts_per_cluster,
+  file = "C:/Users/arenk/JP/Updated_Viral_Transcript_Positive_Cells.csv",
+  row.names = FALSE
+)
+
+
+
+# 1. Define the updated cell type–gene pairs
+#    - "Glutamatergic Neurons" changed to "Excitatory neurons"
+#    - "Endothelial" changed to "Endothelial Cells"
+cell_gene_pairs <- data.frame(
+  CellType = c(
+    "Astrocytes", "Astrocytes", "Astrocytes", "Astrocytes", "Astrocytes", "Astrocytes",
+    "Endothelial Cells", "Endothelial Cells", "Endothelial Cells", "Endothelial Cells", "Endothelial Cells", "Endothelial Cells",
+    "Microglia", "Microglia", "Microglia", "Microglia", "Microglia",
+    "Excitatory neurons", "Excitatory neurons", "Excitatory neurons", "Excitatory neurons", "Excitatory neurons", "Excitatory neurons",
+    "GABA", "GABA", "GABA", "GABA", "GABA", "GABA",
+    "Oligodendrocytes", "Oligodendrocytes", "Oligodendrocytes", "Oligodendrocytes", "Oligodendrocytes", "Oligodendrocytes",
+    "OPCs", "OPCs", "OPCs", "OPCs", "OPCs", "OPCs",
+    "Vascular leptomeningeal cells", "Vascular leptomeningeal cells", "Vascular leptomeningeal cells",
+    "Vascular leptomeningeal cells", "Vascular leptomeningeal cells", "Vascular leptomeningeal cells"
+  ),
+  Gene = c(
+    # Astrocytes
+    "CAG", "GFAP", "AQP4", "S100B", "EEF1A1", "EEF1A2",
+    # Endothelial Cells
+    "CAG", "CLDN5", "PECAM1", "VWF", "EEF1A1", "EEF1A2",
+    # Microglia (Iba1→AIF1)
+    "CAG", "AIF1", "TMEM119", "EEF1A1", "EEF1A2",
+    # Excitatory neurons (was Glutamatergic Neurons)
+    "CAG", "SLC17A7", "SLC17A6", "CAMK2A", "EEF1A1", "EEF1A2",
+    # GABA
+    "CAG", "GAD1", "GAD2", "SST", "EEF1A1", "EEF1A2",
+    # Oligodendrocytes
+    "CAG", "MBP", "MOG", "OLIG2", "EEF1A1", "EEF1A2",
+    # OPCs
+    "CAG", "PDGFRA", "CSPG4", "SOX10", "EEF1A1", "EEF1A2",
+    # Vascular leptomeningeal cells
+    "CAG", "DCN", "COL1A1", "PDGFRA", "EEF1A1", "EEF1A2"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# 2. Viral genes to sum for "CAG"
+viral_genes_cag <- c(
+  "CAG-VG1", "CAG-VG2", "CAG-VG3", "CAG-VG4", "CAG-VG5", "CAG-VG6", 
+  "CAG-VG7", "CAG-VG8", "CAG-VG9", "CAG-VG10", "CAG-VG11", 
+  "CAG-VG12", "CAG-VG13", "CAG-VG14", "CAG-VG15"
+)
+
+# 3. Calculate median & mean UMI counts (log-normalized, "data" slot)
+library(Seurat)
+
+# Ensure Seurat_d14BC is loaded & that 'GeneralCluster' uses these labels
+DefaultAssay(Seurat_d14BC) <- "RNA"
+
+result_table <- data.frame(
+  CellType = character(),
+  Gene = character(),
+  MedianUMI = numeric(),
+  MeanUMI = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop
+for (i in seq_len(nrow(cell_gene_pairs))) {
+  
+  cell_type <- cell_gene_pairs$CellType[i]
+  gene <- cell_gene_pairs$Gene[i]
+  
+  # Which cells match cell_type?
+  cell_indices <- which(Seurat_d14BC$GeneralCluster == cell_type)
+  
+  if (length(cell_indices) == 0) {
+    # No matching cell type => NA
+    result_table <- rbind(result_table,
+                          data.frame(CellType=cell_type, Gene=gene, MedianUMI=NA, MeanUMI=NA))
+    next
+  }
+  
+  if (gene == "CAG") {
+    # Sum across viral_genes_cag
+    valid_viral_genes <- intersect(viral_genes_cag, rownames(Seurat_d14BC))
+    if (length(valid_viral_genes) == 0) {
+      # None present
+      result_table <- rbind(result_table,
+                            data.frame(CellType=cell_type, Gene=gene, MedianUMI=NA, MeanUMI=NA))
+      next
+    }
+    
+    umi_data <- GetAssayData(Seurat_d14BC, slot="data")[valid_viral_genes, cell_indices, drop=FALSE]
+    sums_per_cell <- Matrix::colSums(umi_data)
+    
+    median_val <- median(sums_per_cell, na.rm=TRUE)
+    mean_val <- mean(sums_per_cell, na.rm=TRUE)
+    
+    result_table <- rbind(result_table,
+                          data.frame(CellType=cell_type, Gene=gene, MedianUMI=median_val, MeanUMI=mean_val))
+    
+  } else {
+    # Single gene
+    if (gene %in% rownames(Seurat_d14BC)) {
+      umi_values <- GetAssayData(Seurat_d14BC, slot="data")[gene, cell_indices]
+      median_umi <- median(umi_values, na.rm=TRUE)
+      mean_umi <- mean(umi_values, na.rm=TRUE)
+      
+      result_table <- rbind(result_table,
+                            data.frame(CellType=cell_type, Gene=gene, MedianUMI=median_umi, MeanUMI=mean_umi))
+    } else {
+      # Gene not in dataset
+      result_table <- rbind(result_table,
+                            data.frame(CellType=cell_type, Gene=gene, MedianUMI=NA, MeanUMI=NA))
+    }
+  }
+}
+
+# Print final results
+print(result_table)
+
+# Save to CSV
+output_file <- "C:/Users/arenk/JP/Mean_Median_UMI_CAG_summed_Updated.csv"
+write.csv(result_table, file = output_file, row.names = FALSE)
+cat("Results saved to:", output_file, "\n")
+
