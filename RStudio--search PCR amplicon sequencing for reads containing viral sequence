@@ -1,0 +1,79 @@
+# Load necessary packages
+library(ShortRead)
+library(Biostrings)
+library(openxlsx)
+
+# Define the paths to the FASTQ files for all batches
+batch_1_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-1_S83_L001_R1_001.fastq.gz"
+batch_1_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-1_S83_L001_R2_001.fastq.gz"
+
+batch_2_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-2_S84_L001_R1_001.fastq.gz"
+batch_2_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-2_S84_L001_R2_001.fastq.gz"
+
+batch_3_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-3_S85_L001_R1_001.fastq.gz"
+batch_3_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-3_S85_L001_R2_001.fastq.gz"
+
+# Read the FASTQ files for all batches
+r1_fastq_1 <- readFastq(batch_1_r1)
+r2_fastq_1 <- readFastq(batch_1_r2)
+
+r1_fastq_2 <- readFastq(batch_2_r1)
+r2_fastq_2 <- readFastq(batch_2_r2)
+
+r1_fastq_3 <- readFastq(batch_3_r1)
+r2_fastq_3 <- readFastq(batch_3_r2)
+
+# Define the sequence you are searching for (case-insensitive search)
+search_seq <- "gttcaaaaccaaggaatacttccg"
+
+# Initialize a list to store the reads containing the search sequence
+matching_reads <- list()
+
+# Function to check if a read contains the search sequence and return the full read
+check_for_sequence <- function(read, search_seq) {
+    read_str <- as.character(read)
+    # Perform a case-insensitive search
+    if (grepl(search_seq, read_str, ignore.case = TRUE)) {
+        return(read_str)  # Return the full read if the search sequence is found
+    }
+    return(NULL)
+}
+
+# Function to process a batch and search for the sequence in all reads
+process_batch <- function(r1_fastq, r2_fastq, search_seq, batch_name) {
+    batch_reads <- character()  # Initialize to store matching reads for this batch
+    for (read in c(as.character(sread(r1_fastq)), as.character(sread(r2_fastq)))) {
+        match <- check_for_sequence(read, search_seq)
+        if (!is.null(match)) {
+            batch_reads <- c(batch_reads, match)  # Add the matching read
+        }
+    }
+    if (length(batch_reads) > 0) {
+        matching_reads[[batch_name]] <<- batch_reads  # Save results for the batch
+    }
+}
+
+# Process all batches
+process_batch(r1_fastq_1, r2_fastq_1, search_seq, "Batch 1 (S83)")
+process_batch(r1_fastq_2, r2_fastq_2, search_seq, "Batch 2 (S84)")
+process_batch(r1_fastq_3, r2_fastq_3, search_seq, "Batch 3 (S85)")
+
+# Check if any matches were found
+if (length(matching_reads) == 0) {
+  cat("No matching sequences were found.\n")
+} else {
+  # Combine all matching reads into a single data frame
+  matching_reads_df <- data.frame(
+      Batch = rep(names(matching_reads), times = sapply(matching_reads, length)),
+      Read = unlist(matching_reads, use.names = FALSE)
+  )
+
+  # Define the path for the output Excel file
+  output_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/matching_reads.xlsx"
+
+  # Write the data frame to an Excel file
+  write.xlsx(matching_reads_df, output_excel_path)
+
+  # Print a message indicating where the file was saved
+  cat("Matching reads have been saved to:", output_excel_path, "\n")
+}
