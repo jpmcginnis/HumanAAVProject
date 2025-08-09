@@ -1,0 +1,341 @@
+# Load necessary packages
+library(ShortRead)
+library(Biostrings)
+library(openxlsx)
+
+# Define the paths to the FASTQ files for all batches
+batch_1_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-1_S83_L001_R1_001.fastq.gz"
+batch_1_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-1_S83_L001_R2_001.fastq.gz"
+batch_2_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-2_S84_L001_R1_001.fastq.gz"
+batch_2_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-2_S84_L001_R2_001.fastq.gz"
+batch_3_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-3_S85_L001_R1_001.fastq.gz"
+batch_3_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/1049775-3_S85_L001_R2_001.fastq.gz"
+
+# Read the FASTQ files for all batches
+r1_fastq_1 <- readFastq(batch_1_r1)
+r2_fastq_1 <- readFastq(batch_1_r2)
+r1_fastq_2 <- readFastq(batch_2_r1)
+r2_fastq_2 <- readFastq(batch_2_r2)
+r1_fastq_3 <- readFastq(batch_3_r1)
+r2_fastq_3 <- readFastq(batch_3_r2)
+
+# Define the target sequence and barcode length (for R1)
+target_seq <- "tatggacaagtggccacaaaccac"
+barcode_length <- 33
+
+# Define 10x adapter structure components for extraction from R2
+# Structure: AATGATACGGCGACCACCGAGATCTNACACTCTTTCCCTACACGACGCTCTTCCGATCT[16bp Cell Barcode][12bp UMI]NNN[PolyT]
+adapter_prefix <- "AATGATACGGCGACCACCGAGATCT.ACACTCTTTCCCTACACGACGCTCTTCCGATCT"  # Fixed sequence before cell barcode
+cell_barcode_length <- 16
+umi_length <- 12
+spacer_length <- 3  # The NNN between UMI and polyT
+
+# Initialize data storage
+extracted_data <- list()
+
+# Function to extract viral barcode from R1
+extract_viral_barcode <- function(r1_read, target_seq, barcode_length) {
+    read_str <- as.character(r1_read)
+    
+    # Find the target sequence (case-insensitive)
+    match_pos <- regexpr(target_seq, read_str, ignore.case = TRUE)
+    
+    if (match_pos[1] != -1) {  # If target sequence is found
+        # Calculate start position of barcode (right after target sequence)
+        target_length <- attr(match_pos, "match.length")
+        barcode_start <- match_pos[1] + target_length
+        barcode_end <- barcode_start + barcode_length - 1
+        
+        # Check if there are enough bases after the target sequence
+        if (barcode_end <= nchar(read_str)) {
+            barcode <- substr(read_str, barcode_start, barcode_end)
+            return(barcode)
+        }
+    }
+    return(NULL)
+}
+
+# Function to extract cell barcode and UMI from R2 read
+extract_cell_barcode_and_umi <- function(r2_read) {
+    read_str <- as.character(r2_read)
+    
+    # Method 1: Use regex pattern matching for the 10x adapter
+    # Pattern looks for: fixed prefix + 16bp cell barcode + 12bp UMI + 3bp spacer + polyT
+    adapter_pattern <- paste0(
+        "AATGATACGGCGACCACCGAGATCT.ACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+        "([ATCGN]{", cell_barcode_length, "})",  # Capture group 1: cell barcode
+        "([ATCGN]{", umi_length, "})",           # Capture group 2: UMI
+        "[ATCGN]{", spacer_length, "}",         # Spacer (not captured)
+        "T{5,}"                                 # PolyT tail (at least 5 T's)
+    )
+    
+    match <- regexpr(adapter_pattern, read_str, ignore.case = TRUE, perl = TRUE)
+    
+    if (match[1] != -1) {
+        # Extract the captured groups
+        match_start <- attr(match, "capture.start")
+        match_length <- attr(match, "capture.length")
+        
+        if (length(match_start) >= 2 && all(match_length[1:2] > 0)) {
+            cell_barcode <- substr(read_str, match_start[1], match_start[1] + match_length[1] - 1)
+            umi <- substr(read_str, match_start[2], match_start[2] + match_length[2] - 1)
+            
+            # Quality check - avoid low-complexity sequences
+            if (!grepl("^[ATCG]\\1+$", cell_barcode) && !grepl("^[ATCG]\\1+$", umi) &&
+                !grepl("N", cell_barcode) && !grepl("N", umi)) {
+                return(list(cell_barcode = cell_barcode, umi = umi))
+            }
+        }
+    }
+    
+    # Method 2: Fixed position extraction (backup method)
+    # Calculate expected positions based on the adapter structure
+    prefix_length <- 57  # Length of "AATGATACGGCGACCACCGAGATCTNACACTCTTTCCCTACACGACGCTCTTCCGATCT"
+    
+    if (nchar(read_str) >= prefix_length + cell_barcode_length + umi_length + spacer_length + 5) {
+        cell_barcode_start <- prefix_length + 1
+        cell_barcode_end <- cell_barcode_start + cell_barcode_length - 1
+        
+        umi_start <- cell_barcode_end + 1
+        umi_end <- umi_start + umi_length - 1
+        
+        cell_barcode <- substr(read_str, cell_barcode_start, cell_barcode_end)
+        umi <- substr(read_str, umi_start, umi_end)
+        
+        # Quality check
+        if (nchar(cell_barcode) == cell_barcode_length && nchar(umi) == umi_length &&
+            !grepl("^[ATCG]\\1+$", cell_barcode) && !grepl("^[ATCG]\\1+$", umi) &&
+            !grepl("N", cell_barcode) && !grepl("N", umi)) {
+            
+            # Verify we have polyT after the spacer
+            polyt_start <- umi_end + spacer_length + 1
+            if (polyt_start <= nchar(read_str)) {
+                polyt_region <- substr(read_str, polyt_start, min(nchar(read_str), polyt_start + 10))
+                if (grepl("T{3,}", polyt_region)) {  # At least 3 consecutive T's
+                    return(list(cell_barcode = cell_barcode, umi = umi))
+                }
+            }
+        }
+    }
+    
+    return(NULL)
+}
+
+# Function to process a batch and extract all information with proper read pairing
+process_batch_complete <- function(r1_fastq, r2_fastq, batch_name) {
+    batch_data <- data.frame(
+        Read_ID = character(),
+        Viral_Barcode = character(),
+        Cell_Barcode = character(),
+        UMI = character(),
+        stringsAsFactors = FALSE
+    )
+    
+    # Get read IDs and sequences
+    r1_ids <- as.character(id(r1_fastq))
+    r1_reads <- as.character(sread(r1_fastq))
+    r2_ids <- as.character(id(r2_fastq))
+    r2_reads <- as.character(sread(r2_fastq))
+    
+    # Create lookup tables for efficient matching
+    r1_lookup <- setNames(r1_reads, r1_ids)
+    r2_lookup <- setNames(r2_reads, r2_ids)
+    
+    # Clean read IDs to match properly (remove /1, /2 suffixes and other variations)
+    clean_r1_ids <- gsub("\\s+.*|/[12]$", "", r1_ids)
+    clean_r2_ids <- gsub("\\s+.*|/[12]$", "", r2_ids)
+    
+    # Create mapping between cleaned IDs and original sequences
+    r1_clean_lookup <- setNames(r1_reads, clean_r1_ids)
+    r2_clean_lookup <- setNames(r2_reads, clean_r2_ids)
+    
+    # Find common read IDs between R1 and R2
+    common_ids <- intersect(clean_r1_ids, clean_r2_ids)
+    
+    cat("Batch", batch_name, "read pairing check:\n")
+    cat("  - R1 reads:", length(r1_reads), "\n")
+    cat("  - R2 reads:", length(r2_reads), "\n")
+    cat("  - Common paired reads:", length(common_ids), "\n")
+    
+    if (length(common_ids) == 0) {
+        cat("  - WARNING: No matching read pairs found. Falling back to position-based pairing.\n")
+        # Fallback to position-based pairing
+        min_reads <- min(length(r1_reads), length(r2_reads))
+        common_ids <- 1:min_reads
+        
+        for (i in common_ids) {
+            # Extract viral barcode from R1
+            viral_barcode <- extract_viral_barcode(r1_reads[i], target_seq, barcode_length)
+            
+            if (!is.null(viral_barcode)) {
+                # Extract cell barcode and UMI from corresponding R2 read
+                r2_data <- extract_cell_barcode_and_umi(r2_reads[i])
+                
+                if (!is.null(r2_data)) {
+                    batch_data <- rbind(batch_data, data.frame(
+                        Read_ID = paste0("read_", i),
+                        Viral_Barcode = viral_barcode,
+                        Cell_Barcode = r2_data$cell_barcode,
+                        UMI = r2_data$umi,
+                        stringsAsFactors = FALSE
+                    ))
+                }
+            }
+        }
+    } else {
+        # Process properly paired reads
+        for (read_id in common_ids) {
+            # Get the corresponding R1 and R2 sequences
+            r1_seq <- r1_clean_lookup[read_id]
+            r2_seq <- r2_clean_lookup[read_id]
+            
+            if (!is.na(r1_seq) && !is.na(r2_seq)) {
+                # Extract viral barcode from R1
+                viral_barcode <- extract_viral_barcode(r1_seq, target_seq, barcode_length)
+                
+                if (!is.null(viral_barcode)) {
+                    # Extract cell barcode and UMI from corresponding R2 read
+                    r2_data <- extract_cell_barcode_and_umi(r2_seq)
+                    
+                    if (!is.null(r2_data)) {
+                        batch_data <- rbind(batch_data, data.frame(
+                            Read_ID = read_id,
+                            Viral_Barcode = viral_barcode,
+                            Cell_Barcode = r2_data$cell_barcode,
+                            UMI = r2_data$umi,
+                            stringsAsFactors = FALSE
+                        ))
+                    }
+                }
+            }
+        }
+    }
+    
+    if (nrow(batch_data) > 0) {
+        extracted_data[[batch_name]] <<- batch_data
+        
+        # Print summary for this batch
+        cat("  - Complete barcode sets found:", nrow(batch_data), "\n")
+        cat("  - Unique viral barcodes:", length(unique(batch_data$Viral_Barcode)), "\n")
+        cat("  - Unique cell barcodes:", length(unique(batch_data$Cell_Barcode)), "\n")
+        cat("  - Unique UMIs:", length(unique(batch_data$UMI)), "\n\n")
+    } else {
+        cat("  - No complete barcode sets found in this batch\n\n")
+    }
+}
+
+# Process all batches
+cat("Processing batches for complete barcode extraction...\n")
+cat("Looking for viral barcodes in R1 and cell barcodes + UMIs in R2\n\n")
+
+process_batch_complete(r1_fastq_1, r2_fastq_1, "Batch_1_S83")
+process_batch_complete(r1_fastq_2, r2_fastq_2, "Batch_2_S84")
+process_batch_complete(r1_fastq_3, r2_fastq_3, "Batch_3_S85")
+
+# Check if any complete barcode sets were found
+if (length(extracted_data) == 0) {
+    cat("No complete barcode sets (viral + cell + UMI) were found.\n")
+    cat("This might indicate:\n")
+    cat("1. The 10x adapter structure doesn't match the expected pattern\n")
+    cat("2. The target sequence for viral barcodes is not present\n")
+    cat("3. The read pairs don't contain the expected structures\n")
+} else {
+    # Combine all extracted data
+    all_data_list <- list()
+    
+    for (batch_name in names(extracted_data)) {
+        batch_data <- extracted_data[[batch_name]]
+        batch_data$Batch <- batch_name
+        all_data_list[[batch_name]] <- batch_data
+    }
+    
+    # Combine all batches
+    all_data_df <- do.call(rbind, all_data_list)
+    
+    # Reorder columns for better readability
+    all_data_df <- all_data_df[, c("Batch", "Read_ID", "Viral_Barcode", "Cell_Barcode", "UMI")]
+    
+    # Create deduplicated version - unique combinations of Cell_Barcode + UMI + Viral_Barcode
+    # This removes PCR duplicates (same cell, same UMI, same viral barcode)
+    deduplicated_df <- unique(all_data_df[, c("Viral_Barcode", "Cell_Barcode", "UMI")])
+    
+    # Add batch information for deduplicated data
+    deduplicated_with_batches <- merge(deduplicated_df,
+                                       aggregate(Batch ~ Viral_Barcode + Cell_Barcode + UMI, 
+                                                data = all_data_df,
+                                                FUN = function(x) paste(unique(x), collapse = "; ")),
+                                       by = c("Viral_Barcode", "Cell_Barcode", "UMI"))
+    
+    # Add read count information (how many read pairs supported this combination)
+    read_counts <- aggregate(Read_ID ~ Viral_Barcode + Cell_Barcode + UMI, 
+                            data = all_data_df, FUN = length)
+    names(read_counts)[4] <- "Read_Pair_Count"
+    deduplicated_with_batches <- merge(deduplicated_with_batches, read_counts, 
+                                      by = c("Viral_Barcode", "Cell_Barcode", "UMI"))
+    
+    # Create summary statistics
+    cat("Summary of extracted barcode sets:\n")
+    cat("Total barcode sets (before deduplication):", nrow(all_data_df), "\n")
+    cat("Unique barcode sets (after deduplication):", nrow(deduplicated_with_batches), "\n")
+    cat("Unique viral barcodes:", length(unique(deduplicated_with_batches$Viral_Barcode)), "\n")
+    cat("Unique cell barcodes:", length(unique(deduplicated_with_batches$Cell_Barcode)), "\n")
+    cat("Unique UMIs:", length(unique(deduplicated_with_batches$UMI)), "\n\n")
+    
+    # Create frequency tables
+    viral_barcode_counts <- aggregate(UMI ~ Viral_Barcode, data = deduplicated_with_batches, FUN = length)
+    names(viral_barcode_counts)[2] <- "Unique_UMI_Count"
+    viral_barcode_counts <- viral_barcode_counts[order(viral_barcode_counts$Unique_UMI_Count, decreasing = TRUE), ]
+    
+    cell_barcode_counts <- aggregate(UMI ~ Cell_Barcode, data = deduplicated_with_batches, FUN = length)
+    names(cell_barcode_counts)[2] <- "Unique_UMI_Count"
+    cell_barcode_counts <- cell_barcode_counts[order(cell_barcode_counts$Unique_UMI_Count, decreasing = TRUE), ]
+    
+    # Define output path
+    output_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/complete_barcode_analysis.xlsx"
+    
+    # Create workbook with multiple sheets
+    wb <- createWorkbook()
+    
+    # Sheet 1: Deduplicated complete barcode sets
+    addWorksheet(wb, "Deduplicated_Complete_Sets")
+    writeData(wb, "Deduplicated_Complete_Sets", deduplicated_with_batches)
+    
+    # Sheet 2: All raw data
+    addWorksheet(wb, "Raw_Data_All_Reads")
+    writeData(wb, "Raw_Data_All_Reads", all_data_df)
+    
+    # Sheet 3: Viral barcode frequencies
+    addWorksheet(wb, "Viral_Barcode_Frequencies")
+    writeData(wb, "Viral_Barcode_Frequencies", viral_barcode_counts)
+    
+    # Sheet 4: Cell barcode frequencies
+    addWorksheet(wb, "Cell_Barcode_Frequencies")
+    writeData(wb, "Cell_Barcode_Frequencies", cell_barcode_counts)
+    
+    # Sheet 5: Summary by batch
+    batch_summary <- aggregate(cbind(UMI, Cell_Barcode, Viral_Barcode) ~ Batch, 
+                              data = all_data_df, FUN = function(x) length(unique(x)))
+    names(batch_summary) <- c("Batch", "Unique_UMIs", "Unique_Cell_Barcodes", "Unique_Viral_Barcodes")
+    
+    addWorksheet(wb, "Batch_Summary")
+    writeData(wb, "Batch_Summary", batch_summary)
+    
+    # Save workbook
+    saveWorkbook(wb, output_excel_path, overwrite = TRUE)
+    
+    # Print results
+    cat("Results saved to:", output_excel_path, "\n")
+    cat("Excel file contains 5 sheets:\n")
+    cat("  1. Deduplicated_Complete_Sets: Unique viral-cell-UMI combinations\n")
+    cat("  2. Raw_Data_All_Reads: All barcode sets before deduplication\n")
+    cat("  3. Viral_Barcode_Frequencies: Each viral barcode with UMI count\n")
+    cat("  4. Cell_Barcode_Frequencies: Each cell barcode with UMI count\n")
+    cat("  5. Batch_Summary: Summary statistics by batch\n\n")
+    
+    # Show top results
+    cat("Top 10 viral barcodes by unique UMI count:\n")
+    print(head(viral_barcode_counts, 10))
+    
+    cat("\nTop 10 cell barcodes by unique UMI count:\n")
+    print(head(cell_barcode_counts, 10))
+}
