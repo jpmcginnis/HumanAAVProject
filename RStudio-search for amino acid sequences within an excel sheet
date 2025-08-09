@@ -1,0 +1,149 @@
+# Load necessary packages
+library(openxlsx)
+
+# Define file path
+excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/Unique_viral_barcodes_with_translations.xlsx"
+
+# Target sequences to search for
+target_sequences <- c(
+    "TPHVLCVDTTA",
+    "NNPMSFTEQQM", 
+    "KQHYQREGFLN",
+    "QMQDRFLDVTA",
+    "QKPPSVAATDD",
+    "NAHVTFVNPLS",
+    "SRNTVVNTADK",
+    "INKIQVLPIGP",
+    "LEWSDDKQPRD",
+    "IKQPVEPNIEQ",
+    "QDKKWPCDWDR",
+    "GNDGREDFSWK",
+    "QGPNQIFTADD",
+    "YQKRAAVDNVE",
+    "QKQEDLFGNFP",
+    "QKPPHMWEISS",
+    "DWPEALDLGDG",
+    "VDSFRGDEKQD",
+    "MGNVDGIPNQV",
+    "STQSTWVGVDL",
+    "YQRRVHGNLGY",
+    "NAEYMDQECTN",
+    "QWYQRRVHGNS",
+    "VVSTQSTWDTN",
+    "TLKDPGFIADD",
+    "NAEYMGLQEAA"
+)
+
+# Check if file exists
+if (!file.exists(excel_path)) {
+    cat("File not found. Please make sure the translated Excel file exists at:\n")
+    cat(excel_path, "\n")
+    stop("File not found")
+}
+
+# Read the Excel file
+cat("Reading Excel file...\n")
+data <- read.xlsx(excel_path, sheet = 1)
+
+cat("Columns found:", paste(names(data), collapse = ", "), "\n")
+
+# Find the amino acid translation column - look for "Amino acids" column specifically
+aa_col <- NULL
+
+# Look for the column labeled "Amino acids"
+if ("Amino.acids" %in% names(data)) {
+    aa_col <- "Amino.acids"
+} else if ("Amino acids" %in% names(data)) {
+    aa_col <- "Amino acids"
+} else {
+    # If Excel changed the name, look for variations
+    for (col_name in names(data)) {
+        if (grepl("amino.*acid", col_name, ignore.case = TRUE)) {
+            aa_col <- col_name
+            break
+        }
+    }
+}
+
+if (is.null(aa_col)) {
+    cat("Could not find amino acid translation column.\n")
+    cat("Available columns:", paste(names(data), collapse = ", "), "\n")
+    cat("Please specify which column contains the amino acid translations.\n")
+} else {
+    cat("Found amino acid column:", aa_col, "\n")
+    
+    # Search for each target sequence
+    matches_found <- data.frame(
+        Target_Sequence = character(),
+        Row_Number = numeric(),
+        DNA_Sequence = character(),
+        AA_Sequence = character(),
+        Match_Type = character(),
+        stringsAsFactors = FALSE
+    )
+    
+    cat("\nSearching for target sequences in amino acid translations...\n")
+    cat("Sample AA sequences from your data:", paste(head(data[[aa_col]], 3), collapse = ", "), "\n\n")
+    
+    for (target in target_sequences) {
+        # Search for exact matches
+        exact_matches <- which(toupper(data[[aa_col]]) == toupper(target))
+        
+        # Search for partial matches (target sequence contained within the AA sequence)
+        partial_matches <- which(grepl(toupper(target), toupper(data[[aa_col]]), fixed = TRUE))
+        
+        if (length(exact_matches) > 0) {
+            cat("EXACT MATCH:", target, "- Row(s):", paste(exact_matches, collapse = ", "), "\n")
+            
+            # Add exact matches to results
+            for (match_row in exact_matches) {
+                dna_col <- names(data)[!grepl("amino|translation|aa|_AA", names(data), ignore.case = TRUE)][1]
+                
+                matches_found <- rbind(matches_found, data.frame(
+                    Target_Sequence = target,
+                    Row_Number = match_row,
+                    DNA_Sequence = ifelse(!is.null(dna_col), data[[dna_col]][match_row], "N/A"),
+                    AA_Sequence = data[[aa_col]][match_row],
+                    Match_Type = "Exact",
+                    stringsAsFactors = FALSE
+                ))
+            }
+        } else if (length(partial_matches) > 0) {
+            cat("PARTIAL MATCH:", target, "- Row(s):", paste(partial_matches, collapse = ", "), "\n")
+            
+            # Add partial matches to results
+            for (match_row in partial_matches) {
+                dna_col <- names(data)[!grepl("amino|translation|aa|_AA", names(data), ignore.case = TRUE)][1]
+                
+                matches_found <- rbind(matches_found, data.frame(
+                    Target_Sequence = target,
+                    Row_Number = match_row,
+                    DNA_Sequence = ifelse(!is.null(dna_col), data[[dna_col]][match_row], "N/A"),
+                    AA_Sequence = data[[aa_col]][match_row],
+                    Match_Type = "Partial",
+                    stringsAsFactors = FALSE
+                ))
+            }
+        } else {
+            cat("Not found:", target, "\n")
+        }
+    }
+    
+    # Summary
+    cat("\n=== SUMMARY ===\n")
+    cat("Total target sequences searched:", length(target_sequences), "\n")
+    cat("Sequences found:", length(unique(matches_found$Target_Sequence)), "\n")
+    cat("Total matches:", nrow(matches_found), "\n")
+    
+    if (nrow(matches_found) > 0) {
+        cat("\n=== MATCHES FOUND ===\n")
+        print(matches_found)
+        
+        # Save results
+        output_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/sequence_search_results.xlsx"
+        write.xlsx(matches_found, output_path)
+        cat("\nResults saved to:", output_path, "\n")
+    } else {
+        cat("\nNo matches found for any of the target sequences.\n")
+    }
+}
