@@ -1,0 +1,73 @@
+# Load necessary packages
+library(Biostrings)
+library(openxlsx)
+
+# Define file paths
+input_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/Unique_viral_barcodes.xlsx"
+output_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/1-29-24 TCH/Unique_viral_barcodes_with_translations.xlsx"
+
+# Simple function to translate DNA to amino acids
+translate_dna <- function(dna_seq) {
+    if (is.na(dna_seq) || nchar(dna_seq) == 0) return(NA)
+    
+    # Clean sequence
+    clean_seq <- gsub("[^ATCG]", "", toupper(dna_seq))
+    if (nchar(clean_seq) < 3) return("Too_short")
+    
+    # Trim to multiple of 3 and translate
+    trim_length <- nchar(clean_seq) - (nchar(clean_seq) %% 3)
+    trimmed_seq <- substr(clean_seq, 1, trim_length)
+    
+    tryCatch({
+        dna_string <- DNAString(trimmed_seq)
+        as.character(translate(dna_string))
+    }, error = function(e) "Error")
+}
+
+# Read the first sheet (assuming that's where your viral barcodes are)
+cat("Reading Excel file...\n")
+data <- read.xlsx(input_excel_path, sheet = 1)
+
+cat("Column names found:", paste(names(data), collapse = ", "), "\n")
+
+# Look for the column that contains your 33bp viral barcode sequences
+# This will be the column with DNA-looking sequences
+dna_col <- NULL
+for (col_name in names(data)) {
+    if (is.character(data[[col_name]]) || is.factor(data[[col_name]])) {
+        # Check if this column has DNA-like sequences
+        sample_seqs <- head(data[[col_name]][!is.na(data[[col_name]])], 5)
+        if (length(sample_seqs) > 0) {
+            # Check if sequences are around 33bp and contain only ATCG
+            avg_length <- mean(nchar(sample_seqs))
+            dna_like <- sum(grepl("^[ATCG]+$", sample_seqs, ignore.case = TRUE))
+            
+            if (avg_length > 20 && avg_length < 50 && dna_like >= 3) {  # Likely your viral barcodes
+                dna_col <- col_name
+                break
+            }
+        }
+    }
+}
+
+if (is.null(dna_col)) {
+    cat("Could not automatically detect DNA column. Please specify which column contains your viral barcodes.\n")
+    cat("Available columns:", paste(names(data), collapse = ", "), "\n")
+} else {
+    cat("Found DNA sequences in column:", dna_col, "\n")
+    
+    # Add amino acid translation column
+    cat("Translating sequences...\n")
+    data$Amino_Acid_Translation <- sapply(data[[dna_col]], translate_dna)
+    
+    # Save to new Excel file
+    write.xlsx(data, output_excel_path)
+    
+    cat("Done! Saved to:", output_excel_path, "\n")
+    cat("Added column: Amino_Acid_Translation\n")
+    
+    # Show first few examples
+    cat("\nFirst few translations:\n")
+    examples <- head(data[, c(dna_col, "Amino_Acid_Translation")], 3)
+    print(examples)
+}
