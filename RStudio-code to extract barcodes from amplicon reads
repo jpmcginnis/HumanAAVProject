@@ -80,9 +80,9 @@ extract_cell_barcode_and_umi <- function(r2_read) {
             cell_barcode <- substr(read_str, match_start[1], match_start[1] + match_length[1] - 1)
             umi <- substr(read_str, match_start[2], match_start[2] + match_length[2] - 1)
             
-            # Quality check - avoid low-complexity sequences
-            if (!grepl("^[ATCG]\\1+$", cell_barcode) && !grepl("^[ATCG]\\1+$", umi) &&
-                !grepl("N", cell_barcode) && !grepl("N", umi)) {
+            # Basic quality check - just avoid sequences with N's (which indicate sequencing uncertainty)
+            # Note: We're being permissive here because this is mRNA data with expected polyT stretches
+            if (!grepl("N", cell_barcode) && !grepl("N", umi)) {
                 return(list(cell_barcode = cell_barcode, umi = umi))
             }
         }
@@ -102,9 +102,9 @@ extract_cell_barcode_and_umi <- function(r2_read) {
         cell_barcode <- substr(read_str, cell_barcode_start, cell_barcode_end)
         umi <- substr(read_str, umi_start, umi_end)
         
-        # Quality check
+        # Basic quality check - sequences should be correct length and not contain N's
+        # Being permissive since this is mRNA data with natural polyA/polyT content
         if (nchar(cell_barcode) == cell_barcode_length && nchar(umi) == umi_length &&
-            !grepl("^[ATCG]\\1+$", cell_barcode) && !grepl("^[ATCG]\\1+$", umi) &&
             !grepl("N", cell_barcode) && !grepl("N", umi)) {
             
             # Verify we have polyT after the spacer
