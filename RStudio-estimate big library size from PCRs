@@ -1,0 +1,296 @@
+# Load necessary packages
+library(ShortRead)
+library(Biostrings)
+library(openxlsx)
+
+# Define the paths to the FASTQ files for all 5 batches
+batch_1_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-1_S83_L001_R1_001.fastq.gz"
+batch_1_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-1_S83_L001_R2_001.fastq.gz"
+batch_2_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-2_S84_L001_R1_001.fastq.gz"
+batch_2_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-2_S84_L001_R2_001.fastq.gz"
+batch_3_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-3_S85_L001_R1_001.fastq.gz"
+batch_3_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-3_S85_L001_R2_001.fastq.gz"
+batch_4_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC1f1r_R1_001.fastq.gz"
+batch_4_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC1f1r_R2_001.fastq.gz"
+batch_5_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC10f10r_R1_001.fastq.gz"
+batch_5_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC10f10r_R2_001.fastq.gz"
+
+# Define the target sequence and barcode length
+target_seq <- "tatggacaagtggccacaaaccac"
+barcode_length <- 33
+
+# Function to extract 33bp barcode following the target sequence
+extract_33bp_barcode <- function(read, target_seq, barcode_length) {
+    read_str <- as.character(read)
+    match_pos <- regexpr(target_seq, read_str, ignore.case = TRUE)
+    
+    if (match_pos[1] != -1) {
+        target_length <- attr(match_pos, "match.length")
+        barcode_start <- match_pos[1] + target_length
+        barcode_end <- barcode_start + barcode_length - 1
+        
+        if (barcode_end <= nchar(read_str)) {
+            barcode <- substr(read_str, barcode_start, barcode_end)
+            return(barcode)
+        }
+    }
+    return(NULL)
+}
+
+# Function to extract barcodes with counts from a batch
+extract_barcodes_with_counts <- function(r1_fastq, r2_fastq, batch_name) {
+    cat("Processing", batch_name, "for capture-recapture analysis...\n")
+    
+    batch_barcodes <- character()
+    
+    # Process R1 reads
+    r1_reads <- as.character(sread(r1_fastq))
+    for (read in r1_reads) {
+        barcode <- extract_33bp_barcode(read, target_seq, barcode_length)
+        if (!is.null(barcode)) {
+            batch_barcodes <- c(batch_barcodes, barcode)
+        }
+    }
+    
+    # Process R2 reads
+    r2_reads <- as.character(sread(r2_fastq))
+    for (read in r2_reads) {
+        barcode <- extract_33bp_barcode(read, target_seq, barcode_length)
+        if (!is.null(barcode)) {
+            batch_barcodes <- c(batch_barcodes, barcode)
+        }
+    }
+    
+    # Count occurrences of each barcode
+    barcode_counts <- table(batch_barcodes)
+    
+    cat("  - Total reads with barcodes:", length(batch_barcodes), "\n")
+    cat("  - Unique barcodes:", length(barcode_counts), "\n")
+    cat("  - Mean reads per barcode:", round(mean(barcode_counts), 1), "\n\n")
+    
+    return(barcode_counts)
+}
+
+# Read FASTQ files and extract barcodes
+cat("Reading FASTQ files and extracting barcodes...\n\n")
+r1_fastq_1 <- readFastq(batch_1_r1)
+r2_fastq_1 <- readFastq(batch_1_r2)
+r1_fastq_2 <- readFastq(batch_2_r1)
+r2_fastq_2 <- readFastq(batch_2_r2)
+r1_fastq_3 <- readFastq(batch_3_r1)
+r2_fastq_3 <- readFastq(batch_3_r2)
+r1_fastq_4 <- readFastq(batch_4_r1)
+r2_fastq_4 <- readFastq(batch_4_r2)
+r1_fastq_5 <- readFastq(batch_5_r1)
+r2_fastq_5 <- readFastq(batch_5_r2)
+
+# Extract barcode counts from each batch
+batch_counts <- list(
+    "Batch_1" = extract_barcodes_with_counts(r1_fastq_1, r2_fastq_1, "Batch 1 (S83)"),
+    "Batch_2" = extract_barcodes_with_counts(r1_fastq_2, r2_fastq_2, "Batch 2 (S84)"),
+    "Batch_3" = extract_barcodes_with_counts(r1_fastq_3, r2_fastq_3, "Batch 3 (S85)"),
+    "Batch_4" = extract_barcodes_with_counts(r1_fastq_4, r2_fastq_4, "Batch 4 (BC1f1r)"),
+    "Batch_5" = extract_barcodes_with_counts(r1_fastq_5, r2_fastq_5, "Batch 5 (BC10f10r)")
+)
+
+# Get all unique barcodes across all batches
+all_barcodes <- unique(unlist(lapply(batch_counts, names)))
+n_observed <- length(all_barcodes)
+
+# Create presence/absence matrix and count matrix
+presence_matrix <- matrix(0, nrow = length(all_barcodes), ncol = 5)
+count_matrix <- matrix(0, nrow = length(all_barcodes), ncol = 5)
+rownames(presence_matrix) <- all_barcodes
+rownames(count_matrix) <- all_barcodes
+colnames(presence_matrix) <- names(batch_counts)
+colnames(count_matrix) <- names(batch_counts)
+
+for (i in 1:5) {
+    batch_barcodes <- names(batch_counts[[i]])
+    presence_matrix[batch_barcodes, i] <- 1
+    count_matrix[batch_barcodes, i] <- as.numeric(batch_counts[[i]])
+}
+
+# Calculate frequency classes
+detection_frequency <- rowSums(presence_matrix)
+f <- table(detection_frequency)
+
+cat("=== CAPTURE-RECAPTURE ANALYSIS ===\n")
+cat("Observed data:\n")
+cat("Total unique barcodes observed (Sobs):", n_observed, "\n")
+for (i in 1:5) {
+    if (i %in% names(f)) {
+        cat("f", i, "(found in", i, "batch(es)):", f[as.character(i)], "barcodes\n")
+    } else {
+        cat("f", i, "(found in", i, "batch(es)): 0 barcodes\n")
+    }
+}
+cat("\n")
+
+# Chao1 Estimator (most commonly used for abundance data)
+f1 <- ifelse("1" %in% names(f), f["1"], 0)
+f2 <- ifelse("2" %in% names(f), f["2"], 0)
+
+if (f2 > 0) {
+    chao1 <- n_observed + (f1^2) / (2 * f2)
+    chao1_var <- f2 * ((f1/f2)^2/2 + (f1/f2)^3/4 + (f1/f2)^4/4)
+    chao1_se <- sqrt(chao1_var)
+    chao1_ci_lower <- chao1 - 1.96 * chao1_se
+    chao1_ci_upper <- chao1 + 1.96 * chao1_se
+} else {
+    chao1 <- n_observed + (f1 * (f1 - 1)) / 2  # Modified Chao1 when f2 = 0
+    chao1_se <- NA
+    chao1_ci_lower <- NA
+    chao1_ci_upper <- NA
+}
+
+# Chao2 Estimator (for incidence data - presence/absence)
+q1 <- ifelse("1" %in% names(f), f["1"], 0)  # Singletons
+q2 <- ifelse("2" %in% names(f), f["2"], 0)  # Doubletons
+m <- 5  # Number of samples
+
+if (q2 > 0) {
+    chao2 <- n_observed + ((m-1)/m) * (q1^2)/(2*q2)
+} else {
+    chao2 <- n_observed + ((m-1)/m) * (q1 * (q1-1))/2
+}
+
+# Jackknife estimators
+jack1 <- n_observed + f1 * (m-1)/m
+if ("2" %in% names(f)) {
+    jack2 <- n_observed + f1 * (2*m-3)/m - f2 * (m-2)^2/(m*(m-1))
+} else {
+    jack2 <- jack1
+}
+
+# Bootstrap estimator
+bootstrap <- n_observed / (1 - f1/sum(sapply(batch_counts, sum)))
+
+# Coverage estimator (sample completeness)
+if (f2 > 0) {
+    coverage <- 1 - f1/sum(sapply(batch_counts, sum)) * (1 - f1/(2*f2))
+} else {
+    coverage <- 1 - f1/sum(sapply(batch_counts, sum))
+}
+
+cat("=== POPULATION SIZE ESTIMATES ===\n")
+cat("Observed species (Sobs):", n_observed, "\n")
+cat("Chao1 estimator:", round(chao1, 0), "\n")
+if (!is.na(chao1_se)) {
+    cat("  - Standard error:", round(chao1_se, 0), "\n")
+    cat("  - 95% CI: (", round(chao1_ci_lower, 0), ",", round(chao1_ci_upper, 0), ")\n")
+}
+cat("Chao2 estimator:", round(chao2, 0), "\n")
+cat("Jackknife 1:", round(jack1, 0), "\n")
+cat("Jackknife 2:", round(jack2, 0), "\n")
+cat("Bootstrap:", round(bootstrap, 0), "\n")
+cat("Sample coverage:", round(coverage * 100, 1), "%\n\n")
+
+# Estimate relative abundances of variants
+cat("=== VARIANT ABUNDANCE ESTIMATES ===\n")
+
+# Calculate total reads per barcode across all batches
+total_reads_per_barcode <- rowSums(count_matrix)
+total_reads_all_batches <- sum(total_reads_per_barcode)
+
+# Estimate true frequencies accounting for detection probability
+# For barcodes found in multiple batches, we can estimate their true frequency
+variant_analysis <- data.frame(
+    Barcode = all_barcodes,
+    Total_Reads = total_reads_per_barcode,
+    Batches_Found = detection_frequency,
+    Estimated_Frequency = total_reads_per_barcode / total_reads_all_batches,
+    Detection_Rate = detection_frequency / 5,
+    stringsAsFactors = FALSE
+)
+
+# Adjust frequency estimates based on detection probability
+# Variants found in more batches are likely more abundant
+variant_analysis$Adjusted_Frequency <- variant_analysis$Estimated_Frequency / 
+    pmax(variant_analysis$Detection_Rate, 0.2)  # Minimum detection rate of 20%
+
+# Normalize adjusted frequencies
+variant_analysis$Adjusted_Frequency <- variant_analysis$Adjusted_Frequency / 
+    sum(variant_analysis$Adjusted_Frequency)
+
+# Sort by adjusted frequency
+variant_analysis <- variant_analysis[order(variant_analysis$Adjusted_Frequency, decreasing = TRUE), ]
+
+cat("Top 10 most abundant variants (estimated):\n")
+print(head(variant_analysis[, c("Barcode", "Total_Reads", "Batches_Found", "Adjusted_Frequency")], 10))
+
+# Abundance classes
+rare_variants <- sum(variant_analysis$Adjusted_Frequency < 0.001)  # <0.1%
+common_variants <- sum(variant_analysis$Adjusted_Frequency >= 0.01)  # >=1%
+dominant_variants <- sum(variant_analysis$Adjusted_Frequency >= 0.1)  # >=10%
+
+cat("\nAbundance distribution:\n")
+cat("Dominant variants (≥10%):", dominant_variants, "\n")
+cat("Common variants (1-10%):", common_variants - dominant_variants, "\n")
+cat("Intermediate variants (0.1-1%):", nrow(variant_analysis) - common_variants - rare_variants, "\n")
+cat("Rare variants (<0.1%):", rare_variants, "\n")
+
+# Create summary results
+estimator_results <- data.frame(
+    Estimator = c("Observed", "Chao1", "Chao2", "Jackknife1", "Jackknife2", "Bootstrap"),
+    Estimate = c(n_observed, round(chao1), round(chao2), round(jack1), round(jack2), round(bootstrap)),
+    Notes = c("Direct count", "Abundance-based", "Incidence-based", "First-order", "Second-order", "Asymptotic"),
+    stringsAsFactors = FALSE
+)
+
+frequency_distribution <- data.frame(
+    Batches = 1:5,
+    Count = as.numeric(f[as.character(1:5)]),
+    Percentage = round(as.numeric(f[as.character(1:5)]) / n_observed * 100, 1)
+)
+frequency_distribution$Count[is.na(frequency_distribution$Count)] <- 0
+frequency_distribution$Percentage[is.na(frequency_distribution$Percentage)] <- 0
+
+cat("\n=== SUMMARY RESULTS ===\n")
+print(estimator_results)
+cat("\nFrequency distribution:\n")
+print(frequency_distribution)
+
+# Save results to Excel
+output_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/capture_recapture_analysis.xlsx"
+
+wb <- createWorkbook()
+
+# Sheet 1: Summary
+addWorksheet(wb, "Population_Estimates")
+writeData(wb, "Population_Estimates", estimator_results)
+
+# Sheet 2: Frequency distribution
+addWorksheet(wb, "Frequency_Distribution") 
+writeData(wb, "Frequency_Distribution", frequency_distribution)
+
+# Sheet 3: Variant abundance estimates
+addWorksheet(wb, "Variant_Abundances")
+writeData(wb, "Variant_Abundances", variant_analysis)
+
+# Sheet 4: Raw detection matrix
+addWorksheet(wb, "Detection_Matrix")
+detection_df <- data.frame(Barcode = rownames(presence_matrix), presence_matrix, 
+                          Total_Detections = rowSums(presence_matrix))
+writeData(wb, "Detection_Matrix", detection_df)
+
+# Sheet 5: Count matrix
+addWorksheet(wb, "Read_Count_Matrix")
+count_df <- data.frame(Barcode = rownames(count_matrix), count_matrix,
+                      Total_Reads = rowSums(count_matrix))
+writeData(wb, "Read_Count_Matrix", count_df)
+
+saveWorkbook(wb, output_excel_path, overwrite = TRUE)
+
+cat("\nDetailed capture-recapture analysis saved to:", output_excel_path, "\n")
+
+# Final summary
+cat("\n" , "═"[rep(1,60)], "\n")
+cat("CAPTURE-RECAPTURE LIBRARY SIZE ESTIMATE\n")
+cat("═"[rep(1,60)], "\n")
+cat("Observed unique variants:", n_observed, "\n")
+cat("Best estimate (Chao1):", round(chao1), "variants\n")
+cat("Library completeness:", round(coverage * 100, 1), "%\n")
+cat("Missing variants (estimated):", round(chao1 - n_observed), "\n")
+cat("Most likely range:", round(jack1), "-", round(chao1), "total variants\n")
+cat("═"[rep(1,60)], "\n")
