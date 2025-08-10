@@ -1,0 +1,292 @@
+# Load necessary packages
+library(ShortRead)
+library(Biostrings)
+library(openxlsx)
+
+# Define the paths to the FASTQ files for all 5 batches
+batch_1_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-1_S83_L001_R1_001.fastq.gz"
+batch_1_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-1_S83_L001_R2_001.fastq.gz"
+batch_2_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-2_S84_L001_R1_001.fastq.gz"
+batch_2_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-2_S84_L001_R2_001.fastq.gz"
+batch_3_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-3_S85_L001_R1_001.fastq.gz"
+batch_3_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/1049775-3_S85_L001_R2_001.fastq.gz"
+batch_4_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC1f1r_R1_001.fastq.gz"
+batch_4_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC1f1r_R2_001.fastq.gz"
+batch_5_r1 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC10f10r_R1_001.fastq.gz"
+batch_5_r2 <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/AAV9libviralBC10f10r_R2_001.fastq.gz"
+
+# Read the FASTQ files
+cat("Reading FASTQ files for all 5 batches...\n")
+r1_fastq_1 <- readFastq(batch_1_r1)
+r2_fastq_1 <- readFastq(batch_1_r2)
+r1_fastq_2 <- readFastq(batch_2_r1)
+r2_fastq_2 <- readFastq(batch_2_r2)
+r1_fastq_3 <- readFastq(batch_3_r1)
+r2_fastq_3 <- readFastq(batch_3_r2)
+r1_fastq_4 <- readFastq(batch_4_r1)
+r2_fastq_4 <- readFastq(batch_4_r2)
+r1_fastq_5 <- readFastq(batch_5_r1)
+r2_fastq_5 <- readFastq(batch_5_r2)
+
+# Define the target sequence and barcode length
+target_seq <- "tatggacaagtggccacaaaccac"
+barcode_length <- 33
+
+# Function to extract 33bp barcode following the target sequence
+extract_33bp_barcode <- function(read, target_seq, barcode_length) {
+    read_str <- as.character(read)
+    
+    # Find the target sequence (case-insensitive)
+    match_pos <- regexpr(target_seq, read_str, ignore.case = TRUE)
+    
+    if (match_pos[1] != -1) {  # If target sequence is found
+        # Calculate start position of barcode (right after target sequence)
+        target_length <- attr(match_pos, "match.length")
+        barcode_start <- match_pos[1] + target_length
+        barcode_end <- barcode_start + barcode_length - 1
+        
+        # Check if there are enough bases after the target sequence
+        if (barcode_end <= nchar(read_str)) {
+            barcode <- substr(read_str, barcode_start, barcode_end)
+            return(barcode)
+        }
+    }
+    return(NULL)
+}
+
+# Function to extract unique barcodes from a batch
+extract_unique_barcodes_from_batch <- function(r1_fastq, r2_fastq, batch_name) {
+    cat("Processing", batch_name, "...\n")
+    
+    batch_barcodes <- character()
+    
+    # Process R1 reads
+    r1_reads <- as.character(sread(r1_fastq))
+    for (read in r1_reads) {
+        barcode <- extract_33bp_barcode(read, target_seq, barcode_length)
+        if (!is.null(barcode)) {
+            batch_barcodes <- c(batch_barcodes, barcode)
+        }
+    }
+    
+    # Process R2 reads
+    r2_reads <- as.character(sread(r2_fastq))
+    for (read in r2_reads) {
+        barcode <- extract_33bp_barcode(read, target_seq, barcode_length)
+        if (!is.null(barcode)) {
+            batch_barcodes <- c(batch_barcodes, barcode)
+        }
+    }
+    
+    # Get unique barcodes
+    unique_barcodes <- unique(batch_barcodes)
+    
+    cat("  - Total barcodes found:", length(batch_barcodes), "\n")
+    cat("  - Unique barcodes:", length(unique_barcodes), "\n\n")
+    
+    return(unique_barcodes)
+}
+
+# Extract unique barcodes from each batch
+batch_1_barcodes <- extract_unique_barcodes_from_batch(r1_fastq_1, r2_fastq_1, "Batch 1 (S83)")
+batch_2_barcodes <- extract_unique_barcodes_from_batch(r1_fastq_2, r2_fastq_2, "Batch 2 (S84)")
+batch_3_barcodes <- extract_unique_barcodes_from_batch(r1_fastq_3, r2_fastq_3, "Batch 3 (S85)")
+batch_4_barcodes <- extract_unique_barcodes_from_batch(r1_fastq_4, r2_fastq_4, "Batch 4 (BC1f1r)")
+batch_5_barcodes <- extract_unique_barcodes_from_batch(r1_fastq_5, r2_fastq_5, "Batch 5 (BC10f10r)")
+
+# Store all batch sets
+all_batches <- list(
+    "Batch_1" = unique(batch_1_barcodes),
+    "Batch_2" = unique(batch_2_barcodes),
+    "Batch_3" = unique(batch_3_barcodes),
+    "Batch_4" = unique(batch_4_barcodes),
+    "Batch_5" = unique(batch_5_barcodes)
+)
+
+cat("=== OVERLAP ANALYSIS FOR ALL 5 BATCHES ===\n")
+
+# Print individual batch counts
+cat("Individual batch counts:\n")
+for (i in 1:5) {
+    cat("Batch", i, ":", length(all_batches[[i]]), "unique barcodes\n")
+}
+cat("\n")
+
+# Get all unique barcodes across all batches
+all_unique_barcodes <- unique(unlist(all_batches))
+total_unique <- length(all_unique_barcodes)
+
+# Create presence matrix
+presence_matrix <- matrix(FALSE, nrow = length(all_unique_barcodes), ncol = 5)
+colnames(presence_matrix) <- names(all_batches)
+rownames(presence_matrix) <- all_unique_barcodes
+
+for (i in 1:5) {
+    presence_matrix[, i] <- all_unique_barcodes %in% all_batches[[i]]
+}
+
+# Count how many batches each barcode appears in
+batch_counts <- rowSums(presence_matrix)
+
+# Analyze by number of batches
+cat("Barcodes by number of batches they appear in:\n")
+for (i in 1:5) {
+    count <- sum(batch_counts == i)
+    percentage <- round(count / total_unique * 100, 1)
+    cat("Found in", i, "batch(es):", count, "barcodes (", percentage, "%)\n")
+}
+cat("\n")
+
+# Find core barcodes (present in all 5 batches)
+core_barcodes <- all_unique_barcodes[batch_counts == 5]
+cat("Core barcodes (found in ALL 5 batches):", length(core_barcodes), "\n")
+
+# Find barcodes present in 4+ batches (highly reproducible)
+highly_reproducible <- all_unique_barcodes[batch_counts >= 4]
+cat("Highly reproducible (4+ batches):", length(highly_reproducible), "\n")
+
+# Find barcodes present in 3+ batches (moderately reproducible)
+moderately_reproducible <- all_unique_barcodes[batch_counts >= 3]
+cat("Moderately reproducible (3+ batches):", length(moderately_reproducible), "\n")
+
+# Batch-specific barcodes
+batch_specific <- all_unique_barcodes[batch_counts == 1]
+cat("Batch-specific (only 1 batch):", length(batch_specific), "\n\n")
+
+# Pairwise overlap analysis
+cat("=== PAIRWISE OVERLAP ANALYSIS ===\n")
+batch_names <- c("Batch 1", "Batch 2", "Batch 3", "Batch 4", "Batch 5")
+pairwise_results <- data.frame(
+    Batch_A = character(),
+    Batch_B = character(),
+    A_Unique = numeric(),
+    B_Unique = numeric(),
+    Shared = numeric(),
+    Jaccard_Index = numeric(),
+    stringsAsFactors = FALSE
+)
+
+for (i in 1:4) {
+    for (j in (i+1):5) {
+        batch_a <- all_batches[[i]]
+        batch_b <- all_batches[[j]]
+        
+        shared <- length(intersect(batch_a, batch_b))
+        a_unique <- length(setdiff(batch_a, batch_b))
+        b_unique <- length(setdiff(batch_b, batch_a))
+        union_size <- length(union(batch_a, batch_b))
+        jaccard <- shared / union_size
+        
+        pairwise_results <- rbind(pairwise_results, data.frame(
+            Batch_A = batch_names[i],
+            Batch_B = batch_names[j],
+            A_Unique = a_unique,
+            B_Unique = b_unique,
+            Shared = shared,
+            Jaccard_Index = round(jaccard, 3),
+            stringsAsFactors = FALSE
+        ))
+    }
+}
+
+print(pairwise_results)
+
+# Create comprehensive summary
+batch_summary <- data.frame(
+    Batch = batch_names,
+    Unique_Barcodes = sapply(all_batches, length),
+    Shared_With_All_Others = sapply(1:5, function(i) {
+        sum(presence_matrix[, i] & batch_counts == 5)
+    }),
+    Shared_With_4_Plus = sapply(1:5, function(i) {
+        sum(presence_matrix[, i] & batch_counts >= 4)
+    }),
+    Batch_Specific = sapply(1:5, function(i) {
+        sum(presence_matrix[, i] & batch_counts == 1)
+    }),
+    stringsAsFactors = FALSE
+)
+
+cat("\n=== BATCH SUMMARY ===\n")
+print(batch_summary)
+
+# Create detailed Excel output
+output_excel_path <- "/Users/jpmcginnis1/Desktop/PCR sequencing/Viral library PCR primers 5 7 8/5_batch_overlap_analysis.xlsx"
+
+wb <- createWorkbook()
+
+# Sheet 1: Summary statistics
+addWorksheet(wb, "Summary")
+summary_stats <- data.frame(
+    Category = c("Total unique barcodes", "Core (all 5 batches)", "Highly reproducible (4+ batches)", 
+                 "Moderately reproducible (3+ batches)", "Found in 2 batches", "Batch-specific (1 batch)"),
+    Count = c(total_unique, length(core_barcodes), length(highly_reproducible), 
+              length(moderately_reproducible), sum(batch_counts == 2), length(batch_specific)),
+    Percentage = c(100, round(length(core_barcodes)/total_unique*100, 1),
+                   round(length(highly_reproducible)/total_unique*100, 1),
+                   round(length(moderately_reproducible)/total_unique*100, 1),
+                   round(sum(batch_counts == 2)/total_unique*100, 1),
+                   round(length(batch_specific)/total_unique*100, 1))
+)
+writeData(wb, "Summary", summary_stats)
+
+# Sheet 2: Batch summary
+addWorksheet(wb, "Batch_Summary")
+writeData(wb, "Batch_Summary", batch_summary)
+
+# Sheet 3: Pairwise comparisons
+addWorksheet(wb, "Pairwise_Overlap")
+writeData(wb, "Pairwise_Overlap", pairwise_results)
+
+# Sheet 4: Core barcodes (all 5 batches)
+if (length(core_barcodes) > 0) {
+    addWorksheet(wb, "Core_All_5_Batches")
+    core_df <- data.frame(Barcode = core_barcodes, stringsAsFactors = FALSE)
+    writeData(wb, "Core_All_5_Batches", core_df)
+}
+
+# Sheet 5: Complete presence matrix
+addWorksheet(wb, "Complete_Presence_Matrix")
+presence_df <- data.frame(
+    Barcode = all_unique_barcodes,
+    presence_matrix,
+    Batch_Count = batch_counts,
+    stringsAsFactors = FALSE
+)
+writeData(wb, "Complete_Presence_Matrix", presence_df)
+
+# Sheets 6-10: Batch-specific barcodes
+for (i in 1:5) {
+    batch_specific_i <- all_unique_barcodes[presence_matrix[, i] & batch_counts == 1]
+    if (length(batch_specific_i) > 0) {
+        sheet_name <- paste0("Batch_", i, "_Specific")
+        addWorksheet(wb, sheet_name)
+        batch_specific_df <- data.frame(Barcode = batch_specific_i, stringsAsFactors = FALSE)
+        writeData(wb, sheet_name, batch_specific_df)
+    }
+}
+
+# Save workbook
+saveWorkbook(wb, output_excel_path, overwrite = TRUE)
+
+cat("\nDetailed 5-batch analysis saved to:", output_excel_path, "\n")
+cat("Excel file contains:\n")
+cat("  1. Summary: Overall statistics\n")
+cat("  2. Batch_Summary: Individual batch statistics\n")
+cat("  3. Pairwise_Overlap: All pairwise comparisons\n")
+cat("  4. Core_All_5_Batches: Barcodes in all batches\n")
+cat("  5. Complete_Presence_Matrix: Full barcode presence data\n")
+cat("  6-10. Batch_X_Specific: Unique barcodes for each batch\n")
+
+# Final summary visualization
+cat("\n=== FINAL SUMMARY ===\n")
+cat("┌────────────────────────────────────────────────────┐\n")
+cat("│                5-BATCH OVERLAP                     │\n")
+cat("├────────────────────────────────────────────────────┤\n")
+cat(sprintf("│ Total unique barcodes:      %8d           │\n", total_unique))
+cat(sprintf("│ Core (all 5 batches):       %8d (%5.1f%%) │\n", length(core_barcodes), length(core_barcodes)/total_unique*100))
+cat(sprintf("│ Highly reproducible (4+):   %8d (%5.1f%%) │\n", length(highly_reproducible), length(highly_reproducible)/total_unique*100))
+cat(sprintf("│ Moderately reproducible (3+):%7d (%5.1f%%) │\n", length(moderately_reproducible), length(moderately_reproducible)/total_unique*100))
+cat(sprintf("│ Found in 2 batches:         %8d (%5.1f%%) │\n", sum(batch_counts == 2), sum(batch_counts == 2)/total_unique*100))
+cat(sprintf("│ Batch-specific (1 only):    %8d (%5.1f%%) │\n", length(batch_specific), length(batch_specific)/total_unique*100))
+cat("└────────────────────────────────────────────────────┘\n")
