@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s nullglob
+
+# ---- CONFIG ----
+INPUT_DIR="/mnt/c/cellbender_in"         # your Windows folder with the raw .h5 files
+OUT_DIR="$HOME/cellbender_out"           # where outputs (.h5, .pdf, .csv) will go
+EPOCHS=150
+EXPECTED_CELLS=3000
+TOTAL_DROPLETS=25000
+FPR=0.01
+CKPT_ROOT="$OUT_DIR/_ckpt"               # per-file checkpoint folders
+# ---------------
+
+mkdir -p "$OUT_DIR" "$CKPT_ROOT"
+
+# sanity: make sure cellbender is on PATH (activate env before running)
+command -v cellbender >/dev/null || { echo "cellbender not found on PATH"; exit 1; }
+
+for f in "$INPUT_DIR"/*_raw_feature_bc_matrix.h5; do
+  base="$(basename "$f")"
+  name="${base%_raw_feature_bc_matrix.h5}"            # e.g., 1-29-24_d0
+  out="$OUT_DIR/${name}_filtered_feature_bc_matrix.h5"
+  log="$OUT_DIR/${name}_cellbender.log"
+  run_dir="$CKPT_ROOT/$name"                          # per-file checkpoint dir
+
+  echo "==> Processing: $base"
+  echo "    Output: $out"
+  echo "    Log:    $log"
+  mkdir -p "$run_dir"
+
+  # Skip if already done
+  if [[ -f "$out" ]]; then
+    echo "    (exists) Skipping."
+    echo
+    continue
+  fi
+
+  # Run from a unique working dir so ckpt.tar.gz doesn't collide across samples
+  pushd "$run_dir" >/dev/null
+
+  # The main command
+  set +e
+  cellbender remove-background \
+    --input "$f" \
+    --output "$out" \
+    --expected-cells "$EXPECTED_CELLS" \
+    --total-droplets-included "$TOTAL_DROPLETS" \
+    --fpr "$FPR" \
+    --epochs "$EPOCHS"  |& tee "$log"
+  status=${PIPESTATUS[0]}
+  set -e
+
+  popd >/dev/null
+
+  if [[ $status -eq 0 && -f "$out" ]]; then
+    sz=$(stat -c%s "$out" 2>/dev/null || wc -c <"$out")
+    echo "    ✅ Done: $(printf "%'d" "$sz") bytes"
+  else
+    echo "    ❌ FAILED (see log: $log)"
+  fi
+  echo
+done
+
+echo "All files processed."
