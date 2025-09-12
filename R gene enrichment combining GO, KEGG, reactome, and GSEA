@@ -1,0 +1,722 @@
+# ===============================
+# Enhanced Multi-Source Pathway Enrichment Integration
+# Combines GO, KEGG/Reactome, and GSEA with statistical rigor
+# ===============================
+
+library(tidyverse)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(RobustRankAggreg)  # for rank aggregation
+library(boot)              # for bootstrapping
+
+# ---- Configuration ----
+.theme_keywords <- list(
+  Vascular_Remodeling = c("blood vessel","vasculature","angiogenesis","endothelial","vascular"),
+  ECM_Structure       = c("extracellular matrix","collagen","basement membrane","matrix organization"),
+  Barrier_Function    = c("tight junction","cell junction","barrier","permeability"),
+  Inflammation        = c("inflammatory","immune","cytokine","chemokine","response to stimulus"),
+  Cell_Migration      = c("cell migration","cell motility","chemotaxis","locomotion"),
+  Proliferation       = c("cell cycle","proliferation","cell division","mitotic"),
+  Neural_Function     = c("nervous system","neural","neuron","axon","synapse"),
+  Metabolism          = c("metabolic","oxidative","respiratory","glucose","energy")
+)
+
+# Default method weights (can be adjusted based on validation)
+.method_weights <- list(
+  GO = 0.3,
+  KEGG = 0.25, 
+  Reactome = 0.25,
+  GSEA = 0.2
+)
+
+# ---- Helper Functions ----
+
+# Safe extract of @result from clusterProfiler objects
+.cp_result_df <- function(x) {
+  if (is.null(x)) return(NULL)
+  df <- tryCatch(x@result, error = function(e) NULL)
+  if (is.null(df) || !is.data.frame(df) || !nrow(df)) return(NULL)
+  df
+}
+
+# Combine multiple enrichResult/gseaResult lists into single data.frame
+.stack_cp_results <- function(named_list, source_label) {
+  out <- list()
+  for (nm in names(named_list)) {
+    df <- .cp_result_df(named_list[[nm]])
+    if (is.null(df)) next
+    df$._Source <- paste(source_label, nm, sep=":")
+    out[[nm]] <- df
+  }
+  if (!length(out)) return(NULL)
+  bind_rows(out)
+}
+
+# Map Entrez IDs to SYMBOLs
+.map_to_symbols <- function(genes_chr) {
+  genes_chr <- unique(genes_chr[nzchar(genes_chr)])
+  if (!length(genes_chr)) return(character(0))
+  
+  looks_numeric <- suppressWarnings(all(!is.na(as.numeric(genes_chr))))
+  if (looks_numeric) {
+    m <- suppressMessages(bitr(genes_chr, fromType = "ENTREZID", toType = "SYMBOL", OrgDb = org.Hs.eg.db))
+    sym_map <- setNames(m$SYMBOL, m$ENTREZID)
+    mapped <- ifelse(genes_chr %in% names(sym_map), sym_map[genes_chr], genes_chr)
+    return(unname(mapped))
+  } else {
+    return(genes_chr)
+  }
+}
+
+# Split slash-separated values
+.split_slash <- function(x) {
+  if (is.null(x) || !length(x)) return(character(0))
+  unlist(strsplit(paste(x, collapse="/"), "/", fixed = TRUE), use.names = FALSE)
+}
+
+# ---- Statistical Combination Methods ----
+
+# Fisher's method for combining p-values
+combine_pvalues_fisher <- function(pvals, weights = NULL) {
+  pvals <- pvals[!is.na(pvals) & pvals > 0]
+  if (length(pvals) == 0) return(NA)
+  
+  if (is.null(weights)) {
+    chi_stat <- -2 * sum(log(pvals))
+    df <- 2 * length(pvals)
+  } else {
+    weights <- weights[!is.na(pvals)]
+    weights <- weights / sum(weights)  # normalize
+    chi_stat <- -2 * sum(weights * log(pvals))
+    df <- 2 * sum(weights)
+  }
+  
+  pchisq(chi_stat, df = df, lower.tail = FALSE)
+}
+
+# Stouffer's Z-score method
+combine_z_scores <- function(z_scores, weights = NULL) {
+  z_scores <- z_scores[!is.na(z_scores)]
+  if (length(z_scores) == 0) return(NA)
+  
+  if (is.null(weights)) {
+    sum(z_scores) / sqrt(length(z_scores))
+  } else {
+    weights <- weights[!is.na(z_scores)]
+    weights <- weights / sqrt(sum(weights^2))
+    sum(z_scores * weights)
+  }
+}
+
+# Convert p-values to Z-scores
+pval_to_zscore <- function(pval, direction = 1) {
+  direction * qnorm(pval/2, lower.tail = FALSE)
+}
+
+# Normalize scores (Z-score normalization)
+normalize_scores <- function(scores) {
+  if (length(scores) <= 1) return(scores)
+  (scores - mean(scores, na.rm = TRUE)) / sd(scores, na.rm = TRUE)
+}
+
+# ---- Pathway Similarity and Redundancy ----
+
+# Calculate Jaccard similarity between gene sets
+jaccard_similarity <- function(set1, set2) {
+  set1 <- unique(set1[nzchar(set1)])
+  set2 <- unique(set2[nzchar(set2)])
+  if (length(set1) == 0 && length(set2) == 0) return(1)
+  if (length(set1) == 0 || length(set2) == 0) return(0)
+  length(intersect(set1, set2)) / length(union(set1, set2))
+}
+
+# Adjust pathway weights based on redundancy
+adjust_for_redundancy <- function(pathway_data, gene_col = "geneID", 
+                                weight_col = "weight", threshold = 0.7) {
+  if (nrow(pathway_data) <= 1) return(pathway_data)
+  
+  # Calculate pairwise similarities
+  n <- nrow(pathway_data)
+  similarity_matrix <- matrix(0, n, n)
+  
+  for (i in 1:n) {
+    genes_i <- .split_slash(pathway_data[[gene_col]][i])
+    for (j in 1:n) {
+      if (i == j) {
+        similarity_matrix[i, j] <- 1
+      } else {
+        genes_j <- .split_slash(pathway_data[[gene_col]][j])
+        similarity_matrix[i, j] <- jaccard_similarity(genes_i, genes_j)
+      }
+    }
+  }
+  
+  # Identify redundant pathways
+  redundant_pairs <- which(similarity_matrix > threshold & upper.tri(similarity_matrix), arr.ind = TRUE)
+  
+  # Reduce weights for redundant pathways (keep the one with higher original weight)
+  adj_weights <- pathway_data[[weight_col]]
+  for (k in 1:nrow(redundant_pairs)) {
+    i <- redundant_pairs[k, 1]
+    j <- redundant_pairs[k, 2]
+    
+    if (adj_weights[i] > adj_weights[j]) {
+      adj_weights[j] <- adj_weights[j] * 0.5  # reduce redundant pathway weight
+    } else {
+      adj_weights[i] <- adj_weights[i] * 0.5
+    }
+  }
+  
+  pathway_data[[paste0(weight_col, "_adjusted")]] <- adj_weights
+  pathway_data$redundancy_adjusted <- TRUE
+  
+  return(pathway_data)
+}
+
+# ---- Bootstrap Confidence Intervals ----
+
+# Bootstrap meta-scores by resampling genes
+bootstrap_meta_score <- function(pathway_hits, gene_col = "geneID", 
+                                score_col = "score", n_boot = 1000, 
+                                conf_level = 0.95) {
+  if (nrow(pathway_hits) == 0) {
+    return(list(mean = 0, ci_lower = 0, ci_upper = 0, se = 0))
+  }
+  
+  # Extract all genes
+  all_genes <- unique(unlist(lapply(pathway_hits[[gene_col]], .split_slash)))
+  if (length(all_genes) == 0) {
+    return(list(mean = 0, ci_lower = 0, ci_upper = 0, se = 0))
+  }
+  
+  original_score <- sum(pathway_hits[[score_col]], na.rm = TRUE)
+  
+  # Bootstrap function
+  boot_fn <- function(data, indices) {
+    # Resample genes
+    resampled_genes <- all_genes[indices]
+    
+    # Recalculate scores based on overlap with resampled genes
+    new_scores <- sapply(1:nrow(pathway_hits), function(i) {
+      pathway_genes <- .split_slash(pathway_hits[[gene_col]][i])
+      overlap_prop <- length(intersect(pathway_genes, resampled_genes)) / length(pathway_genes)
+      pathway_hits[[score_col]][i] * overlap_prop
+    })
+    
+    sum(new_scores, na.rm = TRUE)
+  }
+  
+  # Perform bootstrap
+  boot_results <- boot(data = 1:length(all_genes), statistic = boot_fn, R = n_boot)
+  
+  # Calculate confidence interval
+  ci <- boot.ci(boot_results, conf = conf_level, type = "perc")
+  
+  list(
+    mean = original_score,
+    ci_lower = ci$percent[4],
+    ci_upper = ci$percent[5],
+    se = sd(boot_results$t),
+    boot_object = boot_results
+  )
+}
+
+# ---- Enhanced Meta-Signature Computation ----
+
+compute_meta_signatures_enhanced <- function(go_results,
+                                           pathway_results,
+                                           gsea_results,
+                                           method = "original",  # "original", "fisher", "stouffer", "rank_agg"
+                                           cap_log10p = 10,
+                                           cap_absNES = 3,
+                                           method_weights = .method_weights,
+                                           adjust_redundancy = TRUE,
+                                           bootstrap_ci = FALSE,
+                                           n_boot = 1000) {
+  
+  themes <- .theme_keywords
+  
+  # Store detailed results for each method
+  method_results <- list()
+  
+  # Initialize theme scores structure
+  theme_scores <- list(up = list(), down = list())
+  
+  # Helper to add pathway hits
+  add_pathway_hits <- function(direction, theme_name, hits_df, method_name, score_transform) {
+    if (nrow(hits_df) == 0) return()
+    
+    # Apply score transformation
+    scores <- score_transform(hits_df)
+    
+    # Store detailed results
+    if (is.null(method_results[[method_name]])) method_results[[method_name]] <<- list()
+    if (is.null(method_results[[method_name]][[direction]])) method_results[[method_name]][[direction]] <<- list()
+    if (is.null(method_results[[method_name]][[direction]][[theme_name]])) {
+      method_results[[method_name]][[direction]][[theme_name]] <<- list()
+    }
+    
+    method_results[[method_name]][[direction]][[theme_name]] <<- bind_rows(
+      method_results[[method_name]][[direction]][[theme_name]],
+      hits_df %>% mutate(individual_score = scores, method = method_name)
+    )
+    
+    # Initialize theme score storage
+    if (is.null(theme_scores[[direction]][[theme_name]])) {
+      theme_scores[[direction]][[theme_name]] <<- list(
+        pathways = tibble(),
+        combined_score = 0,
+        method_scores = list()
+      )
+    }
+    
+    # Store method-specific score
+    method_score <- sum(scores, na.rm = TRUE)
+    theme_scores[[direction]][[theme_name]]$method_scores[[method_name]] <<- method_score
+    
+    # Add to pathways
+    pathway_data <- hits_df %>% 
+      mutate(
+        individual_score = scores,
+        method = method_name,
+        weight = individual_score
+      )
+    
+    theme_scores[[direction]][[theme_name]]$pathways <<- bind_rows(
+      theme_scores[[direction]][[theme_name]]$pathways,
+      pathway_data
+    )
+  }
+  
+  # ---- Process ORA results (GO and Pathways) ----
+  for (src in c("GO", "Pathway")) {
+    lst <- if (src == "GO") go_results else pathway_results
+    if (is.null(lst) || !length(lst)) next
+    
+    for (nm in names(lst)) {
+      df <- .cp_result_df(lst[[nm]])
+      if (is.null(df)) next
+      
+      direction <- if (grepl("^up_", nm, ignore.case=TRUE)) "up" else 
+                   if (grepl("^down_", nm, ignore.case=TRUE)) "down" else NA
+      if (is.na(direction)) next
+      
+      # Score transformation for ORA
+      ora_transform <- function(hits) {
+        q <- pmax(hits$p.adjust, .Machine$double.xmin)
+        pmin(-log10(q), cap_log10p)
+      }
+      
+      # Match themes
+      for (theme_name in names(themes)) {
+        idx <- grep(paste(themes[[theme_name]], collapse="|"), df$Description, ignore.case = TRUE)
+        if (length(idx) > 0) {
+          hits <- df[idx, , drop = FALSE]
+          add_pathway_hits(direction, theme_name, hits, src, ora_transform)
+        }
+      }
+    }
+  }
+  
+  # ---- Process GSEA results ----
+  if (!is.null(gsea_results) && length(gsea_results)) {
+    for (nm in names(gsea_results)) {
+      df <- .cp_result_df(gsea_results[[nm]])
+      if (is.null(df)) next
+      if (!all(c("Description","p.adjust","NES") %in% colnames(df))) next
+      
+      # GSEA score transformation
+      gsea_transform <- function(hits, dir) {
+        q <- pmax(hits$p.adjust, .Machine$double.xmin)
+        w <- pmin(abs(hits$NES), cap_absNES)
+        pmin(-log10(q), cap_log10p) * w
+      }
+      
+      for (theme_name in names(themes)) {
+        idx <- grep(paste(themes[[theme_name]], collapse="|"), df$Description, ignore.case = TRUE)
+        if (length(idx) > 0) {
+          hits <- df[idx, , drop = FALSE]
+          
+          # Split by NES direction
+          hits_up <- hits[hits$NES >= 0, , drop = FALSE]
+          hits_down <- hits[hits$NES < 0, , drop = FALSE]
+          
+          if (nrow(hits_up) > 0) {
+            add_pathway_hits("up", theme_name, hits_up, "GSEA", 
+                           function(h) gsea_transform(h, "up"))
+          }
+          if (nrow(hits_down) > 0) {
+            add_pathway_hits("down", theme_name, hits_down, "GSEA", 
+                           function(h) gsea_transform(h, "down"))
+          }
+        }
+      }
+    }
+  }
+  
+  # ---- Combine scores using selected method ----
+  for (direction in names(theme_scores)) {
+    for (theme_name in names(theme_scores[[direction]])) {
+      theme_data <- theme_scores[[direction]][[theme_name]]
+      method_scores <- theme_data$method_scores
+      
+      if (length(method_scores) == 0) {
+        theme_scores[[direction]][[theme_name]]$combined_score <- 0
+        next
+      }
+      
+      # Apply redundancy adjustment if requested
+      if (adjust_redundancy && nrow(theme_data$pathways) > 1) {
+        theme_data$pathways <- adjust_for_redundancy(
+          theme_data$pathways, 
+          gene_col = "geneID",
+          weight_col = "weight"
+        )
+        theme_scores[[direction]][[theme_name]]$pathways <- theme_data$pathways
+      }
+      
+      # Combine scores based on method
+      combined_score <- switch(method,
+        "original" = {
+          # Original weighted sum approach
+          weights <- sapply(names(method_scores), function(m) method_weights[[m]] %||% 1)
+          sum(unlist(method_scores) * weights, na.rm = TRUE)
+        },
+        
+        "fisher" = {
+          # Fisher's method on p-values
+          pathways <- theme_data$pathways
+          if (nrow(pathways) > 0 && "p.adjust" %in% colnames(pathways)) {
+            weights <- sapply(pathways$method, function(m) method_weights[[m]] %||% 1)
+            -log10(combine_pvalues_fisher(pathways$p.adjust, weights))
+          } else {
+            sum(unlist(method_scores), na.rm = TRUE)
+          }
+        },
+        
+        "stouffer" = {
+          # Stouffer's Z-score method
+          pathways <- theme_data$pathways
+          if (nrow(pathways) > 0 && "p.adjust" %in% colnames(pathways)) {
+            z_scores <- pval_to_zscore(pathways$p.adjust)
+            weights <- sapply(pathways$method, function(m) method_weights[[m]] %||% 1)
+            combine_z_scores(z_scores, weights)
+          } else {
+            sum(unlist(method_scores), na.rm = TRUE)
+          }
+        },
+        
+        "rank_agg" = {
+          # Rank aggregation approach
+          if (length(method_scores) > 1) {
+            # Create ranks for each method (lower score = better rank)
+            ranks <- lapply(method_scores, function(x) 1)  # placeholder
+            # In practice, you'd rank pathways within each method
+            mean(unlist(method_scores), na.rm = TRUE)
+          } else {
+            sum(unlist(method_scores), na.rm = TRUE)
+          }
+        },
+        
+        # Default to original
+        sum(unlist(method_scores), na.rm = TRUE)
+      )
+      
+      theme_scores[[direction]][[theme_name]]$combined_score <- combined_score
+      
+      # Add bootstrap confidence intervals if requested
+      if (bootstrap_ci && nrow(theme_data$pathways) > 0) {
+        boot_result <- bootstrap_meta_score(
+          theme_data$pathways,
+          gene_col = "geneID",
+          score_col = if (adjust_redundancy && "weight_adjusted" %in% colnames(theme_data$pathways)) "weight_adjusted" else "weight",
+          n_boot = n_boot
+        )
+        theme_scores[[direction]][[theme_name]]$bootstrap <- boot_result
+      }
+    }
+  }
+  
+  # Return enhanced results
+  list(
+    theme_scores = theme_scores,
+    method_results = method_results,
+    method = method,
+    parameters = list(
+      cap_log10p = cap_log10p,
+      cap_absNES = cap_absNES,
+      method_weights = method_weights,
+      adjust_redundancy = adjust_redundancy,
+      bootstrap_ci = bootstrap_ci
+    )
+  )
+}
+
+# ---- Enhanced Gene Collection ----
+
+get_top_genes_for_theme_enhanced <- function(meta_results, theme, direction, top_n = 5) {
+  theme_data <- meta_results$theme_scores[[direction]][[theme]]
+  if (is.null(theme_data) || nrow(theme_data$pathways) == 0) return("")
+  
+  # Collect genes with weights
+  all_genes <- list()
+  for (i in 1:nrow(theme_data$pathways)) {
+    pathway <- theme_data$pathways[i, ]
+    genes <- .split_slash(pathway$geneID)
+    weight <- if ("weight_adjusted" %in% colnames(pathway)) pathway$weight_adjusted else pathway$weight
+    
+    for (gene in genes) {
+      if (gene %in% names(all_genes)) {
+        all_genes[[gene]] <- all_genes[[gene]] + weight
+      } else {
+        all_genes[[gene]] <- weight
+      }
+    }
+  }
+  
+  if (length(all_genes) == 0) return("")
+  
+  # Convert to symbols and rank
+  gene_weights <- sort(unlist(all_genes), decreasing = TRUE)
+  top_genes <- names(gene_weights)[1:min(top_n, length(gene_weights))]
+  top_genes_sym <- .map_to_symbols(top_genes)
+  
+  paste(top_genes_sym, collapse = ", ")
+}
+
+# ---- Enhanced Table Building ----
+
+build_enhanced_meta_summaries <- function(all_results,
+                                         methods = c("original", "fisher", "stouffer"),
+                                         score_cutoff = 5,
+                                         write_csv = TRUE,
+                                         out_prefix = "enhanced_meta_summary") {
+  
+  cat("=== Building Enhanced Meta-Summary Tables ===\n")
+  cat("Processing", length(all_results), "cell types with", length(methods), "methods...\n")
+  
+  all_summaries <- list()
+  
+  for (method in methods) {
+    cat("Processing method:", method, "\n")
+    
+    celltype_to_theme <- tibble()
+    
+    for (cell_type in names(all_results)) {
+      result <- all_results[[cell_type]]
+      if (!is.list(result) || "error" %in% names(result)) next
+      
+      # Compute enhanced meta-signatures
+      meta_enhanced <- compute_meta_signatures_enhanced(
+        go_results      = result$go_results,
+        pathway_results = result$pathway_results,
+        gsea_results    = result$gsea_results,
+        method = method,
+        adjust_redundancy = TRUE,
+        bootstrap_ci = (method == "original")  # Only for original to save time
+      )
+      
+      # Extract results
+      for (direction in names(meta_enhanced$theme_scores)) {
+        themes <- meta_enhanced$theme_scores[[direction]]
+        
+        for (theme in names(themes)) {
+          theme_data <- themes[[theme]]
+          score <- theme_data$combined_score
+          
+          if (is.null(score) || is.na(score) || score < score_cutoff) next
+          
+          # Get pathway information
+          pathways <- theme_data$pathways
+          example_terms <- if (nrow(pathways) > 0) {
+            paste(head(unique(pathways$Description), 3), collapse = "; ")
+          } else ""
+          
+          # Get top genes
+          top_genes <- get_top_genes_for_theme_enhanced(meta_enhanced, theme, direction)
+          
+          # Prepare row data
+          row_data <- tibble(
+            CellType = cell_type,
+            Theme = theme,
+            Direction = direction,
+            Score = round(score, 2),
+            Method = method,
+            NumPathways = nrow(pathways),
+            TopGenes = top_genes,
+            ExampleTerms = example_terms
+          )
+          
+          # Add bootstrap CI if available
+          if (!is.null(theme_data$bootstrap)) {
+            row_data$Score_CI_Lower <- round(theme_data$bootstrap$ci_lower, 2)
+            row_data$Score_CI_Upper <- round(theme_data$bootstrap$ci_upper, 2)
+            row_data$Score_SE <- round(theme_data$bootstrap$se, 2)
+          }
+          
+          # Add redundancy info
+          if (nrow(pathways) > 0 && "redundancy_adjusted" %in% colnames(pathways)) {
+            row_data$RedundancyAdjusted <- any(pathways$redundancy_adjusted, na.rm = TRUE)
+          }
+          
+          celltype_to_theme <- bind_rows(celltype_to_theme, row_data)
+        }
+      }
+    }
+    
+    celltype_to_theme <- celltype_to_theme %>% 
+      arrange(CellType, desc(Score), Theme, Direction)
+    
+    all_summaries[[method]] <- celltype_to_theme
+    
+    if (write_csv) {
+      filename <- paste0(out_prefix, "_", method, ".csv")
+      readr::write_csv(celltype_to_theme, filename)
+      cat("✓ Wrote:", filename, "\n")
+    }
+  }
+  
+  # Create comparison summary
+  if (length(methods) > 1) {
+    comparison_summary <- bind_rows(all_summaries, .id = "Method") %>%
+      select(Method, CellType, Theme, Direction, Score) %>%
+      pivot_wider(names_from = Method, values_from = Score, names_prefix = "Score_") %>%
+      arrange(CellType, Theme, Direction)
+    
+    if (write_csv) {
+      readr::write_csv(comparison_summary, paste0(out_prefix, "_method_comparison.csv"))
+      cat("✓ Wrote method comparison:", paste0(out_prefix, "_method_comparison.csv"), "\n")
+    }
+    
+    all_summaries$comparison <- comparison_summary
+  }
+  
+  cat("\nSummary complete!\n")
+  invisible(all_summaries)
+}
+
+# ---- Main Analysis Runner ----
+
+run_enhanced_pathway_analysis <- function(
+  results_dir = "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs",
+  methods = c("original", "fisher", "stouffer"),
+  score_cutoff = 5,
+  out_prefix = "enhanced_pathway_analysis",
+  method_weights = .method_weights
+) {
+  
+  cat("=== ENHANCED PATHWAY INTEGRATION ANALYSIS ===\n")
+  cat("Methods:", paste(methods, collapse = ", "), "\n")
+  cat("Score cutoff:", score_cutoff, "\n")
+  
+  if (!dir.exists(results_dir)) stop("Directory not found: ", results_dir)
+  
+  # Load results
+  rds_files <- list.files(results_dir, pattern = "_d14_vs_d0_results\\.rds$", full.names = TRUE)
+  if (!length(rds_files)) stop("No *_d14_vs_d0_results.rds files in: ", results_dir)
+  
+  all_results <- list()
+  for (fp in rds_files) {
+    nm <- gsub("_d14_vs_d0_results\\.rds$", "", basename(fp))
+    all_results[[nm]] <- readRDS(fp)
+  }
+  
+  cat("Loaded", length(all_results), "cell type results\n")
+  
+  # Update method weights if provided
+  if (!is.null(method_weights)) {
+    .method_weights <<- method_weights
+  }
+  
+  # Build enhanced summaries
+  summaries <- build_enhanced_meta_summaries(
+    all_results = all_results,
+    methods = methods,
+    score_cutoff = score_cutoff,
+    write_csv = TRUE,
+    out_prefix = file.path(results_dir, out_prefix)
+  )
+  
+  return(summaries)
+}
+
+# ---- Validation and Diagnostic Functions ----
+
+# Validate method performance against known pathways
+validate_method_performance <- function(results, known_pathways, method = "original") {
+  # known_pathways should be a named list: celltype -> theme -> expected_direction
+  validation_results <- list()
+  
+  for (cell_type in names(known_pathways)) {
+    if (!cell_type %in% names(results)) next
+    
+    cell_results <- results[[cell_type]]
+    expected <- known_pathways[[cell_type]]
+    
+    validation <- tibble()
+    for (theme in names(expected)) {
+      expected_dir <- expected[[theme]]
+      
+      # Check if theme was detected in expected direction
+      theme_result <- cell_results %>% 
+        filter(Method == method, Theme == theme, Direction == expected_dir)
+      
+      detected <- nrow(theme_result) > 0
+      score <- if (detected) theme_result$Score[1] else 0
+      
+      validation <- bind_rows(validation, tibble(
+        CellType = cell_type,
+        Theme = theme,
+        ExpectedDirection = expected_dir,
+        Detected = detected,
+        Score = score
+      ))
+    }
+    
+    validation_results[[cell_type]] <- validation
+  }
+  
+  return(validation_results)
+}
+
+# Generate diagnostic plots for method comparison
+plot_method_comparison <- function(comparison_data) {
+  library(ggplot2)
+  library(corrplot)
+  
+  # Correlation between methods
+  score_cols <- grep("^Score_", colnames(comparison_data), value = TRUE)
+  if (length(score_cols) > 1) {
+    cor_data <- comparison_data[, score_cols]
+    cor_data[is.na(cor_data)] <- 0
+    cor_matrix <- cor(cor_data, use = "complete.obs")
+    
+    corrplot(cor_matrix, method = "color", type = "upper", 
+             title = "Method Score Correlations")
+  }
+  
+  # Score distribution by method
+  if (length(score_cols) > 1) {
+    plot_data <- comparison_data %>%
+      select(CellType, Theme, Direction, all_of(score_cols)) %>%
+      pivot_longer(cols = all_of(score_cols), names_to = "Method", values_to = "Score") %>%
+      mutate(Method = gsub("Score_", "", Method))
+    
+    p1 <- ggplot(plot_data, aes(x = Method, y = Score, fill = Method)) +
+      geom_boxplot() +
+      scale_y_log10() +
+      labs(title = "Score Distribution by Method",
+           y = "Score (log10 scale)") +
+      theme_minimal()
+    
+    print(p1)
+  }
+}
+
+cat("Enhanced pathway integration functions loaded successfully!\n")
+cat("Key functions:\n")
+cat("- compute_meta_signatures_enhanced(): Main computation with multiple methods\n")
+cat("- build_enhanced_meta_summaries(): Build summary tables\n")  
+cat("- run_enhanced_pathway_analysis(): Main runner function\n")
+cat("- validate_method_performance(): Validate against known biology\n")
+cat("- plot_method_comparison(): Generate diagnostic plots\n")
