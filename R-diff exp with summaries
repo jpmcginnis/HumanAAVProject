@@ -1,0 +1,823 @@
+# VLMC-Specific Enhanced GO Analysis
+# Example implementation for your day 14 vs day 0 comparison
+
+library(tidyverse)
+library(clusterProfiler)
+library(enrichplot)
+library(org.Hs.eg.db)
+library(ReactomePA)
+library(pheatmap)
+library(viridis)
+
+# Read your VLMC data
+vlmc_data <- read_csv("/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs/VLMCs.csv")
+
+# Step 1: Prepare gene lists with multiple ranking strategies
+prepare_vlmc_gene_lists <- function(vlmc_data, pval_cutoff = 0.05, logfc_cutoff = 0.5) {
+    
+    # Filter significant genes for ORA analysis
+    sig_genes <- vlmc_data %>%
+        filter(p_val_adj < pval_cutoff, abs(avg_log2FC) > logfc_cutoff)
+    
+    cat("Found", nrow(sig_genes), "significant genes (p.adj <", pval_cutoff, ", |log2FC| >", logfc_cutoff, ")\n")
+    cat("Upregulated:", sum(sig_genes$avg_log2FC > 0), "\n")
+    cat("Downregulated:", sum(sig_genes$avg_log2FC < 0), "\n")
+    
+    # Create ALL GENES ranked list for GSEA (better approach)
+    all_genes_ranked <- vlmc_data %>%
+        filter(!is.na(avg_log2FC), !is.na(p_val_adj)) %>%
+        # Rank by log2FC for GSEA
+        arrange(desc(avg_log2FC)) %>%
+        pull(avg_log2FC, name = gene)
+    
+    cat("Total genes for GSEA ranking:", length(all_genes_ranked), "\n")
+    
+    # Alternative ranking strategies for all genes
+    all_genes_by_stat <- vlmc_data %>%
+        filter(!is.na(avg_log2FC), !is.na(p_val_adj)) %>%
+        # Rank by: sign(log2FC) * -log10(p_val)
+        mutate(stat = sign(avg_log2FC) * (-log10(p_val_adj + 1e-300))) %>%
+        arrange(desc(stat)) %>%
+        pull(stat, name = gene)
+    
+    # Separate up and down regulated genes (from significant set)
+    up_genes <- sig_genes %>% 
+        filter(avg_log2FC > logfc_cutoff) %>% 
+        arrange(desc(avg_log2FC)) %>%
+        pull(gene)
+    
+    down_genes <- sig_genes %>% 
+        filter(avg_log2FC < -logfc_cutoff) %>% 
+        arrange(avg_log2FC) %>%
+        pull(gene)
+    
+    return(list(
+        # For ORA analysis (filtered genes)
+        up_genes = up_genes,
+        down_genes = down_genes,
+        sig_data = sig_genes,
+        # For GSEA analysis (all genes)
+        all_genes_ranked_fc = all_genes_ranked,
+        all_genes_ranked_stat = all_genes_by_stat,
+        total_genes = nrow(vlmc_data)
+    ))
+}
+
+# Strategy 1: Reduced redundancy GO analysis
+run_simplified_go <- function(gene_lists) {
+    
+    results <- list()
+    
+    for (direction in c("up", "down")) {
+        gene_set <- gene_lists[[paste0(direction, "_genes")]]
+        
+        if (length(gene_set) > 5) {
+            
+            # Convert to Entrez IDs
+            entrez_ids <- bitr(gene_set, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+            
+            if (nrow(entrez_ids) > 5) {
+                
+                # GO Biological Process with simplification
+                go_bp <- enrichGO(gene = entrez_ids$ENTREZID,
+                                  OrgDb = org.Hs.eg.db,
+                                  ont = "BP",
+                                  pAdjustMethod = "BH",
+                                  pvalueCutoff = 0.05,
+                                  qvalueCutoff = 0.2,
+                                  readable = TRUE,
+                                  minGSSize = 5,
+                                  maxGSSize = 500)
+                
+                # Strategy 1: Simplify to remove redundancy
+                if (nrow(go_bp@result) > 0) {
+                    go_bp_simple <- simplify(go_bp, cutoff = 0.7, by = "p.adjust")
+                    results[[paste0(direction, "_GO_BP")]] <- go_bp_simple
+                }
+                
+                # GO Molecular Function
+                go_mf <- enrichGO(gene = entrez_ids$ENTREZID,
+                                  OrgDb = org.Hs.eg.db,
+                                  ont = "MF",
+                                  pAdjustMethod = "BH",
+                                  pvalueCutoff = 0.05,
+                                  qvalueCutoff = 0.2,
+                                  readable = TRUE,
+                                  minGSSize = 5,
+                                  maxGSSize = 500)
+                
+                if (nrow(go_mf@result) > 0) {
+                    go_mf_simple <- simplify(go_mf, cutoff = 0.7, by = "p.adjust")
+                    results[[paste0(direction, "_GO_MF")]] <- go_mf_simple
+                }
+            }
+        }
+    }
+    
+    return(results)
+}
+
+# Strategy 2: Pathway-centric analysis
+run_pathway_analysis <- function(gene_lists) {
+    
+    results <- list()
+    
+    for (direction in c("up", "down")) {
+        gene_set <- gene_lists[[paste0(direction, "_genes")]]
+        
+        if (length(gene_set) > 5) {
+            
+            # Convert to Entrez IDs
+            entrez_ids <- bitr(gene_set, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+            
+            if (nrow(entrez_ids) > 5) {
+                
+                # KEGG pathways
+                kegg_result <- enrichKEGG(gene = entrez_ids$ENTREZID,
+                                          organism = 'hsa',
+                                          pvalueCutoff = 0.05,
+                                          qvalueCutoff = 0.2,
+                                          minGSSize = 5,
+                                          maxGSSize = 500)
+                
+                if (nrow(kegg_result@result) > 0) {
+                    results[[paste0(direction, "_KEGG")]] <- kegg_result
+                }
+                
+                # Reactome pathways
+                reactome_result <- enrichPathway(gene = entrez_ids$ENTREZID,
+                                                 pvalueCutoff = 0.05,
+                                                 qvalueCutoff = 0.2,
+                                                 readable = TRUE,
+                                                 minGSSize = 5,
+                                                 maxGSSize = 500)
+                
+                if (nrow(reactome_result@result) > 0) {
+                    results[[paste0(direction, "_Reactome")]] <- reactome_result
+                }
+            }
+        }
+    }
+    
+    return(results)
+}
+
+# GSEA analysis using ALL genes (more powerful approach)
+run_gsea_analysis <- function(gene_lists) {
+    
+    results <- list()
+    
+    # Convert gene symbols to Entrez IDs for the ranked list
+    all_genes_df <- data.frame(
+        SYMBOL = names(gene_lists$all_genes_ranked_fc),
+        score = gene_lists$all_genes_ranked_fc
+    )
+    
+    # Get Entrez IDs
+    entrez_mapping <- bitr(all_genes_df$SYMBOL, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+    
+    if (nrow(entrez_mapping) > 100) {  # Need sufficient genes for GSEA
+        
+        # Merge and create ranked list
+        ranked_data <- all_genes_df %>%
+            inner_join(entrez_mapping, by = "SYMBOL") %>%
+            arrange(desc(score))
+        
+        # Create named vector for GSEA
+        ranked_list <- ranked_data$score
+        names(ranked_list) <- ranked_data$ENTREZID
+        
+        cat("Running GSEA with", length(ranked_list), "genes\n")
+        
+        # GSEA for GO Biological Process
+        gsea_go_bp <- gseGO(geneList = ranked_list,
+                            OrgDb = org.Hs.eg.db,
+                            ont = "BP",
+                            minGSSize = 15,
+                            maxGSSize = 500,
+                            pvalueCutoff = 0.05,
+                            verbose = FALSE,
+                            by = "fgsea")
+        
+        if (nrow(gsea_go_bp@result) > 0) {
+            results[["GSEA_GO_BP"]] <- gsea_go_bp
+        }
+        
+        # GSEA for KEGG pathways
+        gsea_kegg <- gseKEGG(geneList = ranked_list,
+                             organism = 'hsa',
+                             minGSSize = 15,
+                             maxGSSize = 500,
+                             pvalueCutoff = 0.05,
+                             verbose = FALSE,
+                             by = "fgsea")
+        
+        if (nrow(gsea_kegg@result) > 0) {
+            results[["GSEA_KEGG"]] <- gsea_kegg
+        }
+        
+        # GSEA for Reactome
+        gsea_reactome <- gsePathway(geneList = ranked_list,
+                                    minGSSize = 15,
+                                    maxGSSize = 500,
+                                    pvalueCutoff = 0.05,
+                                    verbose = FALSE,
+                                    by = "fgsea")
+        
+        if (nrow(gsea_reactome@result) > 0) {
+            results[["GSEA_Reactome"]] <- gsea_reactome
+        }
+    }
+    
+    return(results)
+}
+
+# Strategy 4: VLMC-specific custom gene sets
+create_vlmc_custom_sets <- function() {
+    
+    # Based on your VLMC context, create relevant gene sets
+    vlmc_sets <- list(
+        
+        # Vascular development and function
+        "Vascular_Development" = c("VWF", "PECAM1", "CDH5", "KDR", "FLT1", "TEK", "VEGFA", "VEGFB", "VEGFC"),
+        
+        # Leptomeningeal cell markers
+        "Leptomeningeal_Markers" = c("PDGFRB", "ACTA2", "RGS5", "MCAM", "NG2", "PDGFRA"),
+        
+        # Blood-brain barrier function
+        "BBB_Function" = c("CLDN5", "OCLN", "TJP1", "ABCB1", "SLC2A1", "TFRC"),
+        
+        # ECM remodeling (relevant for your top genes like COL3A1, MMP3)
+        "ECM_Remodeling" = c("COL1A1", "COL3A1", "COL4A1", "FN1", "MMP2", "MMP3", "MMP9", "TIMP1", "TIMP2", "PLAU"),
+        
+        # Inflammation and immune response
+        "Inflammation" = c("IL1B", "IL6", "TNF", "CXCL1", "CXCL2", "CXCL6", "CCL2", "ICAM1", "VCAM1"),
+        
+        # Angiogenesis and vessel remodeling
+        "Angiogenesis" = c("VEGFA", "ANGPT1", "ANGPT2", "PDGFB", "NOTCH1", "DLL4", "JAG1"),
+        
+        # Cellular stress and response
+        "Stress_Response" = c("FOS", "JUN", "ATF3", "EGR1", "HSP90AA1", "HSPA1A", "DDIT3"),
+        
+        # Proliferation markers
+        "Proliferation" = c("MKI67", "PCNA", "CCND1", "CCNE1", "CDK1", "CDK2", "TOP2A"),
+        
+        # Neural development (relevant for CNS vasculature)
+        "Neural_Development" = c("SOX2", "NES", "GFAP", "S100B", "OLIG2", "MBP", "CNP"),
+        
+        # Coagulation and hemostasis (given PF4V1 in your top genes)
+        "Coagulation" = c("PF4", "PF4V1", "F3", "SERPINE1", "PLAT", "THBD", "PROCR")
+    )
+    
+    return(vlmc_sets)
+}
+
+# Strategy 5: Meta-signature creation for VLMC biology
+create_vlmc_meta_signatures <- function(go_results, pathway_results, custom_results) {
+    
+    # Define VLMC-relevant meta-themes
+    vlmc_themes <- list(
+        "Vascular_Remodeling" = c("blood vessel", "vasculature", "angiogenesis", "endothelial", "vascular"),
+        "ECM_Structure" = c("extracellular matrix", "collagen", "basement membrane", "matrix organization"),
+        "Barrier_Function" = c("tight junction", "cell junction", "barrier", "permeability"),
+        "Inflammation" = c("inflammatory", "immune", "cytokine", "chemokine", "response to stimulus"),
+        "Cell_Migration" = c("cell migration", "cell motility", "chemotaxis", "locomotion"),
+        "Proliferation" = c("cell cycle", "proliferation", "cell division", "mitotic"),
+        "Neural_Function" = c("nervous system", "neural", "neuron", "axon", "synapse"),
+        "Metabolism" = c("metabolic", "oxidative", "respiratory", "glucose", "energy")
+    )
+    
+    # Score each theme based on enrichment results
+    theme_scores <- list()
+    
+    # Process GO results
+    for (result_name in names(go_results)) {
+        direction <- ifelse(grepl("up", result_name), "up", "down")
+        
+        if (!exists(direction, theme_scores)) {
+            theme_scores[[direction]] <- list()
+        }
+        
+        result_data <- go_results[[result_name]]@result
+        
+        if (nrow(result_data) > 0) {
+            for (theme_name in names(vlmc_themes)) {
+                keywords <- vlmc_themes[[theme_name]]
+                
+                # Find matching terms
+                matches <- result_data[grep(paste(keywords, collapse = "|"), 
+                                            result_data$Description, ignore.case = TRUE), ]
+                
+                if (nrow(matches) > 0) {
+                    score <- sum(-log10(matches$p.adjust + 1e-300))
+                    
+                    if (!exists(theme_name, theme_scores[[direction]])) {
+                        theme_scores[[direction]][[theme_name]] <- list(score = 0, terms = c())
+                    }
+                    
+                    theme_scores[[direction]][[theme_name]]$score <- 
+                        theme_scores[[direction]][[theme_name]]$score + score
+                    theme_scores[[direction]][[theme_name]]$terms <- 
+                        c(theme_scores[[direction]][[theme_name]]$terms, matches$Description)
+                }
+            }
+        }
+    }
+    
+    return(theme_scores)
+}
+
+# Strategy 6: Enhanced visualization
+create_vlmc_visualizations <- function(go_results, pathway_results, meta_signatures, output_prefix = "VLMC") {
+    
+    # 1. Create a comprehensive dotplot
+    if (length(go_results) > 0) {
+        
+        # Combine GO results for comparison
+        all_go_data <- list()
+        
+        for (result_name in names(go_results)) {
+            result_data <- go_results[[result_name]]@result
+            if (nrow(result_data) > 0) {
+                result_data$analysis <- result_name
+                all_go_data[[result_name]] <- result_data %>%
+                    slice_head(n = 10) %>%
+                    mutate(neg_log_p = -log10(p.adjust + 1e-300))
+            }
+        }
+        
+        if (length(all_go_data) > 0) {
+            combined_go <- bind_rows(all_go_data)
+            
+            # Create comparison dotplot
+            p1 <- ggplot(combined_go, aes(x = neg_log_p, y = reorder(Description, neg_log_p))) +
+                geom_point(aes(size = Count, color = analysis), alpha = 0.7) +
+                scale_color_viridis_d() +
+                labs(title = "VLMC GO Enrichment Comparison",
+                     x = "-log10(adjusted p-value)",
+                     y = "GO Terms",
+                     size = "Gene Count",
+                     color = "Analysis") +
+                theme_minimal() +
+                theme(axis.text.y = element_text(size = 8))
+            
+            ggsave(paste0(output_prefix, "_GO_comparison.pdf"), p1, width = 12, height = 10)
+        }
+    }
+    
+    # 2. Meta-signature heatmap
+    if (length(meta_signatures) > 0) {
+        
+        # Create matrix for meta-signatures
+        vlmc_themes <- list(
+            "Vascular_Remodeling" = c("blood vessel", "vasculature", "angiogenesis", "endothelial", "vascular"),
+            "ECM_Structure" = c("extracellular matrix", "collagen", "basement membrane", "matrix organization"),
+            "Barrier_Function" = c("tight junction", "cell junction", "barrier", "permeability"),
+            "Inflammation" = c("inflammatory", "immune", "cytokine", "chemokine", "response to stimulus"),
+            "Cell_Migration" = c("cell migration", "cell motility", "chemotaxis", "locomotion"),
+            "Proliferation" = c("cell cycle", "proliferation", "cell division", "mitotic"),
+            "Neural_Function" = c("nervous system", "neural", "neuron", "axon", "synapse"),
+            "Metabolism" = c("metabolic", "oxidative", "respiratory", "glucose", "energy")
+        )
+        
+        meta_matrix <- matrix(0, nrow = length(vlmc_themes), ncol = 2)
+        rownames(meta_matrix) <- names(vlmc_themes)
+        colnames(meta_matrix) <- c("Upregulated", "Downregulated")
+        
+        for (direction in names(meta_signatures)) {
+            col_name <- ifelse(direction == "up", "Upregulated", "Downregulated")
+            
+            for (theme in names(meta_signatures[[direction]])) {
+                if (theme %in% rownames(meta_matrix)) {
+                    meta_matrix[theme, col_name] <- meta_signatures[[direction]][[theme]]$score
+                }
+            }
+        }
+        
+        # Create heatmap
+        pdf(paste0(output_prefix, "_meta_signatures.pdf"), width = 8, height = 6)
+        pheatmap(meta_matrix,
+                 color = viridis(100),
+                 cluster_cols = FALSE,
+                 cluster_rows = TRUE,
+                 main = "VLMC Meta-Signature Scores",
+                 fontsize = 10,
+                 cellwidth = 40,
+                 cellheight = 20)
+        dev.off()
+    }
+    
+    # 3. Individual enrichment plots for top pathways
+    for (result_name in names(pathway_results)) {
+        result <- pathway_results[[result_name]]
+        
+        if (nrow(result@result) > 0) {
+            p <- dotplot(result, showCategory = 15) + 
+                ggtitle(paste("VLMC", result_name, "Pathways"))
+            
+            ggsave(paste0(output_prefix, "_", result_name, "_pathways.pdf"), p, width = 10, height = 8)
+        }
+    }
+}
+
+# Create detailed summary report
+create_vlmc_summary <- function(gene_lists, go_results, pathway_results, meta_signatures, output_prefix) {
+    
+    sink(paste0(output_prefix, "_detailed_summary.txt"))
+    
+    cat("=== VLMC Day 14 vs Day 0 Analysis Summary ===\n\n")
+    cat("Date:", Sys.Date(), "\n\n")
+    
+    # Gene summary
+    cat("1. DIFFERENTIAL GENE EXPRESSION SUMMARY\n")
+    cat("----------------------------------------\n")
+    cat("Total upregulated genes:", length(gene_lists$up_genes), "\n")
+    cat("Total downregulated genes:", length(gene_lists$down_genes), "\n\n")
+    
+    cat("Top 10 upregulated genes (by log2FC):\n")
+    top_up <- head(names(gene_lists$all_genes_ranked_fc), 10)
+    for (i in seq_along(top_up)) {
+        fc <- gene_lists$all_genes_ranked_fc[top_up[i]]
+        cat(sprintf("%2d. %s (log2FC: %.2f)\n", i, top_up[i], fc))
+    }
+    
+    cat("\nTop 10 downregulated genes (by log2FC):\n")
+    top_down <- tail(names(gene_lists$all_genes_ranked_fc), 10)
+    for (i in seq_along(top_down)) {
+        fc <- gene_lists$all_genes_ranked_fc[top_down[i]]
+        cat(sprintf("%2d. %s (log2FC: %.2f)\n", i, top_down[i], fc))
+    }
+    
+    # GO results summary
+    cat("\n\n2. GO ENRICHMENT SUMMARY (SIMPLIFIED)\n")
+    cat("--------------------------------------\n")
+    
+    for (result_name in names(go_results)) {
+        result <- go_results[[result_name]]
+        cat(toupper(result_name), ":\n")
+        
+        if (nrow(result@result) > 0) {
+            cat("Number of enriched terms:", nrow(result@result), "\n")
+            cat("Top 5 terms:\n")
+            
+            top_terms <- head(result@result, 5)
+            for (i in 1:nrow(top_terms)) {
+                cat(sprintf("  %d. %s (p.adj: %.2e, Count: %d)\n", 
+                            i, top_terms$Description[i], top_terms$p.adjust[i], top_terms$Count[i]))
+            }
+        } else {
+            cat("No significant terms found.\n")
+        }
+        cat("\n")
+    }
+    
+    # Pathway results summary
+    cat("\n3. PATHWAY ENRICHMENT SUMMARY\n")
+    cat("-----------------------------\n")
+    
+    for (result_name in names(pathway_results)) {
+        result <- pathway_results[[result_name]]
+        cat(toupper(result_name), ":\n")
+        
+        if (nrow(result@result) > 0) {
+            cat("Number of enriched pathways:", nrow(result@result), "\n")
+            cat("Top 3 pathways:\n")
+            
+            top_paths <- head(result@result, 3)
+            for (i in 1:nrow(top_paths)) {
+                cat(sprintf("  %d. %s (p.adj: %.2e)\n", 
+                            i, top_paths$Description[i], top_paths$p.adjust[i]))
+            }
+        } else {
+            cat("No significant pathways found.\n")
+        }
+        cat("\n")
+    }
+    
+    # Meta-signature summary
+    cat("\n4. META-SIGNATURE ANALYSIS\n")
+    cat("--------------------------\n")
+    
+    for (direction in names(meta_signatures)) {
+        cat(toupper(direction), "REGULATED META-THEMES:\n")
+        
+        scores <- sapply(meta_signatures[[direction]], function(x) x$score)
+        sorted_scores <- sort(scores, decreasing = TRUE)
+        
+        for (theme in names(sorted_scores)) {
+            if (sorted_scores[theme] > 0) {
+                cat(sprintf("  %s: Score = %.2f\n", theme, sorted_scores[theme]))
+                
+                # Show some example terms
+                terms <- meta_signatures[[direction]][[theme]]$terms
+                if (length(terms) > 0) {
+                    cat("    Example terms:", paste(head(terms, 3), collapse = ", "), "\n")
+                }
+            }
+        }
+        cat("\n")
+    }
+    
+    sink()
+}
+
+# Main VLMC analysis function
+run_vlmc_analysis <- function(output_prefix = "VLMC_d14_vs_d0") {
+    
+    cat("=== VLMC Enhanced GO Analysis ===\n")
+    
+    cat("Step 1: Preparing gene lists...\n")
+    gene_lists <- prepare_vlmc_gene_lists(vlmc_data)
+    
+    cat("Step 2: Running simplified GO analysis...\n")
+    go_results <- run_simplified_go(gene_lists)
+    
+    cat("Step 3: Running pathway analysis...\n")
+    pathway_results <- run_pathway_analysis(gene_lists)
+    
+    cat("Step 4: Running GSEA analysis...\n")
+    gsea_results <- run_gsea_analysis(gene_lists)
+    
+    cat("Step 5: Creating VLMC meta-signatures...\n")
+    meta_signatures <- create_vlmc_meta_signatures(go_results, pathway_results, list())
+    
+    cat("Step 6: Creating visualizations...\n")
+    create_vlmc_visualizations(go_results, pathway_results, meta_signatures, output_prefix)
+    
+    cat("Step 7: Creating summary report...\n")
+    create_vlmc_summary(gene_lists, go_results, pathway_results, meta_signatures, output_prefix)
+    
+    # Return all results
+    results <- list(
+        gene_lists = gene_lists,
+        go_results = go_results,
+        pathway_results = pathway_results,
+        gsea_results = gsea_results,
+        meta_signatures = meta_signatures
+    )
+    
+    saveRDS(results, paste0(output_prefix, "_results.rds"))
+    cat("Analysis complete! Check output files for results.\n")
+    
+    return(results)
+}
+
+# Run analysis on all CSV files in the directory
+run_all_cell_types_analysis <- function(data_dir = "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs") {
+    
+    cat("=== Running GO Analysis on All Cell Types ===\n")
+    
+    # Get all CSV files
+    csv_files <- list.files(data_dir, pattern = "*.csv", full.names = FALSE)
+    
+    cat("Found", length(csv_files), "CSV files:\n")
+    for (i in seq_along(csv_files)) {
+        cat(sprintf("%d. %s\n", i, csv_files[i]))
+    }
+    
+    # Storage for all results
+    all_results <- list()
+    
+    # Process each file
+    for (csv_file in csv_files) {
+        
+        # Extract cell type name (remove .csv extension)
+        cell_type <- gsub("\\.csv$", "", csv_file)
+        
+        cat("\n" , paste(rep("=", 60), collapse = ""), "\n")
+        cat("PROCESSING:", cell_type, "\n")
+        cat(paste(rep("=", 60), collapse = ""), "\n")
+        
+        tryCatch({
+            
+            # Read the data
+            data_path <- file.path(data_dir, csv_file)
+            cat("Reading data from:", data_path, "\n")
+            
+            cell_data <- read_csv(data_path, show_col_types = FALSE)
+            cat("Successfully read", nrow(cell_data), "rows and", ncol(cell_data), "columns\n")
+            
+            # Prepare gene lists
+            cat("Preparing gene lists...\n")
+            gene_lists <- prepare_vlmc_gene_lists(cell_data)
+            
+            # Only proceed if we have enough genes
+            if (length(gene_lists$up_genes) < 5 && length(gene_lists$down_genes) < 5) {
+                cat("Skipping", cell_type, "- not enough significant genes\n")
+                next
+            }
+            
+            # Run GO analysis
+            cat("Running GO analysis...\n")
+            go_results <- run_simplified_go(gene_lists)
+            
+            # Run pathway analysis
+            cat("Running pathway analysis...\n")
+            pathway_results <- run_pathway_analysis(gene_lists)
+            
+            # Run GSEA analysis
+            cat("Running GSEA analysis...\n")
+            gsea_results <- run_gsea_analysis(gene_lists)
+            
+            # Create meta-signatures
+            cat("Creating meta-signatures...\n")
+            meta_signatures <- create_vlmc_meta_signatures(go_results, pathway_results, list())
+            
+            # Create visualizations with cell type specific prefix
+            output_prefix <- paste0(cell_type, "_d14_vs_d0")
+            cat("Creating visualizations...\n")
+            create_vlmc_visualizations(go_results, pathway_results, meta_signatures, output_prefix)
+            
+            # Create summary report
+            cat("Creating summary report...\n")
+            create_vlmc_summary(gene_lists, go_results, pathway_results, meta_signatures, output_prefix)
+            
+            # Store results
+            all_results[[cell_type]] <- list(
+                gene_lists = gene_lists,
+                go_results = go_results,
+                pathway_results = pathway_results,
+                gsea_results = gsea_results,
+                meta_signatures = meta_signatures
+            )
+            
+            # Save individual results
+            saveRDS(all_results[[cell_type]], paste0(output_prefix, "_results.rds"))
+            
+            cat("✓ Completed analysis for", cell_type, "\n")
+            
+        }, error = function(e) {
+            cat("✗ Error processing", cell_type, ":", e$message, "\n")
+            all_results[[cell_type]] <- list(error = e$message)
+        })
+    }
+    
+    # Save combined results
+    cat("\n" , paste(rep("=", 60), collapse = ""), "\n")
+    cat("SAVING COMBINED RESULTS\n")
+    cat(paste(rep("=", 60), collapse = ""), "\n")
+    
+    saveRDS(all_results, "all_cell_types_analysis_results.rds")
+    
+    # Create summary comparison
+    create_cell_type_comparison_summary(all_results)
+    
+    cat("✓ All analyses complete!\n")
+    cat("Individual results saved as: [CellType]_d14_vs_d0_results.rds\n")
+    cat("Combined results saved as: all_cell_types_analysis_results.rds\n")
+    cat("Comparison summary saved as: cell_type_comparison_summary.txt\n")
+    
+    return(all_results)
+}
+
+# Create a comparison summary across cell types
+create_cell_type_comparison_summary <- function(all_results) {
+    
+    sink("cell_type_comparison_summary.txt")
+    
+    cat("=== CELL TYPE COMPARISON SUMMARY ===\n")
+    cat("Analysis Date:", Sys.Date(), "\n\n")
+    
+    # Summary table
+    cat("1. ANALYSIS OVERVIEW\n")
+    cat("--------------------\n")
+    
+    summary_table <- data.frame(
+        Cell_Type = character(),
+        Total_Genes = numeric(),
+        Sig_Genes = numeric(),
+        Up_Genes = numeric(),
+        Down_Genes = numeric(),
+        GO_Terms = numeric(),
+        Status = character(),
+        stringsAsFactors = FALSE
+    )
+    
+    for (cell_type in names(all_results)) {
+        result <- all_results[[cell_type]]
+        
+        if ("error" %in% names(result)) {
+            summary_table <- rbind(summary_table, data.frame(
+                Cell_Type = cell_type,
+                Total_Genes = NA,
+                Sig_Genes = NA,
+                Up_Genes = NA,
+                Down_Genes = NA,
+                GO_Terms = NA,
+                Status = "ERROR"
+            ))
+        } else {
+            # Count GO terms
+            go_term_count <- 0
+            if (length(result$go_results) > 0) {
+                for (go_result in result$go_results) {
+                    go_term_count <- go_term_count + nrow(go_result@result)
+                }
+            }
+            
+            summary_table <- rbind(summary_table, data.frame(
+                Cell_Type = cell_type,
+                Total_Genes = result$gene_lists$total_genes,
+                Sig_Genes = length(result$gene_lists$up_genes) + length(result$gene_lists$down_genes),
+                Up_Genes = length(result$gene_lists$up_genes),
+                Down_Genes = length(result$gene_lists$down_genes),
+                GO_Terms = go_term_count,
+                Status = "SUCCESS"
+            ))
+        }
+    }
+    
+    # Print summary table
+    cat(sprintf("%-15s %10s %10s %10s %10s %10s %10s\n", 
+                "Cell_Type", "Total", "Sig_Genes", "Up", "Down", "GO_Terms", "Status"))
+    cat(paste(rep("-", 85), collapse = ""), "\n")
+    
+    for (i in 1:nrow(summary_table)) {
+        row <- summary_table[i, ]
+        cat(sprintf("%-15s %10s %10s %10s %10s %10s %10s\n",
+                    row$Cell_Type,
+                    ifelse(is.na(row$Total_Genes), "NA", row$Total_Genes),
+                    ifelse(is.na(row$Sig_Genes), "NA", row$Sig_Genes),
+                    ifelse(is.na(row$Up_Genes), "NA", row$Up_Genes),
+                    ifelse(is.na(row$Down_Genes), "NA", row$Down_Genes),
+                    ifelse(is.na(row$GO_Terms), "NA", row$GO_Terms),
+                    row$Status))
+    }
+    
+    # Top enriched terms across cell types
+    cat("\n\n2. TOP GO TERMS BY CELL TYPE\n")
+    cat("-----------------------------\n")
+    
+    for (cell_type in names(all_results)) {
+        result <- all_results[[cell_type]]
+        
+        if (!"error" %in% names(result) && length(result$go_results) > 0) {
+            cat("\n", toupper(cell_type), ":\n")
+            
+            # Get top terms from each analysis
+            for (analysis_name in names(result$go_results)) {
+                go_result <- result$go_results[[analysis_name]]
+                
+                if (nrow(go_result@result) > 0) {
+                    cat("  ", analysis_name, ":\n")
+                    top_terms <- head(go_result@result, 3)
+                    
+                    for (j in 1:nrow(top_terms)) {
+                        cat(sprintf("    %d. %s (p.adj: %.2e)\n", 
+                                    j, top_terms$Description[j], top_terms$p.adjust[j]))
+                    }
+                }
+            }
+        }
+    }
+    
+    # Meta-signature comparison
+    cat("\n\n3. META-SIGNATURE COMPARISON\n")
+    cat("----------------------------\n")
+    
+    # Collect all meta-signature scores
+    all_meta_scores <- list()
+    
+    for (cell_type in names(all_results)) {
+        result <- all_results[[cell_type]]
+        
+        if (!"error" %in% names(result) && length(result$meta_signatures) > 0) {
+            
+            for (direction in names(result$meta_signatures)) {
+                direction_scores <- sapply(result$meta_signatures[[direction]], function(x) x$score)
+                
+                for (theme in names(direction_scores)) {
+                    if (direction_scores[theme] > 0) {
+                        key <- paste(theme, direction, sep = "_")
+                        if (!key %in% names(all_meta_scores)) {
+                            all_meta_scores[[key]] <- list()
+                        }
+                        all_meta_scores[[key]][[cell_type]] <- direction_scores[theme]
+                    }
+                }
+            }
+        }
+    }
+    
+    # Print meta-signature comparison
+    for (meta_key in names(all_meta_scores)) {
+        scores <- all_meta_scores[[meta_key]]
+        if (length(scores) > 1) {  # Only show if multiple cell types have this signature
+            cat("\n", meta_key, ":\n")
+            sorted_scores <- sort(unlist(scores), decreasing = TRUE)
+            for (cell_type in names(sorted_scores)) {
+                cat(sprintf("  %s: %.2f\n", cell_type, sorted_scores[cell_type]))
+            }
+        }
+    }
+    
+    sink()
+}
+
+cat("\n=== BATCH ANALYSIS FUNCTIONS LOADED ===\n")
+cat("To run analysis on all cell types:\n")
+cat("all_results <- run_all_cell_types_analysis()\n")
+cat("\nThis will process all CSV files and create:\n")
+cat("• Individual analysis for each cell type\n")
+cat("• Comparison summary across cell types\n")
+cat("• All output files in your current directory\n")
