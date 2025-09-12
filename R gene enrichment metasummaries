@@ -1,0 +1,302 @@
+# Working Meta-Summary Tables for GO Analysis Results
+# Creates both cell-type-driven and theme-driven summary tables
+
+library(tidyverse)
+
+# Function to build meta-summary tables from your analysis results
+build_meta_summaries_from_loaded_data <- function(
+        all_results,
+        score_cutoff = 5,
+        write_csv = TRUE,
+        out_prefix = "meta_summary"
+) {
+    
+    cat("=== Building Meta-Summary Tables ===\n")
+    cat("Processing", length(all_results), "cell types...\n")
+    
+    # Initialize storage
+    celltype_to_theme <- tibble()
+    theme_to_celltype <- tibble()
+    
+    # Process each cell type
+    for (cell_type in names(all_results)) {
+        result <- all_results[[cell_type]]
+        
+        # Skip if error
+        if ("error" %in% names(result)) {
+            cat("Skipping", cell_type, "- analysis error\n")
+            next
+        }
+        
+        # Get meta-signatures
+        meta_signatures <- result$meta_signatures
+        if (is.null(meta_signatures) || length(meta_signatures) == 0) {
+            cat("No meta-signatures found for", cell_type, "\n")
+            next
+        }
+        
+        # Process each direction (up/down)
+        for (direction in names(meta_signatures)) {
+            direction_data <- meta_signatures[[direction]]
+            
+            if (length(direction_data) == 0) next
+            
+            # Process each theme
+            for (theme in names(direction_data)) {
+                theme_data <- direction_data[[theme]]
+                
+                score <- theme_data$score
+                if (is.null(score) || is.na(score) || score < score_cutoff) next
+                
+                # Get example terms
+                terms <- theme_data$terms
+                example_terms <- if (length(terms) > 0) {
+                    paste(head(terms, 3), collapse = "; ")
+                } else {
+                    ""
+                }
+                
+                # Get top genes from GO results for this cell type/direction
+                top_genes <- get_top_genes_for_theme(result$go_results, theme, direction)
+                
+                # Create row for both tables
+                row_data <- tibble(
+                    CellType = cell_type,
+                    Theme = theme,
+                    Direction = direction,
+                    Score = round(score, 2),
+                    TopGenes = top_genes,
+                    ExampleTerms = example_terms
+                )
+                
+                # Add to cell-type-driven table
+                celltype_to_theme <- bind_rows(celltype_to_theme, row_data)
+                
+                # Add to theme-driven table (same data, will be sorted differently)
+                theme_to_celltype <- bind_rows(theme_to_celltype, row_data)
+            }
+        }
+    }
+    
+    # Sort tables appropriately
+    cat("Organizing tables...\n")
+    
+    # Cell-type-driven: group by cell type, then by score
+    celltype_to_theme <- celltype_to_theme %>%
+        arrange(CellType, desc(Score), Theme, Direction)
+    
+    # Theme-driven: group by theme, then by score
+    theme_to_celltype <- theme_to_celltype %>%
+        arrange(Theme, desc(Score), CellType, Direction)
+    
+    # Write CSV files if requested
+    if (write_csv) {
+        cat("Writing CSV files...\n")
+        
+        celltype_file <- paste0(out_prefix, "_celltype_to_theme.csv")
+        theme_file <- paste0(out_prefix, "_theme_to_celltype.csv")
+        
+        write_csv(celltype_to_theme, celltype_file)
+        write_csv(theme_to_celltype, theme_file)
+        
+        cat("✓ Wrote:", celltype_file, "\n")
+        cat("✓ Wrote:", theme_file, "\n")
+    }
+    
+    # Print summaries
+    cat("\n=== SUMMARY ===\n")
+    cat("Total entries:", nrow(celltype_to_theme), "\n")
+    cat("Cell types:", length(unique(celltype_to_theme$CellType)), "\n")
+    cat("Themes:", length(unique(celltype_to_theme$Theme)), "\n")
+    if (nrow(celltype_to_theme) > 0) {
+        cat("Score range:", min(celltype_to_theme$Score), "-", max(celltype_to_theme$Score), "\n")
+    }
+    
+    return(list(
+        celltype_to_theme = celltype_to_theme,
+        theme_to_celltype = theme_to_celltype
+    ))
+}
+
+# Helper function to get top genes for a theme
+get_top_genes_for_theme <- function(go_results, theme, direction, top_n = 5) {
+    
+    # Define theme keywords
+    theme_keywords <- list(
+        "Vascular_Remodeling" = c("blood vessel", "vasculature", "angiogenesis", "endothelial", "vascular"),
+        "ECM_Structure" = c("extracellular matrix", "collagen", "basement membrane", "matrix organization"),
+        "Barrier_Function" = c("tight junction", "cell junction", "barrier", "permeability"),
+        "Inflammation" = c("inflammatory", "immune", "cytokine", "chemokine", "response to stimulus"),
+        "Cell_Migration" = c("cell migration", "cell motility", "chemotaxis", "locomotion"),
+        "Proliferation" = c("cell cycle", "proliferation", "cell division", "mitotic"),
+        "Neural_Function" = c("nervous system", "neural", "neuron", "axon", "synapse"),
+        "Metabolism" = c("metabolic", "oxidative", "respiratory", "glucose", "energy")
+    )
+    
+    keywords <- theme_keywords[[theme]]
+    if (is.null(keywords)) return("")
+    
+    # Look for matching GO results
+    direction_prefix <- paste0(direction, "_")
+    matching_results <- go_results[grepl(paste0("^", direction_prefix), names(go_results))]
+    
+    all_genes <- character()
+    
+    for (result_name in names(matching_results)) {
+        result <- matching_results[[result_name]]
+        
+        if (is.null(result) || !"result" %in% slotNames(result)) next
+        
+        result_df <- result@result
+        if (nrow(result_df) == 0) next
+        
+        # Find terms matching theme keywords
+        matches <- result_df[grep(paste(keywords, collapse = "|"), 
+                                  result_df$Description, ignore.case = TRUE), ]
+        
+        if (nrow(matches) > 0) {
+            # Extract genes from the geneID column
+            genes <- unlist(strsplit(matches$geneID, "/"))
+            all_genes <- c(all_genes, genes)
+        }
+    }
+    
+    # Get unique genes and return top ones
+    if (length(all_genes) > 0) {
+        gene_counts <- sort(table(all_genes), decreasing = TRUE)
+        top_genes <- names(gene_counts)[1:min(top_n, length(gene_counts))]
+        return(paste(top_genes, collapse = ", "))
+    }
+    
+    return("")
+}
+
+# Function to create formatted display tables
+create_display_tables <- function(summary_results, show_top_n = 10) {
+    
+    cat("=== CELL-TYPE-DRIVEN TABLE ===\n")
+    cat("Top themes for each cell type:\n\n")
+    
+    celltype_table <- summary_results$celltype_to_theme
+    
+    for (cell_type in unique(celltype_table$CellType)) {
+        cat("**", toupper(cell_type), "**\n")
+        
+        cell_data <- celltype_table %>% 
+            filter(CellType == cell_type) %>%
+            head(show_top_n)
+        
+        for (i in 1:nrow(cell_data)) {
+            row <- cell_data[i, ]
+            cat(sprintf("  %s (%s): %.1f\n", 
+                        row$Theme, row$Direction, row$Score))
+            if (nchar(row$ExampleTerms) > 0) {
+                cat(sprintf("    Terms: %s\n", 
+                            substr(row$ExampleTerms, 1, 60)))
+            }
+        }
+        cat("\n")
+    }
+    
+    cat("\n" , paste(rep("=", 60), collapse = ""), "\n")
+    cat("THEME-DRIVEN TABLE\n")
+    cat("Cell types most active in each theme:\n\n")
+    
+    theme_table <- summary_results$theme_to_celltype
+    
+    for (theme in unique(theme_table$Theme)) {
+        cat("**", toupper(gsub("_", " ", theme)), "**\n")
+        
+        theme_data <- theme_table %>% 
+            filter(Theme == theme) %>%
+            head(show_top_n)
+        
+        for (i in 1:nrow(theme_data)) {
+            row <- theme_data[i, ]
+            cat(sprintf("  %s (%s): %.1f\n", 
+                        row$CellType, row$Direction, row$Score))
+            if (nchar(row$TopGenes) > 0) {
+                cat(sprintf("    Genes: %s\n", 
+                            substr(row$TopGenes, 1, 50)))
+            }
+        }
+        cat("\n")
+    }
+}
+
+# Main function - SIMPLE VERSION with hardcoded path
+run_meta_summary_analysis <- function() {
+    
+    cat("=== META-SUMMARY ANALYSIS ===\n\n")
+    
+    # HARDCODED PATH - NO WORKING DIRECTORY REFERENCES
+    results_dir <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs"
+    
+    cat("Looking for RDS files in:", results_dir, "\n")
+    
+    # Check if directory exists
+    if (!dir.exists(results_dir)) {
+        stop("Directory does not exist: ", results_dir)
+    }
+    
+    # Find RDS files
+    rds_files <- list.files(results_dir, pattern = "_d14_vs_d0_results\\.rds$", full.names = TRUE)
+    
+    if (length(rds_files) == 0) {
+        cat("No RDS files found. Listing all files in directory:\n")
+        all_files <- list.files(results_dir)
+        for (file in all_files) {
+            cat(" -", file, "\n")
+        }
+        stop("No RDS results files found.")
+    }
+    
+    cat("Found", length(rds_files), "RDS files:\n")
+    for (file in rds_files) {
+        cat(" -", basename(file), "\n")
+    }
+    
+    # Load all results
+    all_results <- list()
+    
+    for (rds_file in rds_files) {
+        # Extract cell type name
+        basename_file <- basename(rds_file)
+        cell_type <- gsub("_d14_vs_d0_results\\.rds$", "", basename_file)
+        
+        cat("Loading", cell_type, "...\n")
+        
+        tryCatch({
+            result <- readRDS(rds_file)
+            all_results[[cell_type]] <- result
+            cat(" ✓ Success\n")
+        }, error = function(e) {
+            cat(" ✗ Error:", e$message, "\n")
+        })
+    }
+    
+    if (length(all_results) == 0) {
+        stop("No results could be loaded successfully")
+    }
+    
+    cat("\nSuccessfully loaded", length(all_results), "cell types:", paste(names(all_results), collapse = ", "), "\n")
+    
+    # Build tables
+    summary_results <- build_meta_summaries_from_loaded_data(
+        all_results = all_results,
+        score_cutoff = 5,
+        write_csv = TRUE,
+        out_prefix = "meta_summary"
+    )
+    
+    # Display tables
+    create_display_tables(summary_results, show_top_n = 8)
+    
+    return(summary_results)
+}
+
+cat("=== META-SUMMARY FUNCTIONS LOADED ===\n")
+cat("To create summary tables:\n")
+cat('summary_tables <- run_meta_summary_analysis()\n')
+cat("\nThis will look for RDS files in:\n")
+cat("/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs\n")
