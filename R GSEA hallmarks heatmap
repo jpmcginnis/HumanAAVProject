@@ -106,3 +106,17 @@ plot_hallmark_heatmap_gg <- function(results,
                          padj_threshold, if (mask_nonsig) "(non-sig masked)" else ""),
          x = "Cell Type", y = "Hallmark", fill = "NES")
 }
+
+# Build and save matrices (optional)
+mats <- build_hallmark_matrices(results)
+readr::write_csv(tibble::as_tibble(rownames_to_column(as.data.frame(mats$nes), "Hallmark")),
+                 file.path(csv_dir, "GSEA_Results_Symbols", "HALLMARK_NES_matrix.csv"))
+readr::write_csv(tibble::as_tibble(rownames_to_column(as.data.frame(mats$padj), "Hallmark")),
+                 file.path(csv_dir, "GSEA_Results_Symbols", "HALLMARK_padj_matrix.csv"))
+
+# Plot heatmap (pheatmap)
+plot_hallmark_heatmap(results, padj_threshold = 0.25, mask_nonsig = TRUE, na_as = 0)
+
+# Or as a ggplot object (handy for theming/combining)
+p <- plot_hallmark_heatmap_gg(results, padj_threshold = 0.25, mask_nonsig = TRUE, na_as = 0)
+print(p)
