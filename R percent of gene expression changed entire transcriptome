@@ -1,0 +1,135 @@
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(org.Hs.eg.db)
+  library(AnnotationDbi)
+})
+
+# ---- Point to your folder ----
+de_dir <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs"
+
+# ---- Thresholds (match your GO filters) ----
+padj_cutoff  <- 0.05
+logfc_cutoff <- 0.5
+
+# ---- Universe (GRCh38 via org.Hs.eg.db) ----
+strip_ens_version <- function(x) sub("\\.\\d+$","", x)
+universe <- AnnotationDbi::keys(org.Hs.eg.db, keytype = "ENSEMBL") |> unique() |> strip_ens_version()
+universe_n <- length(universe)
+message("Universe size: ", universe_n, " Ensembl genes")
+
+# ---- Loader for mixed file types ----
+load_de_table <- function(f) {
+  nm <- basename(f)
+  if (grepl("(?i)\\.rds$", f)) {
+    obj <- readRDS(f)
+    if (is.data.frame(obj)) return(obj)
+    if (inherits(obj, "Seurat")) stop(nm, ": is a Seurat object; export its DE table first.")
+    stop(nm, ": RDS does not contain a data.frame.")
+  } else if (grepl("(?i)\\.rda$", f)) {
+    e <- new.env(); loaded <- load(f, envir = e)
+    dfs <- loaded[sapply(loaded, function(x) is.data.frame(e[[x]]))]
+    if (!length(dfs)) stop(nm, ": RDA has no data.frame.")
+    if (length(dfs) > 1) message(nm, ": multiple objects; using ", dfs[1])
+    return(e[[dfs[1]]])
+  } else if (grepl("(?i)\\.csv$", f)) {
+    return(read.csv(f, check.names = FALSE, stringsAsFactors = FALSE))
+  }
+  stop(nm, ": unsupported file type.")
+}
+
+# ---- Standardizer (same as before) ----
+standardize_de <- function(df, file_nm) {
+  names(df) <- tolower(names(df))
+  eff_col <- dplyr::case_when(
+    "avg_log2fc" %in% names(df) ~ "avg_log2fc",
+    "log2fc"     %in% names(df) ~ "log2fc",
+    TRUE ~ NA_character_
+  )
+  padj_col <- dplyr::case_when(
+    "p_val_adj" %in% names(df) ~ "p_val_adj",
+    "padj"      %in% names(df) ~ "padj",
+    "q_value"   %in% names(df) ~ "q_value",
+    TRUE ~ NA_character_
+  )
+  if (is.na(eff_col) || is.na(padj_col)) {
+    stop(sprintf("%s is missing avg_log2FC/log2FC and/or p_val_adj/padj/q_value.", file_nm))
+  }
+  gene_cols <- c("ensembl_id","ensembl","gene_id","gene","genes","feature","featureid","feature_name","gene_sym","symbol")
+  found <- intersect(gene_cols, names(df))
+  if (!length(found)) stop(sprintf("%s: no gene ID/symbol column found.", file_nm))
+  tibble(
+    gene_raw   = as.character(df[[found[1]]]),
+    avg_log2fc = as.numeric(df[[eff_col]]),
+    p_val_adj  = as.numeric(df[[padj_col]])
+  )
+}
+
+map_symbols_to_ensembl <- function(symbols) {
+  suppressWarnings(AnnotationDbi::mapIds(
+    org.Hs.eg.db, keys = unique(symbols), keytype = "SYMBOL",
+    column = "ENSEMBL", multiVals = "first"
+  )) |> as.list()
+}
+
+# ---- Find files (recursive, case-insensitive) ----
+de_files <- list.files(
+  de_dir,
+  pattern = "(?i)\\.(rds|rda|csv)$",
+  full.names = TRUE,
+  recursive = TRUE
+)
+stopifnot(length(de_files) > 0)
+message("Found ", length(de_files), " candidate files")
+
+# Quick peek to confirm
+print(utils::head(basename(de_files), 20))
+
+# ---- Main loop ----
+summaries <- list()
+for (f in de_files) {
+  df0 <- tryCatch(load_de_table(f), error = function(e) { warning(e$message); return(NULL) })
+  if (is.null(df0)) next
+  df  <- tryCatch(standardize_de(df0, basename(f)), error = function(e) { warning(e$message); return(NULL) })
+  if (is.null(df)) next
+
+  looks_ensembl <- grepl("^ENSG\\d+", df$gene_raw)
+  if (any(looks_ensembl)) {
+    df$ensembl_id <- strip_ens_version(df$gene_raw)
+  } else {
+    symbol2ens <- map_symbols_to_ensembl(df$gene_raw)
+    mapped <- unlist(symbol2ens[df$gene_raw], use.names = FALSE)
+    df$ensembl_id <- strip_ens_version(mapped)
+  }
+
+  df_sig <- df |>
+    filter(!is.na(ensembl_id),
+           p_val_adj < padj_cutoff,
+           abs(avg_log2fc) > logfc_cutoff)
+
+  sig_in_univ <- df_sig |>
+    filter(ensembl_id %in% universe) |>
+    distinct(ensembl_id, .keep_all = TRUE)
+
+  n_sig_total <- nrow(sig_in_univ)
+  n_sig_up    <- sum(sig_in_univ$avg_log2fc > 0, na.rm = TRUE)
+  n_sig_down  <- sum(sig_in_univ$avg_log2fc < 0, na.rm = TRUE)
+
+  summaries[[length(summaries)+1]] <- tibble(
+    celltype     = tools::file_path_sans_ext(basename(f)),
+    universe_size= universe_n,
+    n_sig_total  = n_sig_total,
+    n_sig_up     = n_sig_up,
+    n_sig_down   = n_sig_down,
+    pct_changed  = 100 * n_sig_total / universe_n,
+    pct_up       = 100 * n_sig_up / universe_n,
+    pct_down     = 100 * n_sig_down / universe_n
+  )
+}
+
+summary_tbl <- bind_rows(summaries) |> arrange(desc(pct_changed))
+print(summary_tbl, n = Inf)
+
+# Optional: write outputs next to your DE files
+out_csv <- file.path(de_dir, "percent_transcriptome_changed_summary.csv")
+readr::write_csv(summary_tbl, out_csv)
+message("Wrote: ", out_csv)
