@@ -1,0 +1,108 @@
+# ===============================
+# Hallmark heatmap (add to your script)
+# ===============================
+
+# Build Hallmark NES and q matrices from 'results' (output of run_gsea_symbols_analysis)
+build_hallmark_matrices <- function(results, species = "Homo sapiens") {
+  hm_lookup <- msigdbr::msigdbr(species = species, category = "H") %>%
+    dplyr::distinct(gs_name, gs_description)
+
+  long_hm <- purrr::map_dfr(names(results), function(ct) {
+    r <- results[[ct]]
+    if (!"gsea_results" %in% names(r)) return(NULL)
+    r$gsea_results$by_collection$Hallmark %>%
+      dplyr::select(pathway, NES, padj) %>%
+      dplyr::mutate(CellType = ct)
+  })
+  if (nrow(long_hm) == 0) stop("No Hallmark results found.")
+
+  long_hm <- long_hm %>%
+    dplyr::left_join(hm_lookup, by = c("pathway" = "gs_name")) %>%
+    dplyr::rename(Hallmark = pathway, Description = gs_description)
+
+  nes_mat <- long_hm %>%
+    dplyr::select(CellType, Hallmark, NES) %>%
+    tidyr::pivot_wider(names_from = CellType, values_from = NES) %>%
+    tibble::column_to_rownames("Hallmark") %>%
+    as.matrix()
+
+  q_mat <- long_hm %>%
+    dplyr::select(CellType, Hallmark, padj) %>%
+    tidyr::pivot_wider(names_from = CellType, values_from = padj) %>%
+    tibble::column_to_rownames("Hallmark") %>%
+    as.matrix()
+
+  list(nes = nes_mat, padj = q_mat, meta = dplyr::distinct(long_hm, Hallmark, Description))
+}
+
+# Option A: pheatmap (simple and fast)
+plot_hallmark_heatmap <- function(results,
+                                  padj_threshold = 0.25,
+                                  mask_nonsig = TRUE,   # set non-sig cells to 0 (or NA)
+                                  na_as = 0,            # 0 keeps tiles neutral; use NA to blank them
+                                  cluster_rows = TRUE,
+                                  cluster_cols = TRUE,
+                                  species = "Homo sapiens") {
+  suppressPackageStartupMessages(library(pheatmap))
+  mats <- build_hallmark_matrices(results, species)
+  NES <- mats$nes
+  Q   <- mats$padj
+
+  # mask non-significant cells if requested
+  if (mask_nonsig) {
+    NES_masked <- NES
+    NES_masked[is.na(Q) | Q >= padj_threshold] <- na_as
+  } else {
+    NES_masked <- NES
+  }
+
+  # center & scale color around 0
+  max_abs <- max(abs(NES_masked), na.rm = TRUE)
+  breaks <- seq(-max_abs, max_abs, length.out = 101)
+  cols <- colorRampPalette(c("blue", "white", "red"))(length(breaks) - 1)
+
+  pheatmap::pheatmap(
+    NES_masked,
+    color = cols,
+    breaks = breaks,
+    cluster_rows = cluster_rows,
+    cluster_cols = cluster_cols,
+    border_color = NA,
+    main = sprintf("Hallmark GSEA (NES)  —  q < %.2f %s",
+                   padj_threshold, if (mask_nonsig) "(non-sig masked)" else ""),
+    fontsize_row = 8,
+    fontsize_col = 10
+  )
+}
+
+# Option B: ggplot tile (if you prefer a figure-friendly plot object)
+plot_hallmark_heatmap_gg <- function(results,
+                                     padj_threshold = 0.25,
+                                     mask_nonsig = TRUE,
+                                     na_as = 0,
+                                     species = "Homo sapiens") {
+  suppressPackageStartupMessages(library(ggplot2))
+  mats <- build_hallmark_matrices(results, species)
+  NES <- mats$nes
+  Q   <- mats$padj
+  NESm <- NES
+  if (mask_nonsig) NESm[is.na(Q) | Q >= padj_threshold] <- na_as
+
+  df <- as.data.frame(NESm) %>%
+    tibble::rownames_to_column("Hallmark") %>%
+    tidyr::pivot_longer(-Hallmark, names_to = "CellType", values_to = "NES")
+
+  max_abs <- max(abs(df$NES), na.rm = TRUE)
+
+  ggplot(df, aes(CellType, Hallmark, fill = NES)) +
+    geom_tile(color = "white") +
+    scale_fill_gradient2(limits = c(-max_abs, max_abs),
+                         low = "blue", mid = "white", high = "red", midpoint = 0,
+                         na.value = "grey95") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.text.y = element_text(size = 8)) +
+    labs(title = sprintf("Hallmark GSEA (NES) — q < %.2f %s",
+                         padj_threshold, if (mask_nonsig) "(non-sig masked)" else ""),
+         x = "Cell Type", y = "Hallmark", fill = "NES")
+}
