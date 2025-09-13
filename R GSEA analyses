@@ -1,0 +1,376 @@
+# ===============================
+# GSEA Using Gene Symbols (fgseaMultilevel) + Hallmark Extras
+# ===============================
+
+suppressPackageStartupMessages({
+  library(tidyverse)   # dplyr, readr, tidyr, tibble, stringr, ggplot2
+  library(fgsea)
+  library(msigdbr)
+  library(enrichplot)
+})
+
+# ---- Configuration ----
+csv_dir <- "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs/Cell type CSVs"
+
+# GSEA gene set collections using gene symbols
+.gsea_collections_symbols <- list(
+  "Hallmark"       = "H",
+  "C2_KEGG"        = "C2",
+  "C5_GO_BP"       = "C5",
+  "C6_Oncogenic"   = "C6",
+  "C7_Immunologic" = "C7"
+)
+
+# ---- Helpers ----
+.pick_col <- function(df, candidates) {
+  nm <- names(df); low <- tolower(nm)
+  for (cand in candidates) {
+    at <- which(low == tolower(cand))
+    if (length(at)) return(nm[at[1]])
+  }
+  NULL
+}
+
+load_csv_data_symbols <- function(csv_path) {
+  cat("Loading:", basename(csv_path), "\n")
+  df <- readr::read_csv(csv_path, show_col_types = FALSE)
+  cat("Actual columns:", paste(colnames(df), collapse = ", "), "\n")
+
+  gene_col <- .pick_col(df, c("gene","symbol","gene_symbol","hgnc_symbol"))
+  lfc_col  <- .pick_col(df, c("avg_log2fc","avg_log2FC","log2fc","logFC","log2foldchange","lfc"))
+  padj_col <- .pick_col(df, c("p_val_adj","padj","p.adj","fdr","adjusted_p_value","adj_p_value"))
+  if (is.null(gene_col) || is.null(lfc_col) || is.null(padj_col)) {
+    stop("Missing required columns. Found gene=", gene_col, " logFC=", lfc_col, " padj=", padj_col)
+  }
+
+  df %>%
+    dplyr::rename(gene = !!gene_col, avg_log2FC = !!lfc_col, p_val_adj = !!padj_col) %>%
+    dplyr::mutate(gene = as.character(gene)) %>%
+    dplyr::filter(!is.na(gene), !is.na(avg_log2FC), !is.na(p_val_adj)) %>%
+    dplyr::group_by(gene) %>%
+    dplyr::slice_max(abs(avg_log2FC), n = 1, with_ties = FALSE) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange(dplyr::desc(abs(avg_log2FC))) -> df_clean
+
+  cat("Cleaned data:", nrow(df_clean), "unique genes\n")
+  df_clean
+}
+
+prepare_gene_list_symbols <- function(df) {
+  gene_list <- stats::setNames(df$avg_log2FC, df$gene)
+  gene_list <- gene_list[!is.na(gene_list)]
+  sort(gene_list, decreasing = TRUE)
+}
+
+get_gene_sets_symbols <- function(collections = .gsea_collections_symbols, species = "Homo sapiens") {
+  all_sets <- list()
+  for (name in names(collections)) {
+    cat("Loading", name, "gene sets...\n")
+    sets <- switch(
+      collections[[name]],
+      "C2" = msigdbr(species = species, category = "C2", subcategory = "CP:KEGG"),
+      "C5" = msigdbr(species = species, category = "C5", subcategory = "GO:BP"),
+      msigdbr(species = species, category = collections[[name]])
+    )
+    sets_list <- split(sets$gene_symbol, sets$gs_name)
+    all_sets[[name]] <- sets_list
+    cat("Loaded", length(sets_list), "gene sets for", name, "\n")
+  }
+  all_sets
+}
+
+# also keep a lookup for human-readable descriptions (esp. for Hallmarks)
+get_hallmark_desc_lookup <- function(species = "Homo sapiens") {
+  hm <- msigdbr(species = species, category = "H") %>%
+    dplyr::distinct(gs_name, gs_description)
+  # order by Broad's nominal set order if desired (optional)
+  hm
+}
+
+run_gsea_symbols <- function(gene_list, gene_sets, collection_name) {
+  cat("Running GSEA for", collection_name, "with", length(gene_sets), "gene sets...\n")
+
+  fgsea_results <- fgseaMultilevel(
+    pathways = gene_sets,
+    stats    = gene_list,
+    minSize  = 15,
+    maxSize  = 500
+  )
+
+  fgsea_results %>%
+    tibble::as_tibble() %>%
+    dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
+    dplyr::mutate(
+      collection = collection_name,
+      description = pathway,
+      geneID = vapply(leadingEdge, function(x) paste(x, collapse = "/"), character(1)),
+      core_enrichment = geneID,
+      Direction = ifelse(NES > 0, "Up", "Down")
+    ) %>%
+    dplyr::select(collection, pathway, description, pval, padj, ES, NES, size,
+                  Direction, leadingEdge, geneID, core_enrichment) -> results_df
+
+  cat("Found", sum(results_df$padj < 0.05, na.rm = TRUE), "significant pathways (padj < 0.05)\n")
+  results_df
+}
+
+collapse_pathways_simple <- function(gsea_results, max_pathways = 50) {
+  if (is.null(gsea_results) || nrow(gsea_results) == 0) return(gsea_results)
+  sig_results <- gsea_results %>% dplyr::filter(padj < 0.05)
+  if (nrow(sig_results) <= max_pathways) return(gsea_results)
+  top_pathways <- sig_results %>% dplyr::arrange(padj) %>% dplyr::slice_head(n = max_pathways)
+  non_sig <- gsea_results %>% dplyr::filter(padj >= 0.05)
+  dplyr::bind_rows(top_pathways, non_sig)
+}
+
+run_gsea_analysis_symbols <- function(gene_list,
+                                      collections = .gsea_collections_symbols,
+                                      collapse_categories = TRUE,
+                                      species = "Homo sapiens") {
+  all_gene_sets <- get_gene_sets_symbols(collections, species)
+  all_results <- list()
+  for (collection_name in names(all_gene_sets)) {
+    gene_sets <- all_gene_sets[[collection_name]]
+    if (length(gene_sets) > 0) {
+      results <- run_gsea_symbols(gene_list, gene_sets, collection_name)
+      if (collapse_categories) results <- collapse_pathways_simple(results)
+      all_results[[collection_name]] <- results
+    }
+  }
+  combined_results <- dplyr::bind_rows(all_results, .id = "source_collection")
+  list(
+    combined = combined_results,
+    by_collection = all_results,
+    gene_sets_used = all_gene_sets
+  )
+}
+
+process_csv_symbols <- function(csv_path,
+                                collections = .gsea_collections_symbols,
+                                collapse_categories = TRUE) {
+  cell_type <- tools::file_path_sans_ext(basename(csv_path))
+  cat("\n=== Processing", cell_type, "===\n")
+  tryCatch({
+    df <- load_csv_data_symbols(csv_path)
+    gene_list <- prepare_gene_list_symbols(df)
+    if (length(gene_list) < 100) cat("Warning:", length(gene_list), "genes - may have limited power\n")
+
+    gsea_results <- run_gsea_analysis_symbols(
+      gene_list = gene_list,
+      collections = collections,
+      collapse_categories = collapse_categories
+    )
+
+    sig_count <- sum(gsea_results$combined$padj < 0.05, na.rm = TRUE)
+    cat("GSEA complete:", sig_count, "significant pathways\n")
+
+    list(
+      cell_type = cell_type,
+      gene_list = gene_list,
+      gsea_results = gsea_results,
+      input_genes = nrow(df),
+      significant_pathways = sig_count
+    )
+  }, error = function(e) {
+    cat("Error processing", cell_type, ":", e$message, "\n")
+    list(error = e$message)
+  })
+}
+
+run_gsea_symbols_analysis <- function(csv_directory = csv_dir,
+                                      collections = .gsea_collections_symbols,
+                                      collapse_categories = TRUE,
+                                      save_results = TRUE,
+                                      output_dir = NULL,
+                                      species = "Homo sapiens",
+                                      hallmark_padj_threshold = 0.25) {
+
+  cat("=== GSEA Analysis with Gene Symbols ===\n")
+  cat("Directory:", csv_directory, "\n")
+  cat("Collections:", paste(names(collections), collapse = ", "), "\n")
+
+  if (!dir.exists(csv_directory)) stop("Directory not found: ", csv_directory)
+  csv_files <- list.files(csv_directory, pattern = "\\.csv$", full.names = TRUE)
+  if (length(csv_files) == 0) stop("No CSV files found in: ", csv_directory)
+  cat("Found", length(csv_files), "CSV files\n")
+
+  if (is.null(output_dir)) output_dir <- file.path(csv_directory, "GSEA_Results_Symbols")
+  if (save_results && !dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+    cat("Created output directory:", output_dir, "\n")
+  }
+
+  # For Hallmark pretty names
+  hm_lookup <- get_hallmark_desc_lookup(species)  # gs_name, gs_description
+  hallmark_names <- unique(hm_lookup$gs_name)     # ~50 sets
+
+  all_results <- list()
+  summary_stats <- tibble::tibble()
+
+  for (csv_file in csv_files) {
+    result <- process_csv_symbols(csv_file, collections, collapse_categories)
+    cell_type <- tools::file_path_sans_ext(basename(csv_file))
+    all_results[[cell_type]] <- result
+
+    if (!"error" %in% names(result)) {
+      summary_stats <- dplyr::bind_rows(summary_stats, tibble::tibble(
+        CellType = cell_type,
+        InputGenes = result$input_genes,
+        SignificantPathways = result$significant_pathways
+      ))
+
+      if (save_results) {
+        # ---- Save general outputs as before ----
+        saveRDS(result, file.path(output_dir, paste0(cell_type, "_gsea_symbols_results.rds")))
+
+        sig_results <- result$gsea_results$combined %>%
+          dplyr::filter(padj < 0.05) %>%
+          dplyr::arrange(padj) %>%
+          dplyr::select(collection, pathway, NES, pval, padj, size, Direction, geneID)
+        if (nrow(sig_results) > 0) {
+          readr::write_csv(sig_results, file.path(output_dir, paste0(cell_type, "_significant_pathways.csv")))
+        }
+
+        top_results <- result$gsea_results$combined %>%
+          dplyr::arrange(padj) %>%
+          dplyr::slice_head(n = 20) %>%
+          dplyr::select(collection, pathway, NES, pval, padj, size, Direction, geneID)
+        readr::write_csv(top_results, file.path(output_dir, paste0(cell_type, "_top20_pathways.csv")))
+
+        # ---- NEW: Hallmark-only outputs ----
+        hm_df <- result$gsea_results$by_collection$Hallmark %>%
+          dplyr::left_join(hm_lookup, by = c("pathway" = "gs_name")) %>%
+          dplyr::rename(Hallmark = pathway, Description = gs_description)
+
+        # Significant Hallmarks (default q<0.25, common in GSEA papers)
+        hm_sig <- hm_df %>%
+          dplyr::filter(padj < hallmark_padj_threshold) %>%
+          dplyr::arrange(padj) %>%
+          dplyr::select(Hallmark, Description, NES, pval, padj, size, Direction, geneID)
+        readr::write_csv(hm_sig, file.path(output_dir, paste0(cell_type, "_HALLMARK_significant_q", hallmark_padj_threshold, ".csv")))
+
+        # Full Hallmark table (all ~50 with NES/padj, NA allowed)
+        hm_full <- tibble::tibble(Hallmark = hallmark_names) %>%
+          dplyr::left_join(hm_df %>% dplyr::select(Hallmark, Description, NES, pval, padj, size, Direction), by = "Hallmark") %>%
+          dplyr::arrange(Hallmark)
+        readr::write_csv(hm_full, file.path(output_dir, paste0(cell_type, "_HALLMARK_all.csv")))
+      }
+    }
+  }
+
+  if (nrow(summary_stats) > 0) {
+    cat("\n=== Summary Statistics ===\n")
+    print(summary_stats)
+    if (save_results) readr::write_csv(summary_stats, file.path(output_dir, "gsea_summary_stats.csv"))
+  }
+
+  # ---- NEW: Project-wide Hallmark matrices (NES & padj) ----
+  if (save_results) {
+    # Build long table across cell types
+    long_hm <- purrr::map_dfr(names(all_results), function(ct) {
+      r <- all_results[[ct]]
+      if (!"gsea_results" %in% names(r)) return(NULL)
+      r$gsea_results$by_collection$Hallmark %>%
+        dplyr::select(pathway, NES, padj) %>%
+        dplyr::mutate(CellType = ct)
+    })
+    if (nrow(long_hm) > 0) {
+      long_hm <- long_hm %>%
+        dplyr::left_join(hm_lookup, by = c("pathway" = "gs_name")) %>%
+        dplyr::rename(Hallmark = pathway, Description = gs_description)
+
+      nes_mat <- long_hm %>%
+        dplyr::select(CellType, Hallmark, NES) %>%
+        tidyr::pivot_wider(names_from = CellType, values_from = NES) %>%
+        dplyr::arrange(Hallmark)
+      padj_mat <- long_hm %>%
+        dplyr::select(CellType, Hallmark, padj) %>%
+        tidyr::pivot_wider(names_from = CellType, values_from = padj) %>%
+        dplyr::arrange(Hallmark)
+
+      readr::write_csv(nes_mat,  file.path(output_dir, "HALLMARK_NES_matrix.csv"))
+      readr::write_csv(padj_mat, file.path(output_dir, "HALLMARK_padj_matrix.csv"))
+    }
+  }
+
+  if (save_results) {
+    tryCatch({
+      saveRDS(all_results, file.path(output_dir, "all_gsea_symbols_results.rds"))
+      cat("✓ All results saved to:", output_dir, "\n")
+    }, error = function(e) {
+      cat("Error saving combined results:", e$message, "\n")
+    })
+  }
+
+  all_results
+}
+
+# ---- Visualization: all-collections (as before) ----
+plot_gsea_heatmap <- function(results, padj_threshold = 0.05, top_n = 30) {
+  library(ggplot2)
+  all_pathways <- tibble::tibble()
+  for (cell_type in names(results)) {
+    if ("gsea_results" %in% names(results[[cell_type]])) {
+      pathways <- results[[cell_type]]$gsea_results$combined %>%
+        dplyr::filter(padj < padj_threshold) %>%
+        dplyr::select(pathway, NES, padj) %>%
+        dplyr::mutate(CellType = cell_type)
+      all_pathways <- dplyr::bind_rows(all_pathways, pathways)
+    }
+  }
+  if (nrow(all_pathways) == 0) {
+    cat("No significant pathways found at padj <", padj_threshold, "\n")
+    return(NULL)
+  }
+  top_pathways <- all_pathways %>% dplyr::count(pathway, sort = TRUE) %>% dplyr::slice_head(n = top_n) %>% dplyr::pull(pathway)
+  plot_data <- all_pathways %>% dplyr::filter(pathway %in% top_pathways) %>% dplyr::mutate(pathway = factor(pathway, levels = rev(top_pathways)))
+
+  ggplot2::ggplot(plot_data, aes(x = CellType, y = pathway, fill = NES)) +
+    ggplot2::geom_tile(color = "white") +
+    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                   axis.text.y = element_text(size = 8)) +
+    ggplot2::labs(title = paste("Top", length(top_pathways), "GSEA Pathways"),
+                  x = "Cell Type", y = "Pathway", fill = "NES")
+}
+
+# ---- NEW Visualization: Hallmark-only dotmap ----
+plot_hallmark_dotmap <- function(results, padj_threshold = 0.25, species = "Homo sapiens") {
+  hm_lookup <- get_hallmark_desc_lookup(species)
+  # collect Hallmark results across cell types
+  long_hm <- purrr::map_dfr(names(results), function(ct) {
+    r <- results[[ct]]
+    if (!"gsea_results" %in% names(r)) return(NULL)
+    r$gsea_results$by_collection$Hallmark %>%
+      dplyr::select(pathway, NES, padj) %>%
+      dplyr::mutate(CellType = ct)
+  })
+  if (nrow(long_hm) == 0) return(NULL)
+
+  long_hm <- long_hm %>%
+    dplyr::left_join(hm_lookup, by = c("pathway" = "gs_name")) %>%
+    dplyr::rename(Hallmark = pathway, Description = gs_description) %>%
+    dplyr::mutate(sig = padj < padj_threshold)
+
+  # order Hallmarks by mean NES magnitude (optional)
+  order_hm <- long_hm %>%
+    dplyr::group_by(Hallmark) %>%
+    dplyr::summarise(m = mean(abs(NES), na.rm = TRUE), .groups = "drop") %>%
+    dplyr::arrange(dplyr::desc(m)) %>%
+    dplyr::pull(Hallmark)
+
+  ggplot2::ggplot(long_hm, aes(x = CellType, y = factor(Hallmark, levels = rev(order_hm)))) +
+    ggplot2::geom_point(aes(size = -log10(padj), fill = NES), shape = 21, alpha = 0.9) +
+    ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    ggplot2::scale_size_continuous(range = c(1.5, 6), limits = c(0, NA)) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ggplot2::labs(title = paste0("Hallmark GSEA (q<", padj_threshold, " highlighted by size)"),
+                  y = "Hallmark", x = "Cell Type", fill = "NES", size = "-log10(q)")
+}
+
+cat("GSEA with gene symbols + Hallmark extras loaded.\n")
+cat("Main: results <- run_gsea_symbols_analysis()\n")
+cat("Plot (all): p_all <- plot_gsea_heatmap(results)\n")
+cat("Plot (Hallmarks): p_hm <- plot_hallmark_dotmap(results)\n")
