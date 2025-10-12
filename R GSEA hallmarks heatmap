@@ -1,66 +1,113 @@
 # ===============================
-# Hallmark heatmap (add to your script)
+# GSEA Heatmaps - CORRECTED VERSION
 # ===============================
 
-# Build Hallmark NES and q matrices from 'results' (output of run_gsea_symbols_analysis)
-build_hallmark_matrices <- function(results, species = "Homo sapiens") {
-  hm_lookup <- msigdbr::msigdbr(species = species, category = "H") %>%
-    dplyr::distinct(gs_name, gs_description)
+library(pheatmap)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tibble)
 
-  long_hm <- purrr::map_dfr(names(results), function(ct) {
-    r <- results[[ct]]
-    if (!"gsea_results" %in% names(r)) return(NULL)
-    r$gsea_results$by_collection$Hallmark %>%
-      dplyr::select(pathway, NES, padj) %>%
+# Build NES and padj matrices - FIXED to use gsea_results
+build_gsea_matrices <- function(all_results, gsea_type = "GSEA_GO_BP") {
+  
+  long_data <- purrr::map_dfr(names(all_results), function(ct) {
+    r <- all_results[[ct]]
+    if (!"gsea_results" %in% names(r)) return(NULL)  # CHANGED from "gsea" to "gsea_results"
+    if (!gsea_type %in% names(r$gsea_results)) return(NULL)  # CHANGED
+    
+    gsea_obj <- r$gsea_results[[gsea_type]]  # CHANGED
+    if (is.null(gsea_obj) || !"result" %in% slotNames(gsea_obj)) return(NULL)
+    
+    gsea_obj@result %>%
+      dplyr::select(ID, Description, NES, p.adjust) %>%
       dplyr::mutate(CellType = ct)
   })
-  if (nrow(long_hm) == 0) stop("No Hallmark results found.")
-
-  long_hm <- long_hm %>%
-    dplyr::left_join(hm_lookup, by = c("pathway" = "gs_name")) %>%
-    dplyr::rename(Hallmark = pathway, Description = gs_description)
-
-  nes_mat <- long_hm %>%
-    dplyr::select(CellType, Hallmark, NES) %>%
+  
+  if (nrow(long_data) == 0) {
+    stop(paste("No", gsea_type, "results found."))
+  }
+  
+  # Create NES matrix
+  nes_mat <- long_data %>%
+    dplyr::select(CellType, Description, NES) %>%
     tidyr::pivot_wider(names_from = CellType, values_from = NES) %>%
-    tibble::column_to_rownames("Hallmark") %>%
+    tibble::column_to_rownames("Description") %>%
     as.matrix()
-
-  q_mat <- long_hm %>%
-    dplyr::select(CellType, Hallmark, padj) %>%
-    tidyr::pivot_wider(names_from = CellType, values_from = padj) %>%
-    tibble::column_to_rownames("Hallmark") %>%
+  
+  # Create padj matrix
+  padj_mat <- long_data %>%
+    dplyr::select(CellType, Description, p.adjust) %>%
+    tidyr::pivot_wider(names_from = CellType, values_from = p.adjust) %>%
+    tibble::column_to_rownames("Description") %>%
     as.matrix()
-
-  list(nes = nes_mat, padj = q_mat, meta = dplyr::distinct(long_hm, Hallmark, Description))
+  
+  list(nes = nes_mat, padj = padj_mat)
 }
 
-# Option A: pheatmap (simple and fast)
-plot_hallmark_heatmap <- function(results,
-                                  padj_threshold = 0.25,
-                                  mask_nonsig = TRUE,   # set non-sig cells to 0 (or NA)
-                                  na_as = 0,            # 0 keeps tiles neutral; use NA to blank them
-                                  cluster_rows = TRUE,
-                                  cluster_cols = TRUE,
-                                  species = "Homo sapiens") {
+# Heatmap plotting function using pheatmap
+plot_gsea_heatmap <- function(all_results,
+                              gsea_type = "GSEA_GO_BP",
+                              padj_threshold = 0.05,
+                              nes_threshold = 1.5,
+                              mask_nonsig = TRUE,
+                              na_as = 0,
+                              cluster_rows = TRUE,
+                              cluster_cols = TRUE,
+                              max_pathways = 50) {
+  
   suppressPackageStartupMessages(library(pheatmap))
-  mats <- build_hallmark_matrices(results, species)
+  
+  cat("Building matrices for", gsea_type, "...\n")
+  mats <- build_gsea_matrices(all_results, gsea_type)
   NES <- mats$nes
   Q   <- mats$padj
-
-  # mask non-significant cells if requested
-  if (mask_nonsig) {
-    NES_masked <- NES
-    NES_masked[is.na(Q) | Q >= padj_threshold] <- na_as
-  } else {
-    NES_masked <- NES
+  
+  # Filter to significant pathways in at least one cell type
+  sig_mask <- (abs(NES) > nes_threshold) & (Q < padj_threshold)
+  sig_mask[is.na(sig_mask)] <- FALSE
+  pathways_to_keep <- rowSums(sig_mask) > 0
+  
+  NES_filtered <- NES[pathways_to_keep, , drop = FALSE]
+  Q_filtered <- Q[pathways_to_keep, , drop = FALSE]
+  
+  cat("Pathways after filtering:", nrow(NES_filtered), "\n")
+  
+  if (nrow(NES_filtered) == 0) {
+    stop("No pathways meet the significance criteria")
   }
-
-  # center & scale color around 0
+  
+  # Limit to top pathways if too many
+  if (nrow(NES_filtered) > max_pathways) {
+    cat("Limiting to top", max_pathways, "pathways by max absolute NES\n")
+    max_abs_nes <- apply(abs(NES_filtered), 1, max, na.rm = TRUE)
+    top_idx <- order(max_abs_nes, decreasing = TRUE)[1:max_pathways]
+    NES_filtered <- NES_filtered[top_idx, , drop = FALSE]
+    Q_filtered <- Q_filtered[top_idx, , drop = FALSE]
+  }
+  
+  # Mask non-significant cells if requested
+  if (mask_nonsig) {
+    NES_masked <- NES_filtered
+    NES_masked[is.na(Q_filtered) | Q_filtered >= padj_threshold | abs(NES_filtered) <= nes_threshold] <- na_as
+  } else {
+    NES_masked <- NES_filtered
+  }
+  
+  # Center & scale color around 0
   max_abs <- max(abs(NES_masked), na.rm = TRUE)
+  if (max_abs == 0) max_abs <- 1
   breaks <- seq(-max_abs, max_abs, length.out = 101)
   cols <- colorRampPalette(c("blue", "white", "red"))(length(breaks) - 1)
-
+  
+  # Clean up pathway names
+  clean_names <- gsub("^GOBP_", "", rownames(NES_masked))
+  clean_names <- gsub("^GOCC_", "", clean_names)
+  clean_names <- gsub("^GOMF_", "", clean_names)
+  clean_names <- gsub("^HALLMARK_", "", clean_names)
+  clean_names <- gsub("_", " ", clean_names)
+  rownames(NES_masked) <- clean_names
+  
   pheatmap::pheatmap(
     NES_masked,
     color = cols,
@@ -68,55 +115,141 @@ plot_hallmark_heatmap <- function(results,
     cluster_rows = cluster_rows,
     cluster_cols = cluster_cols,
     border_color = NA,
-    main = sprintf("Hallmark GSEA (NES)  —  q < %.2f %s",
-                   padj_threshold, if (mask_nonsig) "(non-sig masked)" else ""),
-    fontsize_row = 8,
-    fontsize_col = 10
+    main = sprintf("%s GSEA (NES) — padj < %.2f, |NES| > %.1f %s",
+                   gsub("GSEA_", "", gsea_type),
+                   padj_threshold, 
+                   nes_threshold,
+                   if (mask_nonsig) "(non-sig masked)" else ""),
+    fontsize_row = 7,
+    fontsize_col = 10,
+    angle_col = 45
   )
 }
 
-# Option B: ggplot tile (if you prefer a figure-friendly plot object)
-plot_hallmark_heatmap_gg <- function(results,
-                                     padj_threshold = 0.25,
-                                     mask_nonsig = TRUE,
-                                     na_as = 0,
-                                     species = "Homo sapiens") {
+# ggplot version
+plot_gsea_heatmap_gg <- function(all_results,
+                                 gsea_type = "GSEA_GO_BP",
+                                 padj_threshold = 0.05,
+                                 nes_threshold = 1.5,
+                                 mask_nonsig = TRUE,
+                                 na_as = 0,
+                                 max_pathways = 50) {
+  
   suppressPackageStartupMessages(library(ggplot2))
-  mats <- build_hallmark_matrices(results, species)
+  
+  cat("Building matrices for", gsea_type, "...\n")
+  mats <- build_gsea_matrices(all_results, gsea_type)
   NES <- mats$nes
   Q   <- mats$padj
-  NESm <- NES
-  if (mask_nonsig) NESm[is.na(Q) | Q >= padj_threshold] <- na_as
-
+  
+  # Filter to significant pathways
+  sig_mask <- (abs(NES) > nes_threshold) & (Q < padj_threshold)
+  sig_mask[is.na(sig_mask)] <- FALSE
+  pathways_to_keep <- rowSums(sig_mask) > 0
+  
+  NES_filtered <- NES[pathways_to_keep, , drop = FALSE]
+  Q_filtered <- Q[pathways_to_keep, , drop = FALSE]
+  
+  cat("Pathways after filtering:", nrow(NES_filtered), "\n")
+  
+  if (nrow(NES_filtered) == 0) {
+    stop("No pathways meet the significance criteria")
+  }
+  
+  # Limit to top pathways
+  if (nrow(NES_filtered) > max_pathways) {
+    cat("Limiting to top", max_pathways, "pathways by max absolute NES\n")
+    max_abs_nes <- apply(abs(NES_filtered), 1, max, na.rm = TRUE)
+    top_idx <- order(max_abs_nes, decreasing = TRUE)[1:max_pathways]
+    NES_filtered <- NES_filtered[top_idx, , drop = FALSE]
+    Q_filtered <- Q_filtered[top_idx, , drop = FALSE]
+  }
+  
+  # Mask non-significant
+  NESm <- NES_filtered
+  if (mask_nonsig) {
+    NESm[is.na(Q_filtered) | Q_filtered >= padj_threshold | abs(NES_filtered) <= nes_threshold] <- na_as
+  }
+  
+  # Clean pathway names
+  clean_names <- gsub("^GOBP_", "", rownames(NESm))
+  clean_names <- gsub("^GOCC_", "", clean_names)
+  clean_names <- gsub("^GOMF_", "", clean_names)
+  clean_names <- gsub("^HALLMARK_", "", clean_names)
+  clean_names <- gsub("_", " ", clean_names)
+  rownames(NESm) <- clean_names
+  
   df <- as.data.frame(NESm) %>%
-    tibble::rownames_to_column("Hallmark") %>%
-    tidyr::pivot_longer(-Hallmark, names_to = "CellType", values_to = "NES")
-
+    tibble::rownames_to_column("Pathway") %>%
+    tidyr::pivot_longer(-Pathway, names_to = "CellType", values_to = "NES")
+  
   max_abs <- max(abs(df$NES), na.rm = TRUE)
-
-  ggplot(df, aes(CellType, Hallmark, fill = NES)) +
-    geom_tile(color = "white") +
+  if (max_abs == 0) max_abs <- 1
+  
+  ggplot(df, aes(CellType, Pathway, fill = NES)) +
+    geom_tile(color = "white", size = 0.5) +
     scale_fill_gradient2(limits = c(-max_abs, max_abs),
                          low = "blue", mid = "white", high = "red", midpoint = 0,
                          na.value = "grey95") +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          axis.text.y = element_text(size = 8)) +
-    labs(title = sprintf("Hallmark GSEA (NES) — q < %.2f %s",
-                         padj_threshold, if (mask_nonsig) "(non-sig masked)" else ""),
-         x = "Cell Type", y = "Hallmark", fill = "NES")
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+          axis.text.y = element_text(size = 7),
+          plot.title = element_text(hjust = 0.5)) +
+    labs(title = sprintf("%s GSEA (NES) — padj < %.2f, |NES| > %.1f %s",
+                         gsub("GSEA_", "", gsea_type),
+                         padj_threshold,
+                         nes_threshold,
+                         if (mask_nonsig) "(non-sig masked)" else ""),
+         x = "Cell Type", y = "Pathway", fill = "NES")
 }
 
-# Build and save matrices (optional)
-mats <- build_hallmark_matrices(results)
-readr::write_csv(tibble::as_tibble(rownames_to_column(as.data.frame(mats$nes), "Hallmark")),
-                 file.path(csv_dir, "GSEA_Results_Symbols", "HALLMARK_NES_matrix.csv"))
-readr::write_csv(tibble::as_tibble(rownames_to_column(as.data.frame(mats$padj), "Hallmark")),
-                 file.path(csv_dir, "GSEA_Results_Symbols", "HALLMARK_padj_matrix.csv"))
+# ===========================================
+# CREATE ALL FOUR HEATMAPS
+# ===========================================
 
-# Plot heatmap (pheatmap)
-plot_hallmark_heatmap(results, padj_threshold = 0.25, mask_nonsig = TRUE, na_as = 0)
+cat("\n=== Creating GSEA Heatmaps (Including Hallmark) ===\n\n")
 
-# Or as a ggplot object (handy for theming/combining)
-p <- plot_hallmark_heatmap_gg(results, padj_threshold = 0.25, mask_nonsig = TRUE, na_as = 0)
-print(p)
+# 1. GO Biological Process
+cat("=== GO Biological Process ===\n")
+plot_gsea_heatmap(all_results, 
+                  gsea_type = "GSEA_GO_BP",
+                  padj_threshold = 0.05,
+                  nes_threshold = 1.5,
+                  max_pathways = 50)
+
+# 2. KEGG Pathways
+cat("\n=== KEGG Pathways ===\n")
+plot_gsea_heatmap(all_results, 
+                  gsea_type = "GSEA_KEGG",
+                  padj_threshold = 0.05,
+                  nes_threshold = 1.5,
+                  max_pathways = 50)
+
+# 3. Reactome Pathways
+cat("\n=== Reactome Pathways ===\n")
+plot_gsea_heatmap(all_results, 
+                  gsea_type = "GSEA_Reactome",
+                  padj_threshold = 0.05,
+                  nes_threshold = 1.5,
+                  max_pathways = 50)
+
+# 4. Hallmark Pathways
+cat("\n=== Hallmark Pathways ===\n")
+plot_gsea_heatmap(all_results, 
+                  gsea_type = "GSEA_Hallmark",
+                  padj_threshold = 0.05,
+                  nes_threshold = 1.5,
+                  max_pathways = 50)
+
+# Save as ggplot PDFs
+p_gobp <- plot_gsea_heatmap_gg(all_results, gsea_type = "GSEA_GO_BP", max_pathways = 30)
+p_kegg <- plot_gsea_heatmap_gg(all_results, gsea_type = "GSEA_KEGG", max_pathways = 30)
+p_reactome <- plot_gsea_heatmap_gg(all_results, gsea_type = "GSEA_Reactome", max_pathways = 30)
+p_hallmark <- plot_gsea_heatmap_gg(all_results, gsea_type = "GSEA_Hallmark", max_pathways = 30)
+
+ggsave("GOBP_heatmap.pdf", p_gobp, width = 10, height = 12)
+ggsave("KEGG_heatmap.pdf", p_kegg, width = 10, height = 10)
+ggsave("Reactome_heatmap.pdf", p_reactome, width = 10, height = 12)
+ggsave("Hallmark_heatmap.pdf", p_hallmark, width = 10, height = 10)
+
+cat("\n✓ All 4 heatmaps created!\n")
