@@ -8,9 +8,10 @@ library(org.Hs.eg.db)
 library(ReactomePA)
 library(pheatmap)
 library(viridis)
+library(msigdbr)
 
 # Read your VLMC data
-vlmc_data <- read_csv("/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs/VLMCs.csv")
+vlmc_data <- read_csv("/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs/Near normal cell types/VLMCs.csv")
 
 # Step 1: Prepare gene lists with multiple ranking strategies
 prepare_vlmc_gene_lists <- function(vlmc_data, pval_cutoff = 0.05, logfc_cutoff = 0.5) {
@@ -162,7 +163,7 @@ run_pathway_analysis <- function(gene_lists) {
     return(results)
 }
 
-# GSEA analysis using ALL genes (more powerful approach)
+# GSEA analysis using ALL genes (more powerful approach) - WITH HALLMARK
 run_gsea_analysis <- function(gene_lists) {
     
     results <- list()
@@ -227,6 +228,35 @@ run_gsea_analysis <- function(gene_lists) {
         if (nrow(gsea_reactome@result) > 0) {
             results[["GSEA_Reactome"]] <- gsea_reactome
         }
+        
+        # ===== HALLMARK GENE SETS =====
+        # Get Hallmark gene sets for human
+        hallmark_sets <- msigdbr(species = "Homo sapiens", category = "H")
+        
+        # Need to convert back to gene symbols for Hallmark since msigdbr uses symbols
+        # Create symbol-based ranked list
+        symbol_ranked_data <- all_genes_df %>%
+            arrange(desc(score))
+        
+        symbol_ranked_list <- symbol_ranked_data$score
+        names(symbol_ranked_list) <- symbol_ranked_data$SYMBOL
+        
+        # GSEA for Hallmark pathways
+        gsea_hallmark <- GSEA(
+            geneList = symbol_ranked_list,
+            TERM2GENE = hallmark_sets %>% dplyr::select(gs_name, gene_symbol),
+            minGSSize = 15,
+            maxGSSize = 500,
+            pvalueCutoff = 0.05,
+            verbose = FALSE,
+            by = "fgsea"
+        )
+        
+        if (nrow(gsea_hallmark@result) > 0) {
+            results[["GSEA_Hallmark"]] <- gsea_hallmark
+            cat("Found", nrow(gsea_hallmark@result), "significant Hallmark pathways\n")
+        }
+        # ===== END HALLMARK ADDITION =====
     }
     
     return(results)
@@ -563,7 +593,7 @@ run_vlmc_analysis <- function(output_prefix = "VLMC_d14_vs_d0") {
 }
 
 # Run analysis on all CSV files in the directory
-run_all_cell_types_analysis <- function(data_dir = "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs") {
+run_all_cell_types_analysis <- function(data_dir = "/Users/jpmcginnis1/Desktop/Sequencing info and data/Ex vivo paper data/Diff exp CSVs/Near normal cell types") {
     
     cat("=== Running GO Analysis on All Cell Types ===\n")
     
@@ -821,3 +851,5 @@ cat("\nThis will process all CSV files and create:\n")
 cat("• Individual analysis for each cell type\n")
 cat("• Comparison summary across cell types\n")
 cat("• All output files in your current directory\n")
+cat("• NOW WITH HALLMARK GENE SETS!\n")
+                
