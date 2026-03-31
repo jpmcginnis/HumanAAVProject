@@ -1,0 +1,130 @@
+#!/bin/bash
+# =============================================================================
+# BOCA Data Download Script
+# =============================================================================
+#
+# WHAT IS BOCA?
+# Brain Open Chromatin Atlas — bulk ATAC-seq data from the Roussos lab
+# (Fullard et al., Genome Research 2018, GEO: GSE96949)
+#
+# The dataset contains:
+#   - ATAC-seq from 14 brain regions × 2 cell types (neuron vs glia)
+#   - 5 neurotypical adult postmortem brains
+#   - Nuclei were FACS-sorted using NeuN antibody:
+#       NeuN+ = neurons
+#       NeuN- = glia (astrocytes, oligodendrocytes, microglia, etc.)
+#   - This gives you cell-type-level chromatin accessibility without
+#     needing single-cell resolution (and without needing 128 GB RAM)
+#
+# What we download:
+#   1. Peak BED files (hg38) — open chromatin regions per region per cell type
+#   2. Consensus peaks — merged peaks across all samples
+#   3. Raw count matrix — read counts at each peak in each sample
+#   4. Normalized count matrix — same but normalized for sequencing depth
+#
+# The 14 brain regions:
+#   ACC  = Anterior cingulate cortex    NAC  = Nucleus accumbens
+#   AMY  = Amygdala                     OFC  = Orbitofrontal cortex
+#   DLPFC = Dorsolateral prefrontal ctx PMC  = Primary motor cortex
+#   HIPP = Hippocampus                  PUT  = Putamen
+#   INS  = Insula                       PVC  = Primary visual cortex
+#   ITC  = Inferior temporal cortex     STC  = Superior temporal cortex
+#   MDT  = Mediodorsal thalamus         VLPFC = Ventrolateral prefrontal ctx
+#
+# Each region has two BED files: {REGION}_neuron.bed and {REGION}_glia.bed
+#
+# Why start here:
+#   - Small enough for a 16 GB RAM MacBook (~360 MB total download)
+#   - Already cell-type resolved (neuron vs glia)
+#   - Previously used by Allen Institute for AAV enhancer selection
+#   - Great for learning peak analysis before moving to single-cell data
+#
+# Prerequisites:
+#   - conda activate atacseq
+#   - Internet connection
+#
+# Usage:
+#   chmod +x download_boca.sh
+#   ./download_boca.sh
+# =============================================================================
+
+set -e
+
+echo "============================================"
+echo "  Downloading BOCA Dataset"
+echo "============================================"
+echo ""
+
+# --------------------------------------------------
+# Step 1: Create project directory structure
+# --------------------------------------------------
+echo "[1/3] Setting up project directories..."
+
+mkdir -p ~/atacseq_project/data/raw/boca
+mkdir -p ~/atacseq_project/data/{processed,references}
+mkdir -p ~/atacseq_project/{scripts,results/{peaks,enhancers,figures},notebooks}
+
+cd ~/atacseq_project/data/raw/boca
+
+echo "  ✓ Directories created"
+echo "  ✓ Working in: $(pwd)"
+
+# --------------------------------------------------
+# Step 2: Download processed files from Roussos lab
+# --------------------------------------------------
+echo ""
+echo "[2/3] Downloading BOCA files (this takes a few minutes)..."
+
+echo "  → Region & cell-type specific peaks (hg38)..."
+curl -L -o boca_peaks_hg38.zip \
+    "https://bendlj01.dmz.hpc.mssm.edu/multireg/resources/boca_peaks_hg38_lifted.zip"
+
+echo "  → Consensus peaks..."
+curl -L -o boca_consensus_peaks_hg38.bed \
+    "https://multireg.s3.amazonaws.com/resources/boca_peaks_consensus_no_blacklisted_regions_hg38_lifted.bed"
+
+echo "  → Raw count matrix..."
+curl -L -o boca_raw_counts.tsv.gz \
+    "https://multireg.s3.amazonaws.com/resources/boca_raw_count_matrix.tsv.gz"
+
+echo "  → Normalized count matrix (largest file, ~272 MB)..."
+curl -L -o boca_norm_counts.tsv.gz \
+    "https://multireg.s3.amazonaws.com/resources/boca_norm_count_matrix.tsv.gz"
+
+echo "  ✓ All files downloaded"
+
+# --------------------------------------------------
+# Step 3: Unzip peak files and verify
+# --------------------------------------------------
+echo ""
+echo "[3/3] Unzipping and verifying..."
+
+unzip -o boca_peaks_hg38.zip
+
+echo ""
+echo "  Downloaded files:"
+ls -lh *.bed *.gz *.zip
+echo ""
+echo "  Peak BED files (per region per cell type):"
+ls bed_hg38/*.bed | wc -l | xargs echo "   " "BED files found:"
+echo ""
+
+# Quick sanity check — peek at one file
+echo "  Sample data (first 3 lines of DLPFC neuron peaks):"
+head -3 bed_hg38/DLPFC_neuron.bed | sed 's/^/    /'
+
+echo ""
+echo "============================================"
+echo "  ✓ BOCA download complete!"
+echo "============================================"
+echo ""
+echo "  Location: ~/atacseq_project/data/raw/boca/"
+echo ""
+echo "  Files:"
+echo "    bed_hg38/              Per-region, per-cell-type peak BED files"
+echo "    boca_consensus_peaks_hg38.bed   Merged peaks across all samples"
+echo "    boca_raw_counts.tsv.gz          Raw count matrix"
+echo "    boca_norm_counts.tsv.gz         Normalized count matrix"
+echo ""
+echo "  Next: Open Positron and start exploring the data with Python"
+echo ""
