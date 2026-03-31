@@ -1,0 +1,189 @@
+#!/bin/bash
+# =============================================================================
+# scATAC-seq Environment Setup — Intel MacBook Pro (16 GB RAM)
+# =============================================================================
+#
+# CLEAN INSTALL SCRIPT — incorporates all fixes from initial setup:
+#   - Accepts conda Terms of Service upfront
+#   - Installs ALL packages with C/C++ extensions via conda (not pip)
+#     to avoid llvmlite, pybedtools, pysam build failures
+#   - Pins Python 3.10 in the conda create command to prevent drift
+#   - Only uses pip for snapatac2 (not available on conda)
+#
+# Prerequisites:
+#   - Miniconda or Anaconda installed
+#   - conda init bash already run (and terminal restarted after)
+#   - Internet connection
+#
+# Usage:
+#   chmod +x mac_atacseq_setup_clean.sh
+#   ./mac_atacseq_setup_clean.sh
+#
+# If you need to start over:
+#   conda deactivate
+#   conda env remove -n atacseq -y
+#   ./mac_atacseq_setup_clean.sh
+#
+# Estimated time: 15-25 minutes
+# =============================================================================
+
+set -e  # Exit on any error
+
+echo "============================================"
+echo "  scATAC-seq Environment Setup (Mac Local)"
+echo "============================================"
+echo ""
+
+# --------------------------------------------------
+# Step 1: Accept conda Terms of Service
+# --------------------------------------------------
+echo "[1/5] Accepting conda Terms of Service..."
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+echo "  ✓ TOS accepted"
+
+# --------------------------------------------------
+# Step 2: Remove existing environment if present
+# --------------------------------------------------
+echo ""
+echo "[2/5] Cleaning up any existing atacseq environment..."
+conda deactivate 2>/dev/null || true
+conda env remove -n atacseq -y 2>/dev/null || true
+echo "  ✓ Clean slate"
+
+# --------------------------------------------------
+# Step 3: Create environment with ALL compiled packages via conda
+# --------------------------------------------------
+# KEY LESSON: llvmlite, numba, pybedtools, pysam all fail when pip
+# tries to compile them from source on Mac. Install everything that
+# has C/C++ extensions through conda in one shot so it solves
+# binary compatibility together.
+echo ""
+echo "[3/5] Creating conda environment (this takes 5-10 minutes)..."
+echo "  → Python 3.10 + all compiled dependencies via conda"
+echo "  → This avoids the llvmlite/pybedtools build errors"
+
+conda create -n atacseq \
+    -c conda-forge -c bioconda \
+    python=3.10 \
+    llvmlite numba \
+    pybedtools pysam \
+    macs2 bedtools samtools tabix \
+    scanpy anndata matplotlib seaborn leidenalg \
+    pandas numpy scipy \
+    -y
+
+echo "  ✓ Conda environment created"
+
+# --------------------------------------------------
+# Step 4: Install pip-only packages
+# --------------------------------------------------
+# Activate the environment for pip installs
+eval "$(conda shell.bash hook)"
+conda activate atacseq
+
+echo ""
+echo "[4/5] Installing pip-only packages..."
+echo "  → snapatac2 (not available on conda)"
+
+pip install snapatac2
+pip install pyjaspar
+
+echo "  ✓ Pip packages installed"
+
+# --------------------------------------------------
+# Step 5: Create project directory structure
+# --------------------------------------------------
+echo ""
+echo "[5/5] Creating project directory structure..."
+
+PROJECT_DIR="$HOME/atacseq_project"
+mkdir -p "$PROJECT_DIR"/{data/{raw,processed,references},scripts,results/{peaks,enhancers,figures},notebooks}
+
+cat > "$PROJECT_DIR/README.md" << 'EOF'
+# scATAC-seq AAV Enhancer Discovery Project
+
+## Directory structure
+```
+atacseq_project/
+├── data/
+│   ├── raw/           # Downloaded fragment files, BAMs, peak BEDs
+│   ├── processed/     # Filtered, clustered AnnData objects
+│   └── references/    # Genome files, gene annotations, motif databases
+├── scripts/           # Analysis scripts (mirror these on AWS)
+├── results/
+│   ├── peaks/         # Called peaks per cell type
+│   ├── enhancers/     # Filtered enhancer candidates
+│   └── figures/       # Plots, UMAPs, heatmaps
+└── notebooks/         # Jupyter notebooks for exploration
+```
+
+## Environment
+```bash
+conda activate atacseq
+```
+
+## What runs locally (16 GB RAM)
+- BOCA bulk ATAC-seq (first dataset — small, good for learning)
+- Individual scATAC datasets up to ~30-50K cells
+- QC, clustering, visualization
+- Motif analysis on subsets
+- Enhancer filtering and annotation
+
+## What needs AWS (64-128 GB RAM)
+- CATLAS (1.1M cells)
+- TCGA scATAC (227K cells)
+- Cross-dataset integration
+- Full differential accessibility across merged datasets
+EOF
+
+echo "  ✓ Project structure created at: $PROJECT_DIR"
+
+# --------------------------------------------------
+# Verification
+# --------------------------------------------------
+echo ""
+echo "============================================"
+echo "  Verifying installation..."
+echo "============================================"
+echo ""
+
+python3 -c "
+import snapatac2 as snap
+import scanpy as sc
+import anndata
+import pybedtools
+import pysam
+import matplotlib
+import seaborn
+import numpy
+import pandas
+import scipy
+
+print(f'  snapatac2   {snap.__version__}')
+print(f'  scanpy      {sc.__version__}')
+print(f'  anndata     {anndata.__version__}')
+print(f'  pybedtools  {pybedtools.__version__}')
+print(f'  pysam       {pysam.__version__}')
+print(f'  matplotlib  {matplotlib.__version__}')
+print(f'  numpy       {numpy.__version__}')
+print(f'  pandas      {pandas.__version__}')
+"
+
+echo ""
+echo "  Checking command-line tools..."
+macs2 --version 2>&1 | head -1 | sed 's/^/  /'
+bedtools --version | sed 's/^/  /'
+samtools --version | head -1 | sed 's/^/  /'
+
+echo ""
+echo "============================================"
+echo "  ✓ Setup complete!"
+echo "============================================"
+echo ""
+echo "  To use:"
+echo "    conda activate atacseq"
+echo "    cd ~/atacseq_project"
+echo ""
+echo "  Project dir:  ~/atacseq_project"
+echo ""
