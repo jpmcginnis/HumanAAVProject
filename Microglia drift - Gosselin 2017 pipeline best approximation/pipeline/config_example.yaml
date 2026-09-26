@@ -1,0 +1,22 @@
+# Example config for pipeline/01_h5_to_pseudobulk.py
+#
+# Each donor contributes one D0 (fresh) and one D14 (or later) h5.
+# The `donor_id` string is arbitrary but must be unique across donors.
+# Paths must point to Cell Ranger filtered feature-barcode matrix h5
+# files (or CellBender-corrected h5s in the same format).
+#
+# The pipeline treats `d0_path` as the "ex" (ex-vivo / fresh) sample
+# and `d14_path` as the "iv" (in-vitro / cultured) sample regardless
+# of the exact days in culture. Rename the keys in this file if your
+# late timepoint is not day 14; the script only reads the values.
+
+donors:
+  - donor_id: DONOR_A
+    d0_path:  /path/to/DONOR_A_D0.h5
+    d14_path: /path/to/DONOR_A_D14.h5
+  - donor_id: DONOR_B
+    d0_path:  /path/to/DONOR_B_D0.h5
+    d14_path: /path/to/DONOR_B_D14.h5
+  - donor_id: DONOR_C
+    d0_path:  /path/to/DONOR_C_D0.h5
+    d14_path: /path/to/DONOR_C_D14.h5
