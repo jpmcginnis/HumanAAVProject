@@ -49,6 +49,7 @@ Three cohorts flagged but not included:
 │   ├── marker_peak_scoring.py # fallback: cell type labels from marker-gene TSS ± 2kb accessibility
 │   ├── peak_quantify.py      # CATLAS peak lift (matrix-mode; fragment-mode handled by flatten_cohort)
 │   ├── matrix_build.py       # cohort h5ads → long-format (peak × cell_type × cohort × patient) parquet tensor
+│   ├── pan_malignant_matrix.py  # same, but pools ALL tumor cells (CNV flag OR malignant_unresolved label) into one bucket — bypasses the Neftel-subtype gap and the marker-peak mis-labeling of CNV-malignant cells in gbm_space
 │   ├── scoring.py            # Pass 1 polars point-estimates + Pass 2 PyMC hierarchical ADVI posteriors
 │   ├── ranking.py            # composite ranking + 200-2000 bp + CNV-safe constraints → top candidates per cell type
 │   ├── surprises.py          # patient-subpopulation, multiome discordance, cross-dataset outlier detectors
@@ -167,6 +168,16 @@ Three cohorts' labels were produced by **marker-peak scoring** on
 `config/marker_tsses.tsv` because they lack coordinated gene-activity (snATAC
 only, no paired RNA). Changing the marker list changes labels. Keep the TSV
 versioned.
+
+**Pan-malignant mis-labeling.** Marker-peak scoring routinely assigns
+CNV-called malignant cells to TME types (TAM, microglia, neuron) when the
+tumor cell's chromatin incidentally opens at a marker-gene promoter. In
+GBM-Space this hit 438,994 cells (42% of the cohort) — ALL CNV-malignant,
+NONE labeled as `malignant_unresolved`. For questions about pan-tumor
+accessibility, `src/pan_malignant_matrix.py` rebuilds the aggregate using
+``(malignant_cnv == 1) OR (cell_type == "malignant_unresolved")`` as the
+inclusion rule. This recovers ~2.7× more pan-malignant cells and takes
+cross-cohort replication from max 3 cohorts to 6 cohorts for the top hits.
 
 The 4 TCGA GBM samples behind dbGaP phs000178 are **not** in the public
 pipeline run. If you have dbGaP access, drop their BAMs → fragments → under
