@@ -1,0 +1,332 @@
+# Primary-tissue IDH-WT GBM snATAC / 10x Multiome dataset catalog
+# Verified via literature search 2026-10-04. INCLUSION: primary human adult GBM
+# tissue, unsorted bulk nuclei. EXCLUSION: GSCs, organoids, PDX, mouse, FACS fractions.
+
+references:
+  catlas:
+    role: peak_atlas_and_neuron_labels
+    citation: "Li et al. 2023 Science (GSE244618)"
+    s3_path: "s3://jpm-atacseq-archive-2026/catlas/catlas_full_annotated.h5ad"
+    peak_count: 544735
+    cell_type_count: 107
+  gbmap:
+    role: tme_label_transfer_reference
+    citation: "Ruiz-Moreno et al. 2025 Neuro-Oncology (GSE211376)"
+    url: "https://cellxgene.cziscience.com/collections/999f2a15-3d7e-440b-96ae-2c806799c08c"
+    cell_count: 330000
+    patient_count: 109
+    modality: scRNA  # requires gene-activity-score bridging for ATAC
+
+cohorts:
+
+  guilhamon:
+    status: in_pipeline
+    priority: existing
+    citation: "Guilhamon et al. 2021 eLife (PMID 33427645)"
+    accession: GSE139136
+    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139136"
+    platform: 10x_scATAC_v1
+    n_patients: 4
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue  # unsorted bulk nuclei
+    access: open
+    s3_path: "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/gbm_guilhamon/"
+    notes: |
+      The scATAC subset only — the companion bulk GSC ATAC (GSE109399, 27 patient-
+      derived GSC cultures) is EXCLUDED per inclusion criteria.
+
+  gse165037:
+    # Note: JP flagged on 2026-10-04 that this cohort was previously (incorrectly)
+    # labeled as "Raviram et al. 2023 PNAS" — Raviram 2023 is scHi-C/Paired-seq
+    # work ("Analysis of 3D genomic interactions..."), NOT plain snATAC. The
+    # actual GSE165037 is a Guilhamon-lab-adjacent snATAC deposit titled
+    # "Single Cell Analysis of Chromatin Accessibility Reveals Genetic and
+    # Regulatory Heterogeneity in Glioblastomas". The folder on S3 was named
+    # 'gbm_raviram/' under the wrong citation. The data IS usable snATAC on
+    # 3 IDH-WT patients. Rename slug to GSE accession to avoid author confusion.
+    status: in_pipeline
+    priority: existing
+    citation: "GSE165037 — pending correct citation lookup; title: 'Single Cell Analysis of Chromatin Accessibility Reveals Genetic and Regulatory Heterogeneity in Glioblastomas'"
+    accession: GSE165037
+    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE165037"
+    platform: 10x_scATAC_plus_snRNA_paired  # paired snRNA deposit, NOT 10x Multiome ARC
+    n_patients: 3
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue
+    access: open
+    s3_path: "s3://jpm-atacseq-archive-2026/data_processed_gbm_raviram/"  # folder misnamed; preserve path for backward compatibility
+    action_items:
+      - "CORRECT the citation — pull GEO SOFT metadata via eutils, identify the actual publication (if any) linked to GSE165037"
+      - "CHECK FOR PATIENT OVERLAP with Guilhamon GSE139136 (4 patients). Sample IDs look distinct (GBM4 vs GBM_4349) but prove it computationally: once both are ingested, compare per-patient CNV fingerprints and marker peak signatures. Flag any duplicates and keep only one."
+      - "RL3 multi-region case previously attributed here does NOT exist in GSE165037. Dropped from config. If multi-region GBM snATAC is wanted, needs a separate accession search."
+
+  tcga_scatac:
+    status: in_pipeline
+    priority: existing
+    citation: "Terekhanova/Corces/Chang 2024 Science (PMID 39236169) 'Epigenetic regulation during cancer transitions across 11 tumour types'"
+    accession: TCGA-ATAC-Seq-2024
+    url: "https://gdc.cancer.gov/about-data/publications/TCGA-ATAC-Seq-2024"
+    platform: 10x_scATAC
+    # Lin 2026 Nat Neurosci (Data Availability, ref 37) cites 9 GBM scATAC-seq samples
+    # from this deposit; 5 of 9 are directly extractable from the GDC open-access
+    # pan-cancer fragments tar, 4 require dbGaP phs000178 for the raw BAMs.
+    n_patients: 9
+    n_patients_open_access: 5
+    n_patients_dbgap_controlled: 4
+    n_cells: 157685  # from this pipeline's 9-sample ingest, Oct 2026
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue
+    access: mostly_open  # 5/9 open on GDC endpoint, 4/9 behind dbGaP phs000178
+    fetch_source: "GDC publication endpoint — fetch.fetch_tcga_scatac pulls full_cancer_scatacseq.tar.gz and extracts the GBMx subset"
+    ingest_mode: fragment  # per-sample fragments.tsv.gz → snapatac2 → flatten_cohort.py
+    notes: |
+      Cohort was previously slugged ``sundaram_gbm`` in this pipeline because the
+      5-sample open-access release is sometimes attributed to a "Sundaram et al."
+      distribution. Lin 2026 Nat Neurosci (Data Availability, ref 37) confirms
+      the X003-X011 samples ARE the TCGA scATAC collection — same raw data,
+      different distribution name. Renamed to ``tcga_scatac`` 2026-10-07 to
+      reflect the primary source.
+
+  mathewson_lupien:
+    status: partially_in_pipeline
+    priority: tier1_verify
+    citation: "Mathewson et al. 2022 Nature Cancer (PMID 36539501) — GSE174554 is 'A single cell atlas of human glioma under therapy' (NOT 'Nature Cancer' title verbatim; verify)"
+    accession: GSE174554
+    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE174554"
+    platform: 10x_scATAC_plus_scRNA_separate   # NOT Multiome; snRNA and snATAC on separate libraries
+    n_samples_total: 113
+    n_samples_scATAC: 10
+    n_patients_IDHwt_primary_scATAC: UNVERIFIED  # needs Table S1 lookup
+    disease: GBM_and_IDHmut_mixed
+    tissue_type: primary_tumor_tissue
+    access: open
+    s3_path: "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/kloosterman_glioma/"  # historical misnomer; preserve path
+    action_items:
+      - "READ Table S1 of Mathewson 2022 Nature Cancer paper to determine which of the 10 scATAC samples are (a) IDH-WT and (b) primary (not recurrent). Only those satisfying both filters enter this pipeline."
+      - "VERIFY the 'reanalysis of 4 primary IDHwt from Mathewson 2021 Nature' claim. The deposit title for GSE174554 does not mention reanalysis. If those 4 samples live under a different GEO accession, add it as a separate cohort entry rather than conflating here."
+      - "If the IDH-WT primary snATAC subset turns out to be <5 patients, this cohort's statistical contribution drops substantially — reflect that in the dataset_issues verdict."
+    notes: |
+      Prior assumption was 10 IDH-WT primary snATAC samples. That assumption
+      is now unverified pending Table S1 lookup. Downstream cell counts in
+      the matrix depend on this.
+
+  gbm_space:
+    status: missing_HIGH_PRIORITY
+    priority: tier1_open
+    citation: "De Jong et al. 2025 bioRxiv (DOI 10.1101/2025.05.13.653495); companion Saraswat et al. 2025 bioRxiv (scDORI, DOI 10.1101/2025.05.13.653733)"
+    accession: E-MTAB-17183
+    url: "https://www.ebi.ac.uk/biostudies/ArrayExpress/studies/E-MTAB-17183"
+    portal: "https://www.gbmspace.org/"
+    platform: 10x_Multiome_ARC_v1
+    n_patients: 12
+    n_cells_total: 1000000  # multi-region, >1M across all reactions
+    sampling: multi_region_per_tumor
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue
+    access: open
+    deposited_formats:
+      - Cell_Ranger_ARC_processed_outputs
+      - annotated_snRNA_object
+      - annotated_snATAC_object
+      - metacell_aggregates
+    download_method: ebi_biostudies_bulk_ftp
+    expected_download_size_gb: 400  # estimate
+    notes: |
+      BIGGEST GAP IN JP'S CURRENT PIPELINE. Same-nucleus Multiome enables direct
+      enhancer→target-gene correlation testing. Multi-region sampling tests whether
+      candidate enhancers are consistent across tumor regions or regional artifacts.
+      Processed Cell Ranger ARC outputs are deposited so no reprocessing from FASTQ
+      is required. Priority 1 for immediate ingestion.
+
+  greenwald_hgg:
+    status: missing_MEDIUM_PRIORITY
+    priority: tier2_controlled
+    citation: "Greenwald et al. 2024 Cell (Multi-scale signaling in high-grade gliomas)"
+    accession: PENDING_VERIFY
+    url: "https://www.sciencedirect.com/science/article/pii/S1535610824002290"
+    platform: 10x_Multiome_ARC
+    n_patients: 10
+    sample_design: primary_recurrent_pairs
+    n_nuclei: 134000
+    disease: HGG_IDHwt_adult
+    tissue_type: primary_tumor_tissue
+    access: likely_dbgap_controlled
+    action_needed: |
+      Check paper's Data Availability section for exact accession and access tier.
+      If dbGaP controlled, start application now — approval takes 4-8 weeks.
+    notes: |
+      Only published GBM Multiome dataset with primary-recurrent pairs. Directly
+      tests whether candidate enhancers survive chemoradiation — relevant to the
+      "does the AAV still hit its target in recurrent disease" question that
+      reviewers will ask.
+
+  epco_51:
+    status: missing_LOW_PRIORITY
+    priority: tier2_abstract_stage
+    citation: "EPCO-51 (SNO 2023 abstract, PMC11553060)"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11553060/"
+    platform: 10x_Multiome_plus_Visium
+    n_patients: 15
+    disease: GBM_IDHwt_primary
+    tissue_type: primary_tumor_tissue
+    access: unknown_abstract_stage_no_deposit_confirmed
+    action_needed: |
+      Contact corresponding author or wait for full-length publication. Not
+      actionable now — tracked in case formal deposit appears.
+
+  # ----- Datasets added in the 2026-10-04 second-pass sweep -----
+
+  gbm_tme_atlas_hra004942:
+    status: missing_HIGH_PRIORITY
+    priority: tier1_verified_cohort
+    citation: "Lin, Chen, Li, Chen, Fang et al. 2026 Nature Neuroscience (DOI 10.1038/s41593-026-02265-5) — 'Spatial and single-cell characterization of human glioblastoma tumor microenvironment reveals malignant cellular communities'"
+    accession: HRA004942
+    bioproject: PRJCA017912
+    submitter: "Qu Kun, USTC"
+    url: "https://ngdc.cncb.ac.cn/gsa-human/browse/HRA004942"
+    processed_data_url: "https://zenodo.org/records/8085502"
+    processed_data_files:
+      scATAC_zip: "https://zenodo.org/records/8085502/files/scATAC-seq.zip"   # 2.2 GB
+      scRNA_zip:  "https://zenodo.org/records/8085502/files/scRNA-seq.zip"    # 1.1 GB
+      visium_zip: "https://zenodo.org/records/8085502/files/10X_VISIUM.zip"
+      patch_zip:  "https://zenodo.org/records/8085502/files/Patch-seq.zip"
+      pheno_zip:  "https://zenodo.org/records/8085502/files/PhenoCycler.zip"
+      ish_zip:    "https://zenodo.org/records/8085502/files/ISH.zip"
+    platform: scATAC_plus_scRNA_plus_Visium_plus_SmFISH_plus_patch_seq
+    # Numbers VERIFIED from Supplementary Table 1 (parsed 2026-10-04, cell-fill color decoding)
+    # Original "100 patients" claim in the config was wrong by 3x — came from a mis-read of the paper
+    n_patients_this_cohort: 33           # all 33 are IDH-WT (disease column: "IDH- GBM")
+    n_patients_with_scATAC: 11           # ← this is the useful number for the enhancer atlas
+    n_patients_with_scRNA: 17            # 11 of these are the same patients as scATAC (paired, not Multiome)
+    n_patients_with_scATAC_and_scRNA_paired: 11
+    n_patients_with_Visium: 5
+    n_patients_with_WES: 15
+    disease: GBM_IDHwt                   # 33/33 (100%)
+    tissue_type: primary_tumor_tissue
+    access: open                         # NGDC HRA004942 verified open access
+    verified_2026_10_04:
+      - "Supplementary Table 1 parsed directly: 33 patients, all IDH-WT (IDH- GBM)"
+      - "11 patients have ScATAC-seq (green cell-fill checkmark in Table 1)"
+      - "11 patients have both ScATAC-seq AND ScRNA-seq on the SAME patient — paired but across separate libraries (NOT same-nucleus 10x Multiome)"
+      - "Patient IDs with ScATAC-seq: P62, P64, P77, P78, P79, P80, P83, P84, P92, P98, P101"
+      - "Age range of ScATAC-seq cohort: 41-74 (median 53); sex 6M/5F; location split L/R hemispheres"
+      - "NGDC marks HRA004942 as Open access — no DAA needed"
+      - "Zenodo deposit live, scATAC-seq.zip 2.2 GB"
+    still_unverified:
+      - "Internal structure of scATAC-seq.zip (h5ad vs mtx vs fragments.tsv) — must download to inspect"
+      - "The Nature paper's own 'external cohort' section of Table 1 flags 9 patients from Sundaram et al 2024 with ScATAC-seq — see sundaram_2024_lead cohort below"
+    action_needed: |
+      1. Download https://zenodo.org/records/8085502/files/scATAC-seq.zip (2.2 GB) and inspect contents
+      2. If zip contains h5ad with cell-type labels already applied, use directly
+    notes: |
+      HRA004942 contributes 11 IDH-WT primary GBM patients with snATAC-seq data
+      (not 100 as previously claimed). Paired snRNA + snATAC on the same 11 patients
+      enables cross-modality validation but NOT direct same-nucleus enhancer→gene
+      linkage (which requires 10x Multiome ARC — only GBM-Space provides that).
+      Still an important add: brings the total IDH-WT snATAC patient count to ~50
+      across all cohorts.
+
+  spatial_epigenomic_niches:
+    status: missing_NO_PUBLIC_DEPOSIT_YET
+    priority: tier2_contact_author
+    citation: "Kint, Younes, Bao, Long, Wouters, ..., Gallo 2025 bioRxiv v1 (DOI 10.1101/2025.05.09.653178) — 'Spatial epigenomic niches underlie glioblastoma cell state plasticity'"
+    url: "https://www.biorxiv.org/content/10.1101/2025.05.09.653178v1.full"
+    corresponding_author: "Marco Gallo"
+    corresponding_author_institution: "Baylor College of Medicine"    # SAME INSTITUTION AS JP
+    platform: spatial_ATAC_primary_plus_snATAC_subset_plus_Multiome_subset
+    n_patients: 24
+    n_samples: 28
+    sample_breakdown:
+      spatial_ATAC: 28
+      snATAC: 3
+      snMultiome: 2
+      Visium: 4
+      PhenoCycler: 6
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue
+    access: NOT_YET_DEPOSITED_v1_preprint
+    verified_2026_10_04:
+      - "bioRxiv API: v1 posted 2025-05-14, no formal Data Availability section in v1"
+      - "Only accession in paper (EGAD00001006206) is Couturier external data they reanalyzed"
+      - "Corresponding author Marco Gallo is at BCM — same institution as JP"
+    action_needed: |
+      Email Marco Gallo at BCM directly for the processed snATAC + Multiome h5ad +
+      spatial ATAC data. Pre-publication, same-institution ask — usually a two-day
+      turnaround. Fastest path to this cohort by far.
+    notes: |
+      The 5 bulk-nuclei samples (3 snATAC + 2 Multiome) are what feeds our enhancer
+      atlas directly. The 28 spatial ATAC samples would need a separate ingestion
+      handler (AtlasXomics format) and are more useful for cross-validation than
+      enhancer discovery. If Gallo shares, prioritize the snATAC/Multiome subset.
+
+  wang_sciadv_tc_ptb:
+    status: missing_HIGH_PRIORITY
+    priority: tier2_dnbelab_adapter_needed
+    citation: "Wang, Sun, Liu, Lu, Lin et al. 2024 Science Advances (PMID 39576855, PMC11584018, DOI 10.1126/sciadv.adn4306) — 'Single-cell multi-omics sequencing uncovers region-specific plasticity of glioblastoma for complementary therapeutic targeting'"
+    url: "https://www.science.org/doi/10.1126/sciadv.adn4306"
+    pmc: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11584018/"
+    accessions:
+      cngb_cnsa: "CNP0003766"
+      ngdc_bioproject: "PRJCA025943"
+      visualization: "https://db.cngb.org/cdcp/visualization?project=CNP0003766"
+    platform: DNBelab_C4_snRNA_plus_snATAC_paired   # NOT 10x — different barcode/chemistry
+    n_patients: 5                                   # verified from PMC: RM01-RM05
+    n_samples: 10                                   # 5 tumor-core + 5 peritumoral-brain
+    sample_design: paired_tumor_core_TC_vs_peritumoral_brain_PTB
+    disease: GBM_IDHwt
+    tissue_type: primary_tumor_tissue
+    access: open                                    # CNGB open access
+    verified_2026_10_04:
+      - "PMC verbatim: 'All snRNA-seq and snATAC-seq data are available at CNGB (CNP0003766) and NGDC (PRJCA025943)'"
+      - "Methods verbatim: 'TC and PTB tissues separately from five patients with GBM (RM01-RM05)'"
+    still_unverified:
+      - "Internal file format at CNGB — expect DNBelab-C4 BAM + fragments.tsv (lane-specific), not 10x arrangement"
+      - "Peak calling convention — may need per-sample MACS2 recall before CATLAS requantification"
+    action_needed: |
+      1. CNGB bulk download: https://db.cngb.org/search/project/CNP0003766/
+      2. Build DNBelab-C4 fragment adapter (reference: MGI-tech-bioinformatics/DNBelab_C_Series_scRNA-analysis-software).
+         DNBelab barcode is 20 bp (vs 10x 16 bp); fragment file is typically a sorted BED with chrom/start/end/barcode/count tabs.
+      3. Verify fragments are deposited (vs only BAM) — if only BAM, add a bam→fragments.tsv step.
+    notes: |
+      Peritumoral brain samples are rare and valuable: they drive the "enhancer
+      active in reactive peritumoral but not transformed tumor" detector in
+      src/surprises.py. Only 5 patients, but the TC-vs-PTB paired design is
+      scientifically unique.
+
+  # (Previous 'sundaram_2024_lead' entry removed 2026-10-04: Lin 2026 Nat Neurosci
+  # Data Availability section confirms those X005-X011 samples are from
+  # TCGA-ATAC-Seq-2024 (ref 37), i.e. the same cohort as `tcga_scatac` above.
+  # Not a separate dataset.)
+
+  gse240822_cebpg:
+    status: missing_VERIFY
+    priority: tier3_verify
+    citation: "Yang et al. 2024 Cell Biosci (CEBPG mesenchymal GBM study)"
+    accession: GSE240822
+    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE240822"
+    platform: 10x_scATAC  # verify
+    disease: GBM
+    tissue_type: VERIFY_primary_vs_reanalysis
+    access: open
+    action_needed: |
+      Pull GEO metadata to confirm (a) this is primary tissue not reanalysis of
+      existing cohorts, (b) IDH status, (c) sample count. Only ingest if verified
+      as novel primary-tissue data.
+
+excluded:
+  # Documented here so a future session doesn't try to re-add them
+  - name: gse309579_radiation_gsc
+    reason: "GSC cultures, not primary tissue"
+  - name: gse273013_suv39h1_gsc
+    reason: "GSC cultures"
+  - name: gse109399_guilhamon_bulk_gsc
+    reason: "27 patient-derived GSC cultures, bulk ATAC"
+  - name: glico_mack_organoid
+    reason: "Patient-derived organoids"
+  - name: uw7_johnson_2022
+    reason: "Single-patient PDX time-series"
+  - name: sussman_2026_pediatric_hgg
+    reason: "Pediatric HGG, not adult GBM; track separately for DIPG direction only"
+    separate_tracking:
+      accession: "dbGaP phs002371 (HTAN)"
+      note: "May inform the DIPG arm of the enhancer project later"

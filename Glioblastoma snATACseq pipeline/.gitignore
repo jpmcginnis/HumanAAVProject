@@ -1,0 +1,65 @@
+# Data (never commit — regenerate or pull from Zenodo/S3)
+data/
+raw/
+processed/
+matrix/*.parquet
+matrix/per_celltype/
+reports/out/
+*.h5ad
+*.h5
+*.parquet
+*.tsv.gz
+*.bam
+*.bai
+*.fastq.gz
+*.tar.gz
+*.zip
+
+# Logs
+logs/
+*.log
+.snakemake/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+.venv/
+.conda/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS / editors
+.DS_Store
+._*
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Secrets — never commit
+*.pem
+*.key
+.env
+credentials*
+secrets*
+
+# Catch all partial downloads with scp's dot-prefix pattern
+.*.parquet.*
+.*.h5ad.*
+.*.tar.gz.*
+.*.zip.*
+
+# Runtime output directories (should NEVER be in a code repo)
+code/matrix/
+code/reports/out/
+matrix/
+reports/out/

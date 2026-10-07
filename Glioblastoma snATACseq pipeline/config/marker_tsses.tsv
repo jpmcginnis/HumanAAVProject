@@ -1,0 +1,46 @@
+#gene	chrom	tss	strand	cell_type
+# hg38 / GRCh38 primary-transcript TSSes (Gencode v44 / Ensembl 110).
+# Used by src/marker_peak_scoring.py to pick CATLAS peaks within ±2kb of each
+# marker's TSS as that cell type's accessibility signature.
+#
+# Edit this file to add/remove markers; no code change needed.
+P2RY12	chr3	151055363	-	microglia
+TMEM119	chr12	108172091	-	microglia
+CX3CR1	chr3	39282078	+	microglia
+CSF1R	chr5	150053420	+	microglia
+C1QA	chr1	22635997	+	microglia
+C1QB	chr1	22646192	+	microglia
+CD163	chr12	7490954	+	TAM
+MRC1	chr10	17809238	+	TAM
+APOE	chr19	44905782	+	TAM
+SPP1	chr4	87975661	+	TAM
+TREM2	chr6	41158506	-	TAM
+GFAP	chr17	44903044	+	astrocyte
+AQP4	chr18	26852229	+	astrocyte
+SLC1A2	chr11	35335613	+	astrocyte
+S100B	chr21	46598576	+	astrocyte
+MBP	chr18	76958920	+	oligodendrocyte
+MOG	chr6	29657140	+	oligodendrocyte
+PLP1	chrX	103777932	+	oligodendrocyte
+MAG	chr19	35787129	+	oligodendrocyte
+PDGFRA	chr4	54229098	+	OPC
+CSPG4	chr15	75986596	+	OPC
+SOX10	chr22	37970683	-	OPC
+OLIG2	chr21	33039603	+	OPC
+CLDN5	chr22	18912055	+	endothelial
+PECAM1	chr17	64319818	-	endothelial
+VWF	chr12	5949121	+	endothelial
+KDR	chr4	55078481	-	endothelial
+PDGFRB	chr5	150125502	+	pericyte
+RGS5	chr1	163217290	-	pericyte
+MCAM	chr11	119310478	+	pericyte
+RBFOX3	chr17	77084826	+	neuron
+SYN1	chrX	47582367	+	neuron
+SNAP25	chr20	10218831	+	neuron
+GAD1	chr2	170804996	+	GABA_neuron
+GAD2	chr10	26215439	+	GABA_neuron
+SLC17A7	chr19	49432148	+	glutamatergic_neuron
+CD3D	chr11	118339108	+	T_cell
+CD3E	chr11	118304736	+	T_cell
+CD8A	chr2	86784605	-	T_cell
+CD4	chr12	6789528	+	T_cell

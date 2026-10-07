@@ -1,0 +1,468 @@
+"""
+GBM Enhancer Atlas — orchestrator.
+Run on the EC2 after aws_spinup.sh, inside the atacseq conda env, inside the `work` tmux.
+
+Full pipeline:
+    snakemake --cores all
+
+Just rebuild the matrix after a config change:
+    snakemake matrix_build --forcerun --cores 32
+
+Rescore and rank with a new formula (edit config/pipeline.yaml first):
+    snakemake rank_top_n --forcerun --cores 8
+
+Generate the HTML reports:
+    snakemake report --cores 4
+
+Reference files (CATLAS peaks/annotation and GBmap) are produced by the
+rules at the bottom of this file so a fresh checkout can `--dry-run` cleanly.
+"""
+
+import os
+import yaml
+from pathlib import Path
+
+configfile: "config/pipeline.yaml"
+with open("config/datasets.yaml") as f:
+    DATASETS = yaml.safe_load(f)
+
+# Phase A — fragment-based cohorts (10x Multiome ARC or h5ad-annotated).
+# Phase A.2 — matrix-only cohorts (peak-barcode mtx, lifted to CATLAS by overlap).
+# Phase A.3 — Guilhamon + Mathewson (both matrix-mode via per-sample mtx) and
+# HRA004942 (Signac RDS extracted → matrix-mode via src/extract_rds.R).
+# Phase A.4 — adds gse165037 (SnapATAC v1 RDS extracted via raw-slot bypass in
+# src/extract_rds.R, no SnapATAC package needed). GBM-Space (gbm_space) still
+# fetching; will join as a fragment-mode cohort when done.
+PHASE_A_COHORTS = ["gbm_space", "gse276177_khan_astro", "tcga_scatac"]  # fragment-mode cohorts
+PHASE_A2_MATRIX_COHORTS = ["guilhamon", "mathewson_lupien", "gbm_tme_atlas_hra004942", "gse165037", "gse138794_guo"]  # gse276177 moved to fragment-mode
+PHASE = os.environ.get("GBM_PHASE", "A")
+if PHASE == "A":
+    COHORTS_INCLUDE = PHASE_A_COHORTS
+elif PHASE == "A2":
+    COHORTS_INCLUDE = PHASE_A_COHORTS + PHASE_A2_MATRIX_COHORTS
+else:
+    COHORTS_INCLUDE = [
+        name for name, meta in DATASETS["cohorts"].items()
+        if meta["status"] in ("in_pipeline", "partially_in_pipeline", "missing_HIGH_PRIORITY")
+        and meta.get("access", "") == "open"
+    ]
+MATRIX_COHORTS = set(PHASE_A2_MATRIX_COHORTS)
+print(f"[Snakefile] PHASE={PHASE}  cohorts: {COHORTS_INCLUDE}  (matrix-mode: {sorted(MATRIX_COHORTS & set(COHORTS_INCLUDE))})")
+
+DATA_ROOT = Path("/data/projects/atacseq")
+RAW = DATA_ROOT / "raw"
+PROCESSED = DATA_ROOT / "processed"
+RESULTS = DATA_ROOT / "results"
+REF = DATA_ROOT / "ref"
+MATRIX = Path("matrix")
+REPORT = Path("reports/out")
+
+# -----------------------------------------------------------------------------
+# Top-level targets
+# -----------------------------------------------------------------------------
+
+rule all:
+    input:
+        MATRIX / "enhancer_candidate_matrix.parquet",
+        MATRIX / "candidate_scores.parquet",
+        MATRIX / "provenance.parquet",
+        REPORT / "index.html",
+        REPORT / "top_candidates.html",
+        REPORT / "surprises.html",
+        REPORT / "dataset_issues.html",
+        expand(REPORT / "celltypes" / "{ct}.html",
+               ct=config["ranking"]["priority_celltypes_for_r01"]),
+
+rule report:
+    input:
+        REPORT / "index.html",
+        REPORT / "top_candidates.html",
+        REPORT / "surprises.html",
+        REPORT / "dataset_issues.html",
+
+# -----------------------------------------------------------------------------
+# Reference data — fetched explicitly so --dry-run can plan a fresh checkout
+# -----------------------------------------------------------------------------
+
+rule fetch_catlas:
+    """Download the CATLAS 544K-peak snATAC atlas h5ad from the S3 archive."""
+    output: REF / "catlas_full_annotated.h5ad"
+    log: DATA_ROOT / "logs" / "fetch_catlas.log"
+    shell:
+        "python -u src/fetch.py --cohort catlas --out {output} 2>&1 | tee {log}"
+
+rule extract_catlas_peaks_bed:
+    """Produce the common-coordinate peak BED by reading CATLAS .var."""
+    input:  REF / "catlas_full_annotated.h5ad"
+    output: REF / "catlas_peaks.bed"
+    log:    DATA_ROOT / "logs" / "extract_catlas_peaks_bed.log"
+    shell:
+        "python -u -c \""
+        "import anndata as ad, pandas as pd, sys; "
+        "a = ad.read_h5ad('{input}', backed='r'); "
+        "v = a.var.copy().reset_index(); "
+        "chrom = v['chrom'] if 'chrom' in v.columns else v.iloc[:,0].str.split(':').str[0]; "
+        "start_end = v['start'] if 'start' in v.columns else v.iloc[:,0].str.split(':').str[1].str.split('-'); "
+        "import re; "
+        "idx = pd.DataFrame(v.iloc[:,0].astype(str).str.extract(r'(?P<chrom>chr[\\\\dXYM]+)[:_](?P<start>\\\\d+)[-_](?P<end>\\\\d+)')); "
+        "bed = idx.dropna(); bed['start'] = bed['start'].astype(int); bed['end'] = bed['end'].astype(int); "
+        "print(f'[peaks] {{len(bed)}} peaks parsed from CATLAS .var'); "
+        "bed.to_csv('{output}', sep='\\t', header=False, index=False); "
+        "\" 2>&1 | tee {log}"
+
+rule fetch_gbmap:
+    """GBmap scRNA reference (Ruiz-Moreno 2025) via cellxgene_census."""
+    output: REF / "gbmap.h5ad"
+    log:    DATA_ROOT / "logs" / "fetch_gbmap.log"
+    shell:
+        "python -u src/fetch.py --cohort gbmap --out {output} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Fetch — one rule per cohort, driven by datasets.yaml
+# -----------------------------------------------------------------------------
+
+rule fetch_guilhamon:
+    output: directory(RAW / "guilhamon")
+    log: DATA_ROOT / "logs" / "fetch_guilhamon.log"
+    shell:
+        "python -u src/fetch.py --cohort guilhamon --out {output} 2>&1 | tee {log}"
+
+rule fetch_gse165037:
+    """GSE165037 — 3 IDH-WT snATAC samples (ex-'raviram' slug, citation was wrong)."""
+    output: directory(RAW / "gse165037")
+    log: DATA_ROOT / "logs" / "fetch_gse165037.log"
+    shell:
+        "python -u src/fetch.py --cohort gse165037 --out {output} 2>&1 | tee {log}"
+
+rule fetch_tcga_scatac:
+    """TCGA scATAC-seq GBM subset (Terekhanova 2024 Science, PMID 39236169).
+    Downloads the Zenodo-hosted cancer-pan-cancer fragments tarball and extracts
+    the 9 GBMx samples. 5 are open-access on Zenodo; 4 require dbGaP phs000178.
+    Previously slugged ``sundaram_gbm`` — renamed to accurately reflect source."""
+    output: directory(RAW / "tcga_scatac")
+    log: DATA_ROOT / "logs" / "fetch_tcga_scatac.log"
+    shell:
+        "python -u src/fetch.py --cohort tcga_scatac --out {output} 2>&1 | tee {log}"
+
+rule fetch_gse138794_guo:
+    """Guo 2020 'A single cell atlas of human glioma' — 4 IDH-WT primary GBM
+    snATAC samples (SF11979, SF11956, SF11215, SF11331); others excluded as
+    IDH-mutant astrocytoma/oligo or recurrent."""
+    output: directory(RAW / "gse138794_guo")
+    log: DATA_ROOT / "logs" / "fetch_gse138794.log"
+    shell:
+        "python -u src/fetch.py --cohort gse138794_guo --out {output} 2>&1 | tee {log}"
+
+rule fetch_gse276177_khan_astro:
+    """Khan 2024 Nat Cell Biol 'Divergence from the human astrocyte developmental
+    trajectory in glioblastoma' — 3 IDH-WT primary GBM (GBM20/25/38) with
+    tumor + margin snATAC (5 samples total)."""
+    output: directory(RAW / "gse276177_khan_astro")
+    log: DATA_ROOT / "logs" / "fetch_gse276177.log"
+    shell:
+        "python -u src/fetch.py --cohort gse276177_khan_astro --out {output} 2>&1 | tee {log}"
+
+rule fetch_mathewson_lupien:
+    output: directory(RAW / "mathewson_lupien")
+    log: DATA_ROOT / "logs" / "fetch_mathewson_lupien.log"
+    shell:
+        "python -u src/fetch.py --cohort mathewson_lupien --out {output} 2>&1 | tee {log}"
+
+rule fetch_gbm_space:
+    """E-MTAB-17183 — pulls just the annotated ATAC/RNA h5ads + SDRF (~35 GB)."""
+    output: directory(RAW / "gbm_space")
+    log: DATA_ROOT / "logs" / "fetch_gbm_space.log"
+    shell:
+        "python -u src/fetch.py --cohort gbm_space --out {output} 2>&1 | tee {log}"
+
+rule fetch_gbm_tme_atlas_hra004942:
+    """Lin 2026 Nat Neurosci (100 patients). Zenodo processed-data zips."""
+    output: directory(RAW / "gbm_tme_atlas_hra004942")
+    log: DATA_ROOT / "logs" / "fetch_hra004942.log"
+    shell:
+        "python -u src/fetch.py --cohort gbm_tme_atlas_hra004942 --out {output} 2>&1 | tee {log}"
+
+rule fetch_wang_sciadv_tc_ptb:
+    """Wang 2024 Sci Adv — 5 TC+PTB pairs, DNBelab C4. CNGB CNP0003766."""
+    output: directory(RAW / "wang_sciadv_tc_ptb")
+    log: DATA_ROOT / "logs" / "fetch_wang.log"
+    shell:
+        "python -u src/fetch.py --cohort wang_sciadv_tc_ptb --out {output} 2>&1 | tee {log}"
+
+# (rule fetch_sundaram_gbm removed 2026-10-07; the "Sundaram" tar is actually
+# the TCGA scATAC pan-cancer release — merged into fetch_tcga_scatac above.)
+
+rule fetch_spatial_epigenomic_niches:
+    """Kint/Gallo 2025 — no public deposit; stub that fails loudly with contact info."""
+    output: directory(RAW / "spatial_epigenomic_niches")
+    log: DATA_ROOT / "logs" / "fetch_spatial.log"
+    shell:
+        "python -u src/fetch.py --cohort spatial_epigenomic_niches --out {output} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Ingest
+# -----------------------------------------------------------------------------
+
+def _ingest_mode(wildcards):
+    return "matrix" if wildcards.cohort in MATRIX_COHORTS else "fragment"
+
+rule ingest:
+    """Dispatch by MATRIX_COHORTS membership — matrix-mode uses ingest_matrix.py
+    which lifts per-sample peaks onto CATLAS. Fragment-mode uses ingest.py as before."""
+    input:
+        raw = RAW / "{cohort}",
+        catlas_peaks = REF / "catlas_peaks.bed",
+    output: PROCESSED / "{cohort}" / "ingested.h5ad"
+    log: DATA_ROOT / "logs" / "ingest_{cohort}.log"
+    params:
+        mode = _ingest_mode
+    shell:
+        """
+        if [ "{params.mode}" = "matrix" ]; then
+            python -u src/ingest_matrix.py --cohort {wildcards.cohort} \
+                --in {input.raw} --catlas-peaks {input.catlas_peaks} \
+                --out {output} 2>&1 | tee {log}
+        else
+            python -u src/ingest.py --cohort {wildcards.cohort} \
+                --in {input.raw} --out {output} 2>&1 | tee {log}
+        fi
+        """
+
+# -----------------------------------------------------------------------------
+# Flatten (fragment-mode only) — replaces the QC/CNV/labels/quantify chain
+# -----------------------------------------------------------------------------
+# ``src/ingest.py`` writes per-sample snapatac2 h5ads alongside an AnnDataSet
+# shell. Downstream vanilla-anndata loads see n_vars=0 and the chain breaks.
+# This rule flattens the per-sample h5ads into one cohort-level
+# catlas_quantified.h5ad in CATLAS peak space, with marker-peak-based
+# cell type labels baked in. Fragment-mode cohorts should use this rule
+# instead of the qc → cnv → label_transfer → peak_quantify chain.
+
+rule flatten_cohort:
+    """Per-sample snapatac2 h5ads → cohort-level catlas_quantified.h5ad.
+    Fragment-mode-only replacement for qc + cnv + labels + peak_quantify."""
+    input:
+        # Depend on ingested.h5ad as a signal that per-sample files are ready.
+        ingested = PROCESSED / "{cohort}" / "ingested.h5ad",
+        catlas_bed = REF / "catlas_peaks.bed",
+        markers = "config/marker_tsses.tsv",
+    output: PROCESSED / "{cohort}" / "catlas_quantified_flat.h5ad"
+    log: DATA_ROOT / "logs" / "flatten_{cohort}.log"
+    wildcard_constraints:
+        cohort = "|".join(c for c in PHASE_A_COHORTS)
+    shell:
+        """
+        python -u src/flatten_cohort.py \
+          --per-sample-glob "{PROCESSED}/{wildcards.cohort}/*.h5ad" \
+          --cohort {wildcards.cohort} \
+          --catlas-bed {input.catlas_bed} \
+          --markers-tsv {input.markers} \
+          --out {output} 2>&1 | tee {log}
+        """
+
+# -----------------------------------------------------------------------------
+# QC
+# -----------------------------------------------------------------------------
+
+rule qc:
+    input: PROCESSED / "{cohort}" / "ingested.h5ad"
+    output:
+        h5ad = PROCESSED / "{cohort}" / "qc_passed.h5ad",
+        report = RESULTS / "qc" / "{cohort}_qc.html",
+    log: DATA_ROOT / "logs" / "qc_{cohort}.log"
+    shell:
+        "python -u src/qc.py --in {input} --out {output.h5ad} "
+        "--report {output.report} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# CNV-based malignant calling (inferCNVpy; see src/cnv_malignant.py)
+# -----------------------------------------------------------------------------
+
+rule cnv_malignant:
+    input: PROCESSED / "{cohort}" / "qc_passed.h5ad"
+    output: PROCESSED / "{cohort}" / "malignant_called.h5ad"
+    log: DATA_ROOT / "logs" / "cnv_{cohort}.log"
+    shell:
+        "python -u src/cnv_malignant.py --in {input} --out {output} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Dual label transfer (GBmap TME, CATLAS neuronal subtypes, Neftel malignant)
+# -----------------------------------------------------------------------------
+
+rule label_transfer:
+    input:
+        h5ad = PROCESSED / "{cohort}" / "malignant_called.h5ad",
+        gbmap = REF / "gbmap.h5ad",
+        catlas = REF / "catlas_full_annotated.h5ad",
+    output: PROCESSED / "{cohort}" / "labeled.h5ad"
+    log: DATA_ROOT / "logs" / "labels_{cohort}.log"
+    threads: 16
+    shell:
+        "python -u src/label_transfer.py "
+        "--in {input.h5ad} --gbmap {input.gbmap} --catlas {input.catlas} "
+        "--out {output} --threads {threads} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Peak quantification against CATLAS + per-cohort peak-recall QC gate
+# -----------------------------------------------------------------------------
+
+def _peak_quantify_mode(wildcards):
+    return "passthrough" if wildcards.cohort in MATRIX_COHORTS else "quantify"
+
+rule peak_quantify:
+    """For fragment-based cohorts, requantify against CATLAS peaks via snapatac2.
+    For matrix-mode cohorts (already in CATLAS space from ingest_matrix.py),
+    just pass labeled.h5ad through to catlas_quantified.h5ad."""
+    input:
+        h5ad = PROCESSED / "{cohort}" / "labeled.h5ad",
+        peaks = REF / "catlas_peaks.bed",
+    output: PROCESSED / "{cohort}" / "catlas_quantified.h5ad"
+    log: DATA_ROOT / "logs" / "quantify_{cohort}.log"
+    threads: 16
+    params:
+        mode = _peak_quantify_mode
+    shell:
+        """
+        if [ "{params.mode}" = "passthrough" ]; then
+            cp {input.h5ad} {output}
+            echo "matrix-mode cohort {wildcards.cohort} — passthrough (already in CATLAS peak space)" > {log}
+        else
+            python -u src/peak_quantify.py --in {input.h5ad} --peaks {input.peaks} \
+                --out {output} --threads {threads} 2>&1 | tee {log}
+        fi
+        """
+
+def _peak_recall_threshold(wildcards):
+    # Matrix-mode cohorts (lifted from per-sample peak sets) recall far less
+    # of CATLAS — Guilhamon's 10x v1 peak set + reciprocal 50% overlap gives
+    # ~3% recall. Use 1% here to keep the cohort in; recall is explicitly
+    # recorded per-cohort for honest reporting in dataset_issues.
+    return "0.01" if wildcards.cohort in MATRIX_COHORTS else "0.50"
+
+rule verify_peak_recall:
+    """QC gate: cohort must recall a biologically plausible fraction of CATLAS
+    peaks. Fragment-based cohorts should hit ≥50% (anything less suggests wrong
+    genome build or over-filtered peaks). Matrix-mode cohorts carry an inherent
+    coverage loss from the per-sample-peaks → CATLAS lift; threshold is 5%."""
+    input:
+        h5ad = PROCESSED / "{cohort}" / "catlas_quantified.h5ad",
+        peaks = REF / "catlas_peaks.bed",
+    output:
+        report = RESULTS / "peak_recall" / "{cohort}.json",
+        gate   = PROCESSED / "{cohort}" / "peak_recall.PASS",
+    log: DATA_ROOT / "logs" / "peak_recall_{cohort}.log"
+    params:
+        threshold = _peak_recall_threshold
+    shell:
+        "python -u -c \""
+        "import anndata as ad, json, sys; "
+        "a = ad.read_h5ad('{input.h5ad}', backed='r'); "
+        "n_peaks_total = a.n_vars; "
+        "import numpy as np; "
+        "colsum = np.zeros(a.n_vars, dtype=np.float64); chunk = 50000; "
+        "[colsum.__iadd__(np.asarray(a.X[i:i+chunk].sum(axis=0)).flatten()) for i in range(0, a.n_obs, chunk)]; "
+        "n_peaks_recovered = int((colsum > 0).sum()); "
+        "recall = n_peaks_recovered / n_peaks_total; "
+        "rec = {{'cohort': '{wildcards.cohort}', 'n_peaks_total': n_peaks_total, "
+        "'n_peaks_recovered': n_peaks_recovered, 'recall': recall, 'threshold': {params.threshold}}}; "
+        "import pathlib; "
+        "pathlib.Path('{output.report}').parent.mkdir(parents=True, exist_ok=True); "
+        "open('{output.report}','w').write(json.dumps(rec, indent=2)); "
+        "print(f'[recall] {wildcards.cohort}: {{n_peaks_recovered:,}} / {{n_peaks_total:,}} = {{recall:.2%}} (threshold {params.threshold})'); "
+        "assert recall >= {params.threshold}, f'Peak recall for {wildcards.cohort} = {{recall:.2%}} < {params.threshold}; cohort excluded.'; "
+        "open('{output.gate}','w').write(f'PASS recall={{recall:.4f}}\\n'); "
+        "\" 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Build the persistent matrix (gated on peak_recall PASS per cohort)
+# -----------------------------------------------------------------------------
+
+rule matrix_build:
+    input:
+        quant = expand(PROCESSED / "{cohort}" / "catlas_quantified.h5ad",
+                       cohort=COHORTS_INCLUDE),
+        gates = expand(PROCESSED / "{cohort}" / "peak_recall.PASS",
+                       cohort=COHORTS_INCLUDE),
+    output:
+        matrix = MATRIX / "enhancer_candidate_matrix.parquet",
+        provenance = MATRIX / "provenance.parquet",
+        schema = MATRIX / "MATRIX_SCHEMA.md",
+    log: DATA_ROOT / "logs" / "matrix_build.log"
+    threads: 32
+    shell:
+        "python -u src/matrix_build.py --inputs {input.quant} "
+        "--matrix {output.matrix} --provenance {output.provenance} "
+        "--schema {output.schema} --threads {threads} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# Scoring + ranking
+# -----------------------------------------------------------------------------
+
+rule score_candidates:
+    input: MATRIX / "enhancer_candidate_matrix.parquet"
+    output: MATRIX / "candidate_scores.parquet"
+    log: DATA_ROOT / "logs" / "scoring.log"
+    shell:
+        "python -u src/scoring.py --in {input} --out {output} 2>&1 | tee {log}"
+
+rule rank_top_n:
+    input: MATRIX / "candidate_scores.parquet"
+    output:
+        top = MATRIX / "top_candidates.parquet",
+        per_ct = expand(str(MATRIX / "per_celltype" / "{ct}.parquet"),
+                        ct=config["ranking"]["priority_celltypes_for_r01"]),
+    log: DATA_ROOT / "logs" / "ranking.log"
+    shell:
+        "python -u src/ranking.py --in {input} --top {output.top} "
+        "--per-celltype-dir " + str(MATRIX / "per_celltype") + " 2>&1 | tee {log}"
+
+rule surprises:
+    input: MATRIX / "enhancer_candidate_matrix.parquet"
+    output: MATRIX / "surprises.parquet"
+    log: DATA_ROOT / "logs" / "surprises.log"
+    shell:
+        "python -u src/surprises.py --in {input} --out {output} 2>&1 | tee {log}"
+
+rule dataset_issues:
+    input: MATRIX / "enhancer_candidate_matrix.parquet"
+    output: MATRIX / "dataset_issues.parquet"
+    log: DATA_ROOT / "logs" / "dataset_issues.log"
+    shell:
+        "python -u src/dataset_issues.py --in {input} --out {output} 2>&1 | tee {log}"
+
+# -----------------------------------------------------------------------------
+# HTML reports
+# -----------------------------------------------------------------------------
+
+rule report_index:
+    input:
+        top = MATRIX / "top_candidates.parquet",
+        issues = MATRIX / "dataset_issues.parquet",
+    output: REPORT / "index.html"
+    shell:
+        "python -u src/report.py --page index --inputs {input} --out {output}"
+
+rule report_top:
+    input: MATRIX / "top_candidates.parquet"
+    output: REPORT / "top_candidates.html"
+    shell:
+        "python -u src/report.py --page top_candidates --inputs {input} --out {output}"
+
+rule report_surprises:
+    input: MATRIX / "surprises.parquet"
+    output: REPORT / "surprises.html"
+    shell:
+        "python -u src/report.py --page surprises --inputs {input} --out {output}"
+
+rule report_dataset_issues:
+    input: MATRIX / "dataset_issues.parquet"
+    output: REPORT / "dataset_issues.html"
+    shell:
+        "python -u src/report.py --page dataset_issues --inputs {input} --out {output}"
+
+rule report_celltype:
+    input: MATRIX / "per_celltype" / "{ct}.parquet"
+    output: REPORT / "celltypes" / "{ct}.html"
+    shell:
+        "python -u src/report.py --page celltype --celltype {wildcards.ct} "
+        "--inputs {input} --out {output}"

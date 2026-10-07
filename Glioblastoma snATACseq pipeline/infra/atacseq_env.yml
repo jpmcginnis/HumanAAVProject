@@ -1,0 +1,50 @@
+name: atacseq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pip
+  # Core single-cell infra (loose pins — micromamba will pick latest compatible)
+  - scanpy
+  - anndata
+  - h5py
+  - zarr
+  - pysam
+  - pyBigWig
+  - samtools
+  - bedtools
+  - macs2
+  # Dataframe / IO
+  - polars
+  - pyarrow
+  - pandas
+  - numpy
+  - scipy
+  # Workflow / infra
+  - snakemake-minimal
+  - awscli
+  - wget
+  - pigz
+  - tmux
+  # Reporting
+  - jinja2
+  - matplotlib
+  - seaborn
+  # Build tooling for pip packages (snapatac2 needs rust in some builds)
+  - rust
+  - cmake
+  # pip-installed packages — these are more reliably installed via pip than conda
+  - pip:
+      - snapatac2                   # fragment import, label transfer, gene activity
+      - infercnvpy                  # CNV calling with same-sample reference
+      - celltypist                  # fast CPU cell-type transfer
+      - cellxgene-census            # GBmap (Ruiz-Moreno 2025)
+      - pysradb                     # GEO/SRA metadata fallback
+      - pymc>=5                     # hierarchical Beta-Binomial replication model
+      - arviz
+      - playwright                  # HTML/Playwright-rendered Tufte reports
+      - pyfaidx
+      - gffutils
+      # scGLUE is heavy and only used when GPU is available; install on demand:
+      #   pip install scglue

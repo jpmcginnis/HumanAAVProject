@@ -1,0 +1,150 @@
+# Pipeline thresholds, references, and scoring formulas.
+# Edit here, then re-run `snakemake score_candidates rank_top_n --forcerun`
+# to regenerate the ranked candidate list without re-ingesting data.
+
+qc:
+  min_tss_enrichment: 6.0
+  min_fragments_per_cell: 1000
+  max_fragments_per_cell: 100000
+  max_frac_mito: 0.05
+  min_cells_per_cell_type: 50       # for a cell-type-specific call to be made
+
+malignant_calling:
+  method: cnv_chr7_chr10_ratio
+  chr7_over_chr10_threshold: 2.0
+  confirm_with_rna: true             # only applies to Multiome cohorts
+  exclude_from_tme_label_transfer: true
+
+label_transfer:
+  tme:
+    source: gbmap
+    method: gene_activity_bridge     # ATAC → gene activity scores → RNA space → GBmap labels
+    tool: scglue                     # fallback: Seurat FindTransferAnchors multimodal
+    min_prediction_score: 0.6
+    cell_types_to_transfer:
+      - microglia
+      - TAM                          # tumor-associated macrophage (reactive subset)
+      - DAM                          # disease-associated microglia
+      - astrocyte
+      - reactive_astrocyte
+      - oligodendrocyte
+      - OPC
+      - endothelial
+      - pericyte
+      - T_cell
+      - B_cell
+      - neutrophil
+      - monocyte
+  neurons:
+    source: catlas
+    method: direct_atac              # snATAC-to-snATAC peak-space transfer
+    tool: snapatac2
+    min_prediction_score: 0.6
+    cell_types_to_transfer:
+      - GLUT_L2_3
+      - GLUT_L4
+      - GLUT_L5_IT
+      - GLUT_L5_ET
+      - GLUT_L6
+      - GABA_VIP
+      - GABA_SST
+      - GABA_PV
+      - GABA_LAMP5
+      - GABA_other
+  malignant_states:
+    source: gbmap_malignant_subset
+    method: neftel_classifier
+    states:
+      - NPC_like
+      - OPC_like
+      - AC_like
+      - MES_like
+      - MES_hypoxia
+      - MES_TAM_interaction
+
+peak_atlas:
+  reference: catlas_544k
+  quantification: snapatac2_pmat
+  min_cells_per_peak: 10
+
+scoring:
+  # Per (peak, cell_type) tuple, computed over cohorts and patients
+  strength:
+    metric: mean_frac_cells_accessible
+    description: "Fraction of cells in this cell type with accessibility signal at this peak, averaged across patients"
+  consistency:
+    metric: fraction_patients_above_threshold
+    threshold_frac_accessible: 0.2
+    description: "Fraction of patients in which ≥20% of this cell type's cells show accessibility"
+  selectivity:
+    metric: specificity_ratio
+    formula: "mean(frac_accessible_in_target) / max(mean(frac_accessible_in_each_other_celltype))"
+    description: "Target cell type's mean accessibility divided by the highest mean accessibility across all other cell types; >5 is a clean specificity call"
+  cross_cohort_replication:
+    metric: n_cohorts_above_threshold
+    threshold_strength: 0.15
+    threshold_consistency: 0.5
+    description: "Number of independent cohorts where the (strength, consistency) thresholds are both met"
+  multiome_bonus:
+    metric: coordinated_rna_accessibility
+    description: "In Multiome cohorts, fraction of accessible cells that also express the nearest-gene target (via ENCODE-rE2G link); null for snATAC-only cohorts"
+
+ranking:
+  # Composite score for the "top N to clone" list
+  formula: |
+    composite = (
+        0.30 * strength
+      + 0.25 * consistency
+      + 0.25 * log2(selectivity + 1) / log2(10)   # saturate above specificity 10x
+      + 0.15 * (n_cohorts_above_threshold / n_cohorts_total)
+      + 0.05 * (multiome_coordinated_rna if available else 0)
+    )
+  constraints:
+    peak_length_bp:
+      min: 200
+      max: 2000                      # AAV cargo-limited; favor < 1000 for comfort
+    chromosome_exclusions:
+      - chrX                         # ratio ambiguity in CNV calling
+      - chrY
+    cnv_safe_zones_only: true        # exclude peaks on chr7, chr10 (CNV-affected in most GBMs)
+    e_box_pml_free: true             # exclude candidates containing CACGTG (PmlI counter-selection, per JP's cloning strategy)
+  top_n_per_celltype: 10
+  top_n_per_celltype_for_hierarchical: 2000   # pass 2 Beta-Binomial budget; keep tractable
+  priority_celltypes_for_r01:
+    - TAM                            # Aim 1 anchor (if TAM-specific enhancers exist)
+    - microglia
+    - malignant_NPC_like             # Aim 3 — tumor-cell-selective
+    - malignant_OPC_like
+    - malignant_MES_like
+
+surprises:
+  # Patterns worth flagging that nobody asked about explicitly
+  detectors:
+    - name: dual_celltype_enhancers
+      description: "Peaks accessible in exactly two cell types with high selectivity against all others — useful for engineered combinatorial targeting"
+    - name: tumor_vs_normal_divergence
+      description: "Peaks accessible in a normal cell type (e.g. microglia) but closed in the GBM counterpart (TAM) at the SAME patient's tissue — points to state-specific regulatory shutdown"
+    - name: patient_subpopulation_specific
+      description: "Peaks accessible in >80% of cells of a given type in a subset of patients but <5% in others — potential subtype-marker enhancers (e.g. MGMT-methylated vs unmethylated)"
+    - name: peritumoral_only
+      description: "Peaks only accessible in the peritumoral brain samples (where available), not in the tumor core — enhancers active in reactive-but-not-transformed tissue"
+    - name: multiome_discordance
+      description: "In Multiome cohorts: peaks accessible but target gene not expressed (poised), or expressed but peak closed (compensatory)"
+
+dataset_issues_checks:
+  # The "do we need our own data?" verdict depends on these
+  - min_cohorts_for_tme_call: 3
+  - min_patients_per_celltype: 15
+  - min_cells_per_celltype_per_patient: 20
+  - require_multiome_for_enhancer_to_gene_linkage: true
+  - acceptable_malignant_subtype_coverage:
+      NPC_like: 10        # need ≥10 patients with ≥20 cells of this type
+      OPC_like: 10
+      AC_like: 10
+      MES_like: 10
+
+output_formats:
+  matrix_format: parquet
+  report_format: html                # Tufte aesthetic, Playwright-rendered
+  figure_format: svg_plus_png
+  include_mermaid_diagrams: true

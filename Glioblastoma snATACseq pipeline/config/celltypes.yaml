@@ -1,0 +1,107 @@
+# Canonical cell-type ontology for the GBM enhancer atlas.
+# Maps GBmap labels and CATLAS labels onto a shared harmonized vocabulary
+# so we can compare across cohorts without ambiguity.
+
+harmonized_vocabulary:
+
+  # TME cell types — labels sourced from GBmap (disease-matched)
+  microglia:
+    gbmap_labels: ["microglia", "Microglia", "Mg"]
+    catlas_labels: ["microglia"]
+    canonical_markers: [P2RY12, TMEM119, CX3CR1, CSF1R]
+    role_in_r01: Aim_1_primary_target
+    aav_delivery_relevance: "homeostatic microglia state — baseline for CNS delivery"
+
+  TAM:
+    gbmap_labels: ["TAM", "Macrophage_TAM", "macrophage"]
+    catlas_labels: []  # TAMs don't exist in normal brain reference
+    canonical_markers: [CD163, MRC1, APOE, SPP1, TREM2]
+    role_in_r01: Aim_1_secondary_target
+    aav_delivery_relevance: "GBM-reactive macrophage state; distinguishing enhancers of interest for tumor-microenvironment targeting"
+    notes: "TAM-vs-microglia discrimination is one of the hardest and most interesting enhancer calls in this project. See TAM_specific_enhancer_hypothesis.docx."
+
+  astrocyte:
+    gbmap_labels: ["astrocyte", "Astrocyte"]
+    catlas_labels: ["astrocyte", "ASC"]
+    canonical_markers: [GFAP, AQP4, SLC1A2, S100B]
+    role_in_r01: cross_celltype_resource
+
+  reactive_astrocyte:
+    gbmap_labels: ["reactive_astrocyte", "Astrocyte_reactive"]
+    catlas_labels: []
+    canonical_markers: [GFAP_high, CD44, LCN2, SERPINA3]
+    role_in_r01: cross_celltype_resource
+
+  oligodendrocyte:
+    gbmap_labels: ["oligodendrocyte", "Oligodendrocyte", "Oligo"]
+    catlas_labels: ["oligodendrocyte"]
+    canonical_markers: [MOG, MBP, PLP1, MAG]
+
+  OPC:
+    gbmap_labels: ["OPC", "oligodendrocyte_progenitor"]
+    catlas_labels: ["OPC"]
+    canonical_markers: [PDGFRA, CSPG4, SOX10]
+    notes: "CSPG4 is one of JP's current candidates — the OPC marker gene itself"
+
+  endothelial:
+    gbmap_labels: ["endothelial", "Endothelial"]
+    catlas_labels: ["endothelial"]
+    canonical_markers: [CLDN5, PECAM1, VWF]
+
+  pericyte:
+    gbmap_labels: ["pericyte", "Pericyte", "mural"]
+    catlas_labels: ["pericyte"]
+    canonical_markers: [PDGFRB, RGS5, MCAM]
+
+  T_cell:
+    gbmap_labels: ["T_cell", "T cell", "CD8_T", "CD4_T"]
+    catlas_labels: []
+    canonical_markers: [CD3D, CD3E, CD8A, CD4]
+
+  # Malignant states — the Neftel framework
+  malignant_NPC_like:
+    gbmap_labels: ["NPC-like", "NPC_like", "Neftel_NPC"]
+    neftel_markers: [DLL3, DLL1, HES6, ASCL1]
+    role_in_r01: Aim_3_tumor_specific_target
+
+  malignant_OPC_like:
+    gbmap_labels: ["OPC-like", "OPC_like", "Neftel_OPC"]
+    neftel_markers: [OLIG1, OLIG2, PDGFRA, SOX10]
+    role_in_r01: Aim_3_tumor_specific_target
+
+  malignant_AC_like:
+    gbmap_labels: ["AC-like", "AC_like", "Neftel_AC"]
+    neftel_markers: [GFAP, AQP4, APOE, MLC1]
+    role_in_r01: Aim_3_tumor_specific_target
+
+  malignant_MES_like:
+    gbmap_labels: ["MES-like", "MES_like", "Neftel_MES", "MES1", "MES2"]
+    neftel_markers: [CD44, VIM, CHI3L1, ANXA2]
+    role_in_r01: Aim_3_tumor_specific_target
+
+  # Fine neuronal subtypes — from CATLAS (not well-resolved in GBmap)
+  GLUT_L2_3:
+    catlas_labels: ["L2/3_IT", "GLUT_L2_3_IT"]
+    gbmap_labels: ["neuron", "Neuron"]  # GBmap merges, CATLAS splits
+    canonical_markers: [RORB, CUX2, CARTPT]
+
+  GLUT_L5_IT:
+    catlas_labels: ["L5_IT"]
+    gbmap_labels: ["neuron", "Neuron"]
+    canonical_markers: [RORB, FEZF2]
+
+  GABA_PV:
+    catlas_labels: ["Pvalb", "GABA_PV"]
+    gbmap_labels: ["neuron_inhibitory", "GABAergic"]
+    canonical_markers: [PVALB, GAD1, GAD2]
+
+  GABA_SST:
+    catlas_labels: ["Sst", "GABA_SST"]
+    gbmap_labels: ["neuron_inhibitory"]
+    canonical_markers: [SST, GAD1]
+
+label_transfer_strategy:
+  rule_1: "If GBmap label is non-neuronal, use GBmap (disease-matched)"
+  rule_2: "If GBmap label is 'neuron' or 'Neuron', re-label using CATLAS neuronal subtype (higher resolution)"
+  rule_3: "If CNV call = malignant, override both; use Neftel state classifier instead"
+  rule_4: "Flag cells where GBmap and CATLAS disagree beyond rule_2 for review"
