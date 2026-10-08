@@ -1,7 +1,11 @@
 # GBM Enhancer Atlas — EC2 restore cheat sheet
 
-Full point-in-time backup of the pipeline environment lives in **AWS EBS snapshot `snap-04deb97b5e367bedf`** (us-east-1).
-This captures everything on the `/data` 500 GB volume as of 2026-10-07 02:42 UTC:
+Current full point-in-time backup lives in **AWS EBS snapshot `snap-0e28e2cef18747e24`** (us-east-1), 2026-10-08 15:53 UTC —
+captures the atlas post-CNV-fix (45 patients, pan-malignant v4, per-celltype + pan-myeloid reports, 11-check QC pass).
+
+Previous snapshot: `snap-04deb97b5e367bedf` (2026-10-07 02:42 UTC) — pre-CNV-fix, 33 patients. Keep for a few weeks as a safety net, then delete to save ~$20/mo.
+
+Each snapshot captures everything on the `/data` 500 GB volume at the moment it was taken:
 
 - Conda env (`/data/miniconda3`) with snapatac2, pyMC, polars, etc.
 - Reference files: CATLAS atlas (40 GB), GBmap (11 GB), CATLAS BED
@@ -26,7 +30,7 @@ This captures everything on the `/data` 500 GB volume as of 2026-10-07 02:42 UTC
 ### Restore
 ```bash
 cd "~/Desktop/GBM enhancer atlas 10-4-26/code"
-./infra/aws_restore.sh snap-04deb97b5e367bedf
+./infra/aws_restore.sh snap-0e28e2cef18747e24
 ```
 
 This script:
@@ -62,7 +66,7 @@ For everything else — top-N queries, nearest-gene annotations, custom filters,
 
 ## Backups
 
-- **Snapshot** (`snap-04deb97b5e367bedf`): full /data volume, 500 GB → ~$20/mo. Permanent.
+- **Snapshot** (`snap-0e28e2cef18747e24` current + `snap-04deb97b5e367bedf` legacy): full /data volume, 500 GB → ~$20/mo each. Permanent until deleted.
 - **S3** (`s3://jpm-atacseq-archive-2026/final_atlas_2026_10_07/`): matrix + reports + 8 h5ads, 79 GB → ~$1.80/mo.
 - **Google Drive**: full matrix + reports + 8 h5ads (via s3 sync).
 - **GitHub**: all source code at https://github.com/jpmcginnis/HumanAAVProject (`Glioblastoma snATACseq pipeline/`).
