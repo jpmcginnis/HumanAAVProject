@@ -1,0 +1,11 @@
+ENCODE blacklist hg38 v2 — intersect results (2026-10-07)
+=====================================================
+
+Blacklist regions: 636 (reasons: {'High Signal Region': 594, 'Low Mappability': 42})
+
+Atlas (544K CATLAS peaks that appear in matrix):
+  total unique peaks: 544,735
+  overlapping blacklist: 1,497 (0.27%)
+
+Current top-50 pan-malignant shortlist:
+  overlapping blacklist: 0 / 50

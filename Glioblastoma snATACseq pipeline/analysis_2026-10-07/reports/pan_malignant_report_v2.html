@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html><head>
+<title>Pan-malignant AAV enhancer candidates — v2</title>
+<meta charset="utf-8"/>
+<style>
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; max-width: 1500px; margin: 2em auto; padding: 0 2em; color: #111; line-height: 1.5; }
+  h1 { font-size: 1.8em; border-bottom: 2px solid #ddd; padding-bottom: 0.3em; }
+  h2 { font-size: 1.4em; margin-top: 2em; color: #1e40af; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.2em; }
+  h3 { font-size: 1.1em; color: #334155; }
+  code { font-size: 0.85em; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85em; margin: 1em 0; }
+  th, td { border: 1px solid #e5e7eb; padding: 5px 8px; vertical-align: top; }
+  th { background: #f9fafb; text-align: left; font-weight: 600; }
+  tr:nth-child(even) { background: #fafbfc; }
+  tr:hover { background: #eff6ff; }
+  .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1em; margin: 1em 0; }
+  .success { background: #d1fae5; border-left: 4px solid #059669; padding: 1em; margin: 1em 0; }
+  .pick { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 0.75em; margin: 0.5em 0; }
+  ol li, ul li { margin: 0.3em 0; }
+</style></head><body>
+
+<h1>Pan-malignant AAV enhancer candidates — GBM atlas v2 (2026-10-07)</h1>
+
+<p><strong>Source atlas:</strong> 8 cohorts, 51 patients, 1,523,668 nuclei. Pan-malignant pool
+built from <code>malignant_cnv == 1 OR cell_type == malignant_unresolved</code>, which
+recovered 438,994 CNV-malignant cells in GBM-Space that marker-peak scoring had
+mis-assigned to TME types.</p>
+
+<h2>What changed from v1</h2>
+<ol>
+<li><strong>Fixed nearest-gene bug</strong> — pyranges was returning 29 Mb-distant pseudogenes
+when protein-coding genes were within kb. Rewrote with manual TSS binary search.</li>
+<li><strong>Added selectivity-vs-non-malignant</strong> — now reports how many × more open
+each peak is in malignant cells vs. the best-matched non-malignant cell type from the
+main cell-type matrix. Critical for AAV cell-type selectivity.</li>
+<li><strong>Added distal + housekeeping filters</strong> — the AAV cloning shortlist now
+excludes promoters (|d|<2 kb from TSS, which drive broad expression) and housekeeping
+genes (MCM3, VCP, CCT8 etc., open in every proliferating cell).</li>
+</ol>
+
+<div class="note">
+<strong>Important caveat.</strong> The v1 top-15 was dominated by promoter-proximal
+peaks (PRKCSH, FEM1A, UBAP2, MCM3, VCP, STAT2…). These are <strong>housekeeping
+promoters</strong>, open in every proliferating cell — exactly what you DON'T want
+for AAV cell-type-selective targeting. v2 filters them out so the shortlist actually
+reflects distal, malignant-selective enhancer candidates.
+</div>
+
+<div class="success">
+<strong>Headline numbers (v2):</strong>
+<ul>
+<li>Candidate pool (n_cohorts ≥ 4): <strong>69,382</strong> peaks</li>
+<li>AAV-clean pool (distal 2-100 kb + selective ≥2× + non-chr7 + non-housekeeping): <strong>445</strong> peaks</li>
+<li>Highest aav_score in the clean pool: <strong>0.563</strong></li>
+<li>Max cross-cohort replication achieved: <strong>6/8 cohorts</strong></li>
+</ul>
+</div>
+
+<h2>Top 10 AAV-cloning candidates (distal, selective, replicated)</h2>
+
+<p>Reading each entry: a short English blurb, then the full numeric row below.</p>
+<div class="pick"><strong>#1: <code>chr11:17405115-17405614</code></strong><br/><strong>+16 kb</strong> from <strong>KCNJ11</strong> TSS · <span style='color:#059669'>2.3× more open in malignant vs non-malignant</span> · replicated in 5/8 cohorts, 13/18 patients ≥10% open</div><div class="pick"><strong>#2: <code>chr3:185216514-185217013</code></strong><br/><strong>-36 kb</strong> from <strong>MIR5588</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 13/28 patients ≥10% open</div><div class="pick"><strong>#3: <code>chr5:38783310-38783809</code></strong><br/><strong>-62 kb</strong> from <strong>OSMR-AS1</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 13/31 patients ≥10% open</div><div class="pick"><strong>#4: <code>chr5:36569527-36570026</code></strong><br/><strong>-36 kb</strong> from <strong>SLC1A3</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 12/26 patients ≥10% open · <em style='color:#059669'>gene context: Neftel AC-like</em></div><div class="pick"><strong>#5: <code>chr6:158481480-158481979</code></strong><br/><strong>-54 kb</strong> from <strong>TMEM181</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 5/8 cohorts, 13/25 patients ≥10% open</div><div class="pick"><strong>#6: <code>chr5:38796426-38796925</code></strong><br/><strong>-49 kb</strong> from <strong>OSMR-AS1</strong> TSS · <span style='color:#059669'>2.5× more open in malignant vs non-malignant</span> · replicated in 4/8 cohorts, 9/13 patients ≥10% open</div><div class="pick"><strong>#7: <code>chr5:14157006-14157505</code></strong><br/><strong>+13 kb</strong> from <strong>TRIO</strong> TSS · <span style='color:#059669'>2.0× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 10/28 patients ≥10% open</div><div class="pick"><strong>#8: <code>chr3:132135945-132136444</code></strong><br/><strong>+96 kb</strong> from <strong>CPNE4</strong> TSS · <span style='color:#059669'>3.0× more open in malignant vs non-malignant</span> · replicated in 5/8 cohorts, 10/25 patients ≥10% open</div><div class="pick"><strong>#9: <code>chr5:150036471-150036970</code></strong><br/><strong>+35 kb</strong> from <strong>HMGXB3</strong> TSS · <span style='color:#059669'>2.4× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 9/25 patients ≥10% open</div><div class="pick"><strong>#10: <code>chr14:101001204-101001703</code></strong><br/><strong>+8 kb</strong> from <strong>SNORD114-31</strong> TSS · <span style='color:#059669'>3.0× more open in malignant vs non-malignant</span> · replicated in 4/8 cohorts, 7/11 patients ≥10% open</div>
+
+<h2>Top 50 AAV-cloning candidates — full table</h2>
+
+<p>Sorted by <code>aav_score</code> (consistency × 0.35 + n_cohorts/8 × 0.25 + n_patients/33 × 0.15 + selectivity/10 × 0.15 + strength × 0.10).
+Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non-malignant cell type.</p>
+
+<table>
+<thead><tr>
+  <th>peak_id (GRCh38)</th>
+  <th>nearest gene<br/>GBM tags</th>
+  <th>dist to TSS</th>
+  <th>cohorts</th>
+  <th>n_pt det.</th>
+  <th>n_pt ≥10%</th>
+  <th>consist.</th>
+  <th>strength (mal)</th>
+  <th>strength (max non-mal)</th>
+  <th>selectivity</th>
+</tr></thead>
+<tbody>
+
+          <tr>
+            <td><code>chr11:17405115-17405614</code> </td>
+            <td><strong>KCNJ11</strong><br/></td>
+            <td style="text-align:right;">+16.0 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">18</td>
+            <td style="text-align:center;">13</td>
+            <td style="text-align:center;">72%</td>
+            <td style="text-align:center;">19.1%</td>
+            <td style="text-align:center;">8.3%</td>
+            <td style="text-align:center;"><strong>2.29×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr3:185216514-185217013</code> </td>
+            <td><strong>MIR5588</strong><br/></td>
+            <td style="text-align:right;">-36.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">13</td>
+            <td style="text-align:center;">46%</td>
+            <td style="text-align:center;">13.9%</td>
+            <td style="text-align:center;">6.6%</td>
+            <td style="text-align:center;"><strong>2.10×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:38783310-38783809</code> </td>
+            <td><strong>OSMR-AS1</strong><br/></td>
+            <td style="text-align:right;">-62.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">31</td>
+            <td style="text-align:center;">13</td>
+            <td style="text-align:center;">42%</td>
+            <td style="text-align:center;">10.9%</td>
+            <td style="text-align:center;">5.2%</td>
+            <td style="text-align:center;"><strong>2.11×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:36569527-36570026</code> </td>
+            <td><strong>SLC1A3</strong><br/><span style="color:#059669;font-weight:600;">Neftel AC-like</span></td>
+            <td style="text-align:right;">-36.6 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">12</td>
+            <td style="text-align:center;">46%</td>
+            <td style="text-align:center;">11.6%</td>
+            <td style="text-align:center;">5.6%</td>
+            <td style="text-align:center;"><strong>2.07×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:158481480-158481979</code> </td>
+            <td><strong>TMEM181</strong><br/></td>
+            <td style="text-align:right;">-54.9 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">13</td>
+            <td style="text-align:center;">52%</td>
+            <td style="text-align:center;">13.7%</td>
+            <td style="text-align:center;">6.6%</td>
+            <td style="text-align:center;"><strong>2.08×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:38796426-38796925</code> </td>
+            <td><strong>OSMR-AS1</strong><br/></td>
+            <td style="text-align:right;">-49.2 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">13</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">69%</td>
+            <td style="text-align:center;">17.8%</td>
+            <td style="text-align:center;">7.2%</td>
+            <td style="text-align:center;"><strong>2.46×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:14157006-14157505</code> </td>
+            <td><strong>TRIO</strong><br/></td>
+            <td style="text-align:right;">+13.9 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">12.7%</td>
+            <td style="text-align:center;">6.3%</td>
+            <td style="text-align:center;"><strong>2.02×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr3:132135945-132136444</code> </td>
+            <td><strong>CPNE4</strong><br/></td>
+            <td style="text-align:right;">+96.6 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">40%</td>
+            <td style="text-align:center;">17.3%</td>
+            <td style="text-align:center;">5.7%</td>
+            <td style="text-align:center;"><strong>3.02×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:150036471-150036970</code> </td>
+            <td><strong>HMGXB3</strong><br/></td>
+            <td style="text-align:right;">+36.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">12.4%</td>
+            <td style="text-align:center;">5.2%</td>
+            <td style="text-align:center;"><strong>2.38×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr14:101001204-101001703</code> </td>
+            <td><strong>SNORD114-31</strong><br/></td>
+            <td style="text-align:right;">+8.2 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">11</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">64%</td>
+            <td style="text-align:center;">21.7%</td>
+            <td style="text-align:center;">7.2%</td>
+            <td style="text-align:center;"><strong>3.03×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:25193184-25193683</code> </td>
+            <td><strong>CMAHP</strong><br/></td>
+            <td style="text-align:right;">+55.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">35%</td>
+            <td style="text-align:center;">9.8%</td>
+            <td style="text-align:center;">4.0%</td>
+            <td style="text-align:center;"><strong>2.46×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr16:70714761-70715260</code> </td>
+            <td><strong>MTSS2</strong><br/></td>
+            <td style="text-align:right;">+29.0 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">38%</td>
+            <td style="text-align:center;">15.8%</td>
+            <td style="text-align:center;">6.2%</td>
+            <td style="text-align:center;"><strong>2.56×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chrX:153381490-153381989</code> </td>
+            <td><strong>PNMA6E</strong><br/></td>
+            <td style="text-align:right;">-19.6 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">45%</td>
+            <td style="text-align:center;">14.7%</td>
+            <td style="text-align:center;">6.5%</td>
+            <td style="text-align:center;"><strong>2.26×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:84284351-84284850</code> </td>
+            <td><strong>SLC28A3</strong><br/></td>
+            <td style="text-align:right;">-84.1 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">4</td>
+            <td style="text-align:center;">67%</td>
+            <td style="text-align:center;">18.7%</td>
+            <td style="text-align:center;">5.4%</td>
+            <td style="text-align:center;"><strong>3.43×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:204057279-204057778</code> </td>
+            <td><strong>SOX13</strong><br/></td>
+            <td style="text-align:right;">-15.6 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">43%</td>
+            <td style="text-align:center;">13.4%</td>
+            <td style="text-align:center;">6.0%</td>
+            <td style="text-align:center;"><strong>2.24×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:136279006-136279505</code> </td>
+            <td><strong>TRPC7-AS2</strong><br/></td>
+            <td style="text-align:right;">+52.6 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">43%</td>
+            <td style="text-align:center;">12.9%</td>
+            <td style="text-align:center;">6.1%</td>
+            <td style="text-align:center;"><strong>2.11×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chrX:153744307-153744806</code> </td>
+            <td><strong>PLXNB3</strong><br/></td>
+            <td style="text-align:right;">-19.6 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">33%</td>
+            <td style="text-align:center;">12.6%</td>
+            <td style="text-align:center;">6.0%</td>
+            <td style="text-align:center;"><strong>2.12×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:3622302-3622801</code> </td>
+            <td><strong>DLGAP1-AS2</strong><br/></td>
+            <td style="text-align:right;">+18.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">31%</td>
+            <td style="text-align:center;">10.6%</td>
+            <td style="text-align:center;">4.8%</td>
+            <td style="text-align:center;"><strong>2.20×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:21576494-21576993</code> </td>
+            <td><strong>MIR31HG</strong><br/></td>
+            <td style="text-align:right;">+16.9 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">33%</td>
+            <td style="text-align:center;">7.2%</td>
+            <td style="text-align:center;">2.9%</td>
+            <td style="text-align:center;"><strong>2.50×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr3:155572164-155572663</code> </td>
+            <td><strong>PLCH1-AS2</strong><br/></td>
+            <td style="text-align:right;">+86.6 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">27%</td>
+            <td style="text-align:center;">14.7%</td>
+            <td style="text-align:center;">6.3%</td>
+            <td style="text-align:center;"><strong>2.34×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:127130806-127131305</code> </td>
+            <td><strong>ANGPTL2</strong><br/></td>
+            <td style="text-align:right;">+8.4 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">12</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">58%</td>
+            <td style="text-align:center;">24.8%</td>
+            <td style="text-align:center;">12.0%</td>
+            <td style="text-align:center;"><strong>2.07×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:18490562-18491061</code> </td>
+            <td><strong>ADAMTSL1</strong><br/></td>
+            <td style="text-align:right;">+16.7 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">9.4%</td>
+            <td style="text-align:center;">3.0%</td>
+            <td style="text-align:center;"><strong>3.15×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr22:41636385-41636884</code> </td>
+            <td><strong>XRCC6</strong><br/></td>
+            <td style="text-align:right;">+15.5 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">37%</td>
+            <td style="text-align:center;">10.9%</td>
+            <td style="text-align:center;">5.3%</td>
+            <td style="text-align:center;"><strong>2.06×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:21538410-21538909</code> </td>
+            <td><strong>LINC00581</strong><br/></td>
+            <td style="text-align:right;">+26.8 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">38%</td>
+            <td style="text-align:center;">10.3%</td>
+            <td style="text-align:center;">4.9%</td>
+            <td style="text-align:center;"><strong>2.09×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:4974542-4975041</code> </td>
+            <td><strong>LYRM4-AS1</strong><br/></td>
+            <td style="text-align:right;">-29.0 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">4</td>
+            <td style="text-align:center;">67%</td>
+            <td style="text-align:center;">17.3%</td>
+            <td style="text-align:center;">6.6%</td>
+            <td style="text-align:center;"><strong>2.62×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr11:94706189-94706688</code> </td>
+            <td><strong>LOC105369438</strong><br/></td>
+            <td style="text-align:right;">-33.9 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">27%</td>
+            <td style="text-align:center;">10.7%</td>
+            <td style="text-align:center;">4.2%</td>
+            <td style="text-align:center;"><strong>2.52×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr20:4226127-4226626</code> </td>
+            <td><strong>ADRA1D</strong><br/></td>
+            <td style="text-align:right;">-22.9 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">14.8%</td>
+            <td style="text-align:center;">6.7%</td>
+            <td style="text-align:center;"><strong>2.19×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr20:46558452-46558951</code> </td>
+            <td><strong>OCSTAMP</strong><br/></td>
+            <td style="text-align:right;">+8.0 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">41%</td>
+            <td style="text-align:center;">11.9%</td>
+            <td style="text-align:center;">5.1%</td>
+            <td style="text-align:center;"><strong>2.34×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:20558627-20559126</code> </td>
+            <td><strong>MIR4474</strong><br/></td>
+            <td style="text-align:right;">+56.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">32%</td>
+            <td style="text-align:center;">7.3%</td>
+            <td style="text-align:center;">3.6%</td>
+            <td style="text-align:center;"><strong>2.01×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:3624813-3625312</code> </td>
+            <td><strong>DLGAP1-AS2</strong><br/></td>
+            <td style="text-align:right;">+21.3 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">11.4%</td>
+            <td style="text-align:center;">4.6%</td>
+            <td style="text-align:center;"><strong>2.48×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:100785401-100785900</code> </td>
+            <td><strong>VCAM1</strong><br/></td>
+            <td style="text-align:right;">+66.0 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">41%</td>
+            <td style="text-align:center;">11.6%</td>
+            <td style="text-align:center;">5.2%</td>
+            <td style="text-align:center;"><strong>2.21×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:23115541-23116040</code> </td>
+            <td><strong>CABLES1</strong><br/></td>
+            <td style="text-align:right;">-18.8 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">39%</td>
+            <td style="text-align:center;">13.1%</td>
+            <td style="text-align:center;">6.6%</td>
+            <td style="text-align:center;"><strong>2.01×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:31663318-31663817</code> </td>
+            <td><strong>PDZD2</strong><br/></td>
+            <td style="text-align:right;">+24.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">25%</td>
+            <td style="text-align:center;">8.5%</td>
+            <td style="text-align:center;">4.0%</td>
+            <td style="text-align:center;"><strong>2.09×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr11:35180252-35180751</code> </td>
+            <td><strong>SNORD164</strong><br/></td>
+            <td style="text-align:right;">+17.6 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">27%</td>
+            <td style="text-align:center;">8.4%</td>
+            <td style="text-align:center;">3.9%</td>
+            <td style="text-align:center;"><strong>2.13×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:14105773-14106272</code> </td>
+            <td><strong>TRIO</strong><br/></td>
+            <td style="text-align:right;">-37.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">27%</td>
+            <td style="text-align:center;">7.2%</td>
+            <td style="text-align:center;">3.2%</td>
+            <td style="text-align:center;"><strong>2.21×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:74543052-74543551</code> </td>
+            <td><strong>LINC01331</strong><br/></td>
+            <td style="text-align:right;">+6.3 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">35%</td>
+            <td style="text-align:center;">15.4%</td>
+            <td style="text-align:center;">6.9%</td>
+            <td style="text-align:center;"><strong>2.24×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr14:68779943-68780442</code> </td>
+            <td><strong>ZFP36L1</strong><br/></td>
+            <td style="text-align:right;">-16.1 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">42%</td>
+            <td style="text-align:center;">12.2%</td>
+            <td style="text-align:center;">4.3%</td>
+            <td style="text-align:center;"><strong>2.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:136279524-136280023</code> </td>
+            <td><strong>TRPC7-AS2</strong><br/></td>
+            <td style="text-align:right;">+53.1 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">45%</td>
+            <td style="text-align:center;">13.3%</td>
+            <td style="text-align:center;">5.6%</td>
+            <td style="text-align:center;"><strong>2.40×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr12:50247266-50247765</code> </td>
+            <td><strong>MIR1293</strong><br/></td>
+            <td style="text-align:right;">+13.3 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">36%</td>
+            <td style="text-align:center;">14.1%</td>
+            <td style="text-align:center;">6.1%</td>
+            <td style="text-align:center;"><strong>2.31×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr14:61547139-61547638</code> </td>
+            <td><strong>FLJ22447</strong><br/></td>
+            <td style="text-align:right;">-23.2 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">9</td>
+            <td style="text-align:center;">33%</td>
+            <td style="text-align:center;">9.9%</td>
+            <td style="text-align:center;">4.9%</td>
+            <td style="text-align:center;"><strong>2.02×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr14:77843090-77843589</code> </td>
+            <td><strong>ADCK1</strong><br/></td>
+            <td style="text-align:right;">+43.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">26%</td>
+            <td style="text-align:center;">12.1%</td>
+            <td style="text-align:center;">4.9%</td>
+            <td style="text-align:center;"><strong>2.47×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:95720291-95720790</code> </td>
+            <td><strong>RHOBTB3</strong><br/></td>
+            <td style="text-align:right;">-10.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">28%</td>
+            <td style="text-align:center;">5.8%</td>
+            <td style="text-align:center;">2.6%</td>
+            <td style="text-align:center;"><strong>2.23×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:205600058-205600557</code> </td>
+            <td><strong>MFSD4A-AS1</strong><br/></td>
+            <td style="text-align:right;">+31.0 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">29%</td>
+            <td style="text-align:center;">14.5%</td>
+            <td style="text-align:center;">4.7%</td>
+            <td style="text-align:center;"><strong>3.08×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr16:83813811-83814310</code> </td>
+            <td><strong>HSBP1</strong><br/></td>
+            <td style="text-align:right;">+6.1 kb</td>
+            <td style="text-align:center;">4/8</td>
+            <td style="text-align:center;">10</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">60%</td>
+            <td style="text-align:center;">14.1%</td>
+            <td style="text-align:center;">6.3%</td>
+            <td style="text-align:center;"><strong>2.23×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr13:53191004-53191503</code> </td>
+            <td><strong>LINC01065</strong><br/></td>
+            <td style="text-align:right;">+39.4 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">32%</td>
+            <td style="text-align:center;">9.3%</td>
+            <td style="text-align:center;">3.4%</td>
+            <td style="text-align:center;"><strong>2.70×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:88742386-88742885</code> </td>
+            <td><strong>MIR4289</strong><br/></td>
+            <td style="text-align:right;">-3.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">25%</td>
+            <td style="text-align:center;">12.6%</td>
+            <td style="text-align:center;">6.0%</td>
+            <td style="text-align:center;"><strong>2.11×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:245085415-245085914</code> </td>
+            <td><strong>KIF26B</strong><br/></td>
+            <td style="text-align:right;">-69.3 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">35%</td>
+            <td style="text-align:center;">13.4%</td>
+            <td style="text-align:center;">6.5%</td>
+            <td style="text-align:center;"><strong>2.07×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:12040526-12041025</code> </td>
+            <td><strong>MIR6729</strong><br/></td>
+            <td style="text-align:right;">+11.6 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">28%</td>
+            <td style="text-align:center;">14.2%</td>
+            <td style="text-align:center;">4.9%</td>
+            <td style="text-align:center;"><strong>2.91×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:14165065-14165564</code> </td>
+            <td><strong>CD83</strong><br/></td>
+            <td style="text-align:right;">+48.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">23%</td>
+            <td style="text-align:center;">7.9%</td>
+            <td style="text-align:center;">3.2%</td>
+            <td style="text-align:center;"><strong>2.45×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:2603301-2603800</code> </td>
+            <td><strong>MIR7850</strong><br/></td>
+            <td style="text-align:right;">-27.2 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">32%</td>
+            <td style="text-align:center;">13.1%</td>
+            <td style="text-align:center;">6.5%</td>
+            <td style="text-align:center;"><strong>2.02×</strong></td>
+          </tr>
+        
+</tbody></table>
+
+<h2>Reference: top 100 pan-malignant (unfiltered)</h2>
+
+<p>This includes promoters, chr7 hits, housekeeping genes etc. Shown for reference —
+<strong>don't clone from this table</strong>, clone from the filtered one above.</p>
+
+<table>
+<thead><tr>
+  <th>peak_id</th>
+  <th>nearest gene<br/>GBM tags</th>
+  <th>dist TSS</th>
+  <th>cohorts</th>
+  <th>n_pt det.</th>
+  <th>n_pt ≥10%</th>
+  <th>consist.</th>
+  <th>str (mal)</th>
+  <th>str (max non-mal)</th>
+  <th>sel</th>
+</tr></thead>
+<tbody>
+
+          <tr>
+            <td><code>chr5:44808506-44809005</code> </td>
+            <td><strong>MRPS30-DT</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">85%</td>
+            <td style="text-align:center;">26.0%</td>
+            <td style="text-align:center;">28.4%</td>
+            <td style="text-align:center;"><strong>0.91×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:202926941-202927440</code> </td>
+            <td><strong>KLHL12</strong><br/></td>
+            <td style="text-align:right;">-1.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">82%</td>
+            <td style="text-align:center;">28.0%</td>
+            <td style="text-align:center;">35.8%</td>
+            <td style="text-align:center;"><strong>0.78×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:34915410-34915909</code> </td>
+            <td><strong>BRIX1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">28.2%</td>
+            <td style="text-align:center;">31.7%</td>
+            <td style="text-align:center;"><strong>0.89×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:26659453-26659952</code> </td>
+            <td><strong>ZNF322</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">28.5%</td>
+            <td style="text-align:center;">32.2%</td>
+            <td style="text-align:center;"><strong>0.89×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:8435281-8435780</code> </td>
+            <td><strong>SLC35B3</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">21.9%</td>
+            <td style="text-align:center;">25.7%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:2843863-2844362</code> </td>
+            <td><strong>PUM3</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">28.8%</td>
+            <td style="text-align:center;">34.4%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:36258286-36258785</code> </td>
+            <td><strong>GNE</strong><br/></td>
+            <td style="text-align:right;">-18.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">29.4%</td>
+            <td style="text-align:center;">35.3%</td>
+            <td style="text-align:center;"><strong>0.83×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:33473721-33474220</code> </td>
+            <td><strong>NOL6</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">79%</td>
+            <td style="text-align:center;">28.8%</td>
+            <td style="text-align:center;">36.6%</td>
+            <td style="text-align:center;"><strong>0.79×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:4759807-4760306</code> </td>
+            <td><strong>MIR7-3HG</strong><br/></td>
+            <td style="text-align:right;">-9.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">76%</td>
+            <td style="text-align:center;">24.1%</td>
+            <td style="text-align:center;">28.0%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:37079678-37080177</code> </td>
+            <td><strong>EBLN3P</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">76%</td>
+            <td style="text-align:center;">23.6%</td>
+            <td style="text-align:center;">27.6%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:34178746-34179245</code> </td>
+            <td><strong>UBAP1</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">76%</td>
+            <td style="text-align:center;">26.4%</td>
+            <td style="text-align:center;">31.0%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:36257775-36258274</code> </td>
+            <td><strong>GNE</strong><br/></td>
+            <td style="text-align:right;">-19.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">73%</td>
+            <td style="text-align:center;">24.1%</td>
+            <td style="text-align:center;">23.3%</td>
+            <td style="text-align:center;"><strong>1.04×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:15552739-15553238</code> </td>
+            <td><strong>CCDC171</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">73%</td>
+            <td style="text-align:center;">23.0%</td>
+            <td style="text-align:center;">25.9%</td>
+            <td style="text-align:center;"><strong>0.89×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:37120264-37120763</code> </td>
+            <td><strong>ZCCHC7</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">73%</td>
+            <td style="text-align:center;">28.0%</td>
+            <td style="text-align:center;">34.0%</td>
+            <td style="text-align:center;"><strong>0.82×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:19379998-19380497</code> </td>
+            <td><strong>RPS6</strong><br/><span style="color:#059669;font-weight:600;">⚠️ housekeeping</span></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">73%</td>
+            <td style="text-align:center;">22.9%</td>
+            <td style="text-align:center;">29.4%</td>
+            <td style="text-align:center;"><strong>0.78×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:33001339-33001838</code> </td>
+            <td><strong>APTX</strong><br/></td>
+            <td style="text-align:right;">-23.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">73%</td>
+            <td style="text-align:center;">20.4%</td>
+            <td style="text-align:center;">27.4%</td>
+            <td style="text-align:center;"><strong>0.75×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:15510691-15511190</code> </td>
+            <td><strong>PSIP1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">21.8%</td>
+            <td style="text-align:center;">22.2%</td>
+            <td style="text-align:center;"><strong>0.98×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:34839120-34839619</code> </td>
+            <td><strong>TTC23L</strong><br/></td>
+            <td style="text-align:right;">+0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">16.8%</td>
+            <td style="text-align:center;">17.1%</td>
+            <td style="text-align:center;"><strong>0.98×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:8102431-8102930</code> </td>
+            <td><strong>EEF1E1-BLOC1S5</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">18.1%</td>
+            <td style="text-align:center;">22.2%</td>
+            <td style="text-align:center;"><strong>0.82×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:1633764-1634263</code> </td>
+            <td><strong>LOC728613</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">15.6%</td>
+            <td style="text-align:center;">19.2%</td>
+            <td style="text-align:center;"><strong>0.81×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:5437608-5438107</code> </td>
+            <td><strong>PLGRKT</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">22.7%</td>
+            <td style="text-align:center;">28.7%</td>
+            <td style="text-align:center;"><strong>0.79×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:37422440-37422939</code> </td>
+            <td><strong>GRHPR</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">23</td>
+            <td style="text-align:center;">70%</td>
+            <td style="text-align:center;">20.6%</td>
+            <td style="text-align:center;">26.7%</td>
+            <td style="text-align:center;"><strong>0.77×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:32384283-32384782</code> </td>
+            <td><strong>ACO1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">22</td>
+            <td style="text-align:center;">67%</td>
+            <td style="text-align:center;">22.9%</td>
+            <td style="text-align:center;">25.7%</td>
+            <td style="text-align:center;"><strong>0.89×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:14132306-14132805</code> </td>
+            <td><strong>ZNF519</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">21</td>
+            <td style="text-align:center;">64%</td>
+            <td style="text-align:center;">15.4%</td>
+            <td style="text-align:center;">19.9%</td>
+            <td style="text-align:center;"><strong>0.77×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:92325401-92325900</code> </td>
+            <td><strong>NOL8</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">21</td>
+            <td style="text-align:center;">64%</td>
+            <td style="text-align:center;">21.8%</td>
+            <td style="text-align:center;">32.2%</td>
+            <td style="text-align:center;"><strong>0.68×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:6704105-6704604</code> </td>
+            <td><strong>KDM4C</strong><br/></td>
+            <td style="text-align:right;">-16.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">20</td>
+            <td style="text-align:center;">61%</td>
+            <td style="text-align:center;">13.7%</td>
+            <td style="text-align:center;">21.7%</td>
+            <td style="text-align:center;"><strong>0.63×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr8:27490850-27491349</code> </td>
+            <td><strong>EPHX2</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">19</td>
+            <td style="text-align:center;">58%</td>
+            <td style="text-align:center;">14.5%</td>
+            <td style="text-align:center;">14.4%</td>
+            <td style="text-align:center;"><strong>1.01×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:7763370-7763869</code> </td>
+            <td><strong>C5orf49</strong><br/></td>
+            <td style="text-align:right;">-87.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">18</td>
+            <td style="text-align:center;">55%</td>
+            <td style="text-align:center;">14.9%</td>
+            <td style="text-align:center;">10.0%</td>
+            <td style="text-align:center;"><strong>1.50×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:41903925-41904424</code> </td>
+            <td><strong>C5orf51</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">30</td>
+            <td style="text-align:center;">94%</td>
+            <td style="text-align:center;">45.7%</td>
+            <td style="text-align:center;">51.8%</td>
+            <td style="text-align:center;"><strong>0.88×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:11435244-11435743</code> </td>
+            <td><strong>PRKCSH</strong><br/></td>
+            <td style="text-align:right;">+0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">30</td>
+            <td style="text-align:center;">94%</td>
+            <td style="text-align:center;">41.8%</td>
+            <td style="text-align:center;">54.7%</td>
+            <td style="text-align:center;"><strong>0.76×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:52284779-52285278</code> </td>
+            <td><strong>MCM3</strong><br/><span style="color:#059669;font-weight:600;">⚠️ housekeeping</span></td>
+            <td style="text-align:right;">+0.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">29</td>
+            <td style="text-align:center;">91%</td>
+            <td style="text-align:center;">32.8%</td>
+            <td style="text-align:center;">37.6%</td>
+            <td style="text-align:center;"><strong>0.87×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:34048977-34049476</code> </td>
+            <td><strong>UBAP2</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">29</td>
+            <td style="text-align:center;">91%</td>
+            <td style="text-align:center;">38.2%</td>
+            <td style="text-align:center;">44.3%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:35072535-35073034</code> </td>
+            <td><strong>VCP</strong><br/><span style="color:#059669;font-weight:600;">⚠️ housekeeping</span></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">88%</td>
+            <td style="text-align:center;">35.1%</td>
+            <td style="text-align:center;">40.1%</td>
+            <td style="text-align:center;"><strong>0.88×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:4471666-4472165</code> </td>
+            <td><strong>HDGFL2</strong><br/></td>
+            <td style="text-align:right;">-0.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">88%</td>
+            <td style="text-align:center;">48.7%</td>
+            <td style="text-align:center;">56.5%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:271275-271774</code> </td>
+            <td><strong>HRAT5</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">88%</td>
+            <td style="text-align:center;">34.4%</td>
+            <td style="text-align:center;">40.5%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:9334469-9334968</code> </td>
+            <td><strong>TWSG1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">88%</td>
+            <td style="text-align:center;">32.4%</td>
+            <td style="text-align:center;">40.0%</td>
+            <td style="text-align:center;"><strong>0.81×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr21:29073522-29074021</code> </td>
+            <td><strong>CCT8</strong><br/><span style="color:#059669;font-weight:600;">⚠️ housekeeping</span></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">28</td>
+            <td style="text-align:center;">88%</td>
+            <td style="text-align:center;">29.0%</td>
+            <td style="text-align:center;">40.2%</td>
+            <td style="text-align:center;"><strong>0.72×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:43483630-43484129</code> </td>
+            <td><strong>TMEM267</strong><br/></td>
+            <td style="text-align:right;">-0.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">84%</td>
+            <td style="text-align:center;">29.0%</td>
+            <td style="text-align:center;">29.5%</td>
+            <td style="text-align:center;"><strong>0.98×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:5003513-5004012</code> </td>
+            <td><strong>LYRM4-AS1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">84%</td>
+            <td style="text-align:center;">34.8%</td>
+            <td style="text-align:center;">40.1%</td>
+            <td style="text-align:center;"><strong>0.87×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:86623609-86624108</code> </td>
+            <td><strong>RNF103</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">84%</td>
+            <td style="text-align:center;">27.2%</td>
+            <td style="text-align:center;">33.4%</td>
+            <td style="text-align:center;"><strong>0.81×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:42846341-42846840</code> </td>
+            <td><strong>ZNF691</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">27</td>
+            <td style="text-align:center;">84%</td>
+            <td style="text-align:center;">24.5%</td>
+            <td style="text-align:center;">30.3%</td>
+            <td style="text-align:center;"><strong>0.81×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:14011404-14011903</code> </td>
+            <td><strong>DNAH5</strong><br/></td>
+            <td style="text-align:right;">+67.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">26.0%</td>
+            <td style="text-align:center;">24.3%</td>
+            <td style="text-align:center;"><strong>1.07×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr7:135662179-135662678</code> <span style="color:#dc2626;" title="chr7 — CNV-driven signal possible">⚠️</span></td>
+            <td><strong>STMP1</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">35.3%</td>
+            <td style="text-align:center;">35.9%</td>
+            <td style="text-align:center;"><strong>0.98×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:43556952-43557451</code> </td>
+            <td><strong>PAIP1</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">27.7%</td>
+            <td style="text-align:center;">28.9%</td>
+            <td style="text-align:center;"><strong>0.96×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:24775159-24775658</code> </td>
+            <td><strong>GMNN</strong><br/></td>
+            <td style="text-align:right;">+0.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">30.3%</td>
+            <td style="text-align:center;">33.0%</td>
+            <td style="text-align:center;"><strong>0.92×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:35814803-35815302</code> </td>
+            <td><strong>HINT2</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">33.6%</td>
+            <td style="text-align:center;">37.4%</td>
+            <td style="text-align:center;"><strong>0.90×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:40798052-40798551</code> </td>
+            <td><strong>PRKAA1</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">31.4%</td>
+            <td style="text-align:center;">35.1%</td>
+            <td style="text-align:center;"><strong>0.90×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:32585282-32585781</code> </td>
+            <td><strong>SUB1</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">22.7%</td>
+            <td style="text-align:center;">25.4%</td>
+            <td style="text-align:center;"><strong>0.90×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:12990960-12991459</code> </td>
+            <td><strong>CEP192</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">34.0%</td>
+            <td style="text-align:center;">38.6%</td>
+            <td style="text-align:center;"><strong>0.88×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:170531835-170532334</code> </td>
+            <td><strong>GORAB</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">21.7%</td>
+            <td style="text-align:center;">25.1%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:12407654-12408153</code> </td>
+            <td><strong>PRELID3A</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">27.4%</td>
+            <td style="text-align:center;">32.0%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:37102535-37103034</code> </td>
+            <td><strong>PIM1</strong><br/></td>
+            <td style="text-align:right;">-67.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">32.4%</td>
+            <td style="text-align:center;">38.2%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:3118370-3118869</code> </td>
+            <td><strong>BPHL</strong><br/></td>
+            <td style="text-align:right;">+0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">36.1%</td>
+            <td style="text-align:center;">42.6%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:158212-158711</code> </td>
+            <td><strong>USP14</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">31.2%</td>
+            <td style="text-align:center;">36.9%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:3258708-3259207</code> </td>
+            <td><strong>PSMG4</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">27.4%</td>
+            <td style="text-align:center;">32.7%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chrX:48958178-48958677</code> </td>
+            <td><strong>OTUD5</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">25.4%</td>
+            <td style="text-align:center;">30.4%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:40835111-40835610</code> </td>
+            <td><strong>RPL37</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">23.3%</td>
+            <td style="text-align:center;">29.3%</td>
+            <td style="text-align:center;"><strong>0.80×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:4007260-4007759</code> </td>
+            <td><strong>PIAS4</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">37.5%</td>
+            <td style="text-align:center;">47.9%</td>
+            <td style="text-align:center;"><strong>0.78×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr16:29973480-29973979</code> </td>
+            <td><strong>TAOK2</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">26</td>
+            <td style="text-align:center;">81%</td>
+            <td style="text-align:center;">34.4%</td>
+            <td style="text-align:center;">44.9%</td>
+            <td style="text-align:center;"><strong>0.77×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:10601334-10601833</code> </td>
+            <td><strong>ANKRD33B</strong><br/></td>
+            <td style="text-align:right;">+37.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">21.8%</td>
+            <td style="text-align:center;">19.6%</td>
+            <td style="text-align:center;"><strong>1.11×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:37249174-37249673</code> </td>
+            <td><strong>CPLANE1</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">26.1%</td>
+            <td style="text-align:center;">26.5%</td>
+            <td style="text-align:center;"><strong>0.98×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:7389575-7390074</code> </td>
+            <td><strong>RIOK1</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">25.0%</td>
+            <td style="text-align:center;">25.9%</td>
+            <td style="text-align:center;"><strong>0.96×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:43514916-43515415</code> </td>
+            <td><strong>C5orf34</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">22.5%</td>
+            <td style="text-align:center;">24.2%</td>
+            <td style="text-align:center;"><strong>0.93×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:31531972-31532471</code> </td>
+            <td><strong>C5orf22</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">28.3%</td>
+            <td style="text-align:center;">30.6%</td>
+            <td style="text-align:center;"><strong>0.93×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:20212285-20212784</code> </td>
+            <td><strong>MBOAT1</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">23.4%</td>
+            <td style="text-align:center;">25.6%</td>
+            <td style="text-align:center;"><strong>0.92×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:7098954-7099453</code> </td>
+            <td><strong>ZNF557</strong><br/></td>
+            <td style="text-align:right;">+29.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">33.7%</td>
+            <td style="text-align:center;">37.6%</td>
+            <td style="text-align:center;"><strong>0.90×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:3626829-3627328</code> </td>
+            <td><strong>CACTIN</strong><br/></td>
+            <td style="text-align:right;">+0.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">35.5%</td>
+            <td style="text-align:center;">39.9%</td>
+            <td style="text-align:center;"><strong>0.89×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:3068698-3069197</code> </td>
+            <td><strong>RIPK1</strong><br/></td>
+            <td style="text-align:right;">+5.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">27.7%</td>
+            <td style="text-align:center;">31.4%</td>
+            <td style="text-align:center;"><strong>0.88×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:7868950-7869449</code> </td>
+            <td><strong>MTRR</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">26.1%</td>
+            <td style="text-align:center;">30.0%</td>
+            <td style="text-align:center;"><strong>0.87×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:2944661-2945160</code> </td>
+            <td><strong>ZNF77</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">37.6%</td>
+            <td style="text-align:center;">43.7%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:27356931-27357430</code> </td>
+            <td><strong>GTF3C2</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">32.1%</td>
+            <td style="text-align:center;">37.5%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:2900646-2901145</code> </td>
+            <td><strong>ZNF57</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">36.5%</td>
+            <td style="text-align:center;">43.1%</td>
+            <td style="text-align:center;"><strong>0.85×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr7:106058573-106059072</code> <span style="color:#dc2626;" title="chr7 — CNV-driven signal possible">⚠️</span></td>
+            <td><strong>SYPL1</strong><br/></td>
+            <td style="text-align:right;">-53.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">23.0%</td>
+            <td style="text-align:center;">27.9%</td>
+            <td style="text-align:center;"><strong>0.82×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:6279746-6280245</code> </td>
+            <td><strong>MLLT1</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">32.1%</td>
+            <td style="text-align:center;">39.1%</td>
+            <td style="text-align:center;"><strong>0.82×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:7313026-7313525</code> </td>
+            <td><strong>SSR1</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">29.1%</td>
+            <td style="text-align:center;">35.5%</td>
+            <td style="text-align:center;"><strong>0.82×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:4639062-4639561</code> </td>
+            <td><strong>TNFAIP8L1</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">33.1%</td>
+            <td style="text-align:center;">41.2%</td>
+            <td style="text-align:center;"><strong>0.80×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:10747343-10747842</code> </td>
+            <td><strong>TMEM14B</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">29.3%</td>
+            <td style="text-align:center;">37.0%</td>
+            <td style="text-align:center;"><strong>0.79×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:10525785-10526284</code> </td>
+            <td><strong>NAPG</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">21.1%</td>
+            <td style="text-align:center;">26.7%</td>
+            <td style="text-align:center;"><strong>0.79×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:26785690-26786189</code> </td>
+            <td><strong>CENPA</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">27.8%</td>
+            <td style="text-align:center;">35.4%</td>
+            <td style="text-align:center;"><strong>0.78×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chrX:48897503-48898002</code> </td>
+            <td><strong>PQBP1</strong><br/></td>
+            <td style="text-align:right;">-0.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">21.1%</td>
+            <td style="text-align:center;">26.9%</td>
+            <td style="text-align:center;"><strong>0.78×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr14:63641660-63642159</code> </td>
+            <td><strong>WDR89</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">33.0%</td>
+            <td style="text-align:center;">43.7%</td>
+            <td style="text-align:center;"><strong>0.75×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr16:75622994-75623493</code> </td>
+            <td><strong>ADAT1</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">24.2%</td>
+            <td style="text-align:center;">32.6%</td>
+            <td style="text-align:center;"><strong>0.74×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr22:30592008-30592507</code> </td>
+            <td><strong>PES1</strong><br/></td>
+            <td style="text-align:right;">-14.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">23.3%</td>
+            <td style="text-align:center;">32.2%</td>
+            <td style="text-align:center;"><strong>0.72×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:124861839-124862338</code> </td>
+            <td><strong>ARPC5L</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">25</td>
+            <td style="text-align:center;">78%</td>
+            <td style="text-align:center;">26.5%</td>
+            <td style="text-align:center;">36.7%</td>
+            <td style="text-align:center;"><strong>0.72×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:1594164-1594663</code> </td>
+            <td><strong>SDHAP3</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">19.8%</td>
+            <td style="text-align:center;">17.6%</td>
+            <td style="text-align:center;"><strong>1.12×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:10627814-10628313</code> </td>
+            <td><strong>ANKRD33B</strong><br/></td>
+            <td style="text-align:right;">+64.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">22.7%</td>
+            <td style="text-align:center;">21.4%</td>
+            <td style="text-align:center;"><strong>1.06×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:27830457-27830956</code> </td>
+            <td><strong>PPP1R8</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">22.9%</td>
+            <td style="text-align:center;">24.3%</td>
+            <td style="text-align:center;"><strong>0.94×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:485817-486316</code> </td>
+            <td><strong>ODF3L2</strong><br/></td>
+            <td style="text-align:right;">-5.6 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">23.2%</td>
+            <td style="text-align:center;">24.8%</td>
+            <td style="text-align:center;"><strong>0.93×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:2032337-2032836</code> </td>
+            <td><strong>BTBD2</strong><br/></td>
+            <td style="text-align:right;">+16.9 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">23.9%</td>
+            <td style="text-align:center;">25.6%</td>
+            <td style="text-align:center;"><strong>0.93×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:35161690-35162189</code> </td>
+            <td><strong>UNC13B</strong><br/></td>
+            <td style="text-align:right;">-0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">25.4%</td>
+            <td style="text-align:center;">27.4%</td>
+            <td style="text-align:center;"><strong>0.93×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:1507588-1508087</code> </td>
+            <td><strong>ADAMTSL5</strong><br/></td>
+            <td style="text-align:right;">-5.2 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">28.3%</td>
+            <td style="text-align:center;">30.9%</td>
+            <td style="text-align:center;"><strong>0.92×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:16616786-16617285</code> </td>
+            <td><strong>RETREG1</strong><br/></td>
+            <td style="text-align:right;">-0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">16.0%</td>
+            <td style="text-align:center;">17.4%</td>
+            <td style="text-align:center;"><strong>0.92×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:2739914-2740413</code> </td>
+            <td><strong>SLC39A3</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">30.1%</td>
+            <td style="text-align:center;">32.9%</td>
+            <td style="text-align:center;"><strong>0.92×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:74374429-74374928</code> </td>
+            <td><strong>DCTN1-AS1</strong><br/></td>
+            <td style="text-align:right;">-10.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">19.2%</td>
+            <td style="text-align:center;">21.0%</td>
+            <td style="text-align:center;"><strong>0.91×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr20:43513783-43514282</code> </td>
+            <td><strong>L3MBTL1</strong><br/></td>
+            <td style="text-align:right;">+6.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">35.7%</td>
+            <td style="text-align:center;">40.7%</td>
+            <td style="text-align:center;"><strong>0.88×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:36400632-36401131</code> </td>
+            <td><strong>RNF38</strong><br/></td>
+            <td style="text-align:right;">-0.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">30.1%</td>
+            <td style="text-align:center;">34.9%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:37370943-37371442</code> </td>
+            <td><strong>NUP155</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">22.2%</td>
+            <td style="text-align:center;">26.0%</td>
+            <td style="text-align:center;"><strong>0.86×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:4670094-4670593</code> </td>
+            <td><strong>MYDGF</strong><br/></td>
+            <td style="text-align:right;">+0.0 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">27.3%</td>
+            <td style="text-align:center;">32.4%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:8064258-8064757</code> </td>
+            <td><strong>BLOC1S5</strong><br/></td>
+            <td style="text-align:right;">+0.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">26.6%</td>
+            <td style="text-align:center;">31.6%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr19:7069012-7069511</code> </td>
+            <td><strong>ZNF557</strong><br/></td>
+            <td style="text-align:right;">-0.4 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">24</td>
+            <td style="text-align:center;">75%</td>
+            <td style="text-align:center;">31.5%</td>
+            <td style="text-align:center;">37.5%</td>
+            <td style="text-align:center;"><strong>0.84×</strong></td>
+          </tr>
+        
+</tbody></table>
+
+<h2>Downstream files</h2>
+<ul>
+<li><code>pan_malignant_top50_distal_selective.csv</code> — the AAV cloning shortlist, Excel-ready.</li>
+<li><code>pan_malignant_top100_all.csv</code> — top 100 pan-malignant for reference (includes promoters etc.).</li>
+<li><code>pan_malignant_top30_distal_selective.bed</code> — GRCh38 BED, 30 best candidates, Benchling / UCSC browser upload.</li>
+<li><code>pan_malignant_scores.parquet</code> — all 301,594 scored peaks; query locally with polars for any custom filter.</li>
+</ul>
+
+<h2>Caveats / limits of this analysis</h2>
+<ul>
+<li><strong>chr7 excluded on principle.</strong> chr7+ gain is universal in GBM, so chr7 peaks have inflated strength from CNV, not cell-type selectivity. Even if a chr7 peak is in a biologically perfect spot, re-ranking against a CNV-matched reference is required before trusting it.</li>
+<li><strong>Selectivity reference is coarse.</strong> We compare malignant strength to the <em>max</em> strength across non-malignant cell types (TAM, neuron, OPC, microglia, etc.). A peak that's <em>very</em> open in e.g. neurons will score poorly on selectivity even if it's clearly tumor-driving in a non-neuron context. Future iteration: compare malignant vs each specific non-malignant type.</li>
+<li><strong>Promoter cutoff is 2 kb.</strong> Some bona fide enhancers sit within 2 kb of a TSS. If a candidate looks great on all other metrics but gets excluded by the distal filter, pull it from <code>pan_malignant_top100_all.csv</code> and inspect manually.</li>
+<li><strong>Marker-peak mis-labeling residual.</strong> Even with the pan-malignant rebuild, cohorts where CNV wasn't computed (tcga_scatac, gse276177_khan_astro) contribute less than they should. 2/8 cohorts max achievable there.</li>
+</ul>
+
+</body></html>

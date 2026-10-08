@@ -1,0 +1,52 @@
+cohort,patient_id,total_cells_post_qc,n_cells_malignant_cnv,n_cells_malignant_label,n_cells_pan_malignant,frac_pan_malignant,cnv_was_computed,included_in_pan_malignant_matrix,exclusion_reason
+gbm_space,AT10,86308,37358,0,37358,0.4328,True,True,
+gbm_space,AT11,52625,21022,0,21022,0.3995,True,True,
+gbm_space,AT12,47151,24340,0,24340,0.5162,True,True,
+gbm_space,AT13,121358,15700,0,15700,0.1294,True,True,
+gbm_space,AT14,34702,2261,0,2261,0.0652,True,True,
+gbm_space,AT15,192661,67181,0,67181,0.3487,True,True,
+gbm_space,AT3,77016,55653,0,55653,0.7226,True,True,
+gbm_space,AT4,85235,45824,0,45824,0.5376,True,True,
+gbm_space,AT5,74570,5399,0,5399,0.0724,True,True,
+gbm_space,AT6,93795,72739,0,72739,0.7755,True,True,
+gbm_space,AT7,46060,13463,0,13463,0.2923,True,True,
+gbm_space,AT9,130388,78054,0,78054,0.5986,True,True,
+gbm_tme_atlas_hra004942,P101,688,54,54,54,0.0785,True,True,
+gbm_tme_atlas_hra004942,P62,698,101,101,101,0.1447,True,True,
+gbm_tme_atlas_hra004942,P64,660,250,250,250,0.3788,True,True,
+gbm_tme_atlas_hra004942,P77,589,52,52,52,0.0883,True,True,
+gbm_tme_atlas_hra004942,P78,544,20,20,20,0.0368,True,True,
+gbm_tme_atlas_hra004942,P79,759,6,6,6,0.0079,True,False,pan_mal_cells=6 < min_threshold=10
+gbm_tme_atlas_hra004942,P80,761,1,1,1,0.0013,True,False,pan_mal_cells=1 < min_threshold=10
+gbm_tme_atlas_hra004942,P83,637,47,47,47,0.0738,True,True,
+gbm_tme_atlas_hra004942,P84,761,5,5,5,0.0066,True,False,pan_mal_cells=5 < min_threshold=10
+gbm_tme_atlas_hra004942,P92,158,55,55,55,0.3481,True,True,
+gbm_tme_atlas_hra004942,P98,480,0,0,0,0.0,True,False,zero_cnv_positive_zero_label
+gse138794_guo,SF11215,766,350,350,350,0.4569,True,True,
+gse138794_guo,SF11956,3628,12,12,12,0.0033,True,True,
+gse138794_guo,SF11979,2220,1455,1455,1455,0.6554,True,True,
+gse165037,GBM12,70,70,70,70,1.0,True,True,
+gse165037,GBM4,3249,2912,2912,2912,0.8963,True,True,
+gse165037,GBM9,8,8,8,8,1.0,True,False,pan_mal_cells=8 < min_threshold=10
+gse276177_khan_astro,GBM20,119652,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+gse276177_khan_astro,GBM25,129846,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+gse276177_khan_astro,GBM38,39744,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+guilhamon,GBM_4218,1442,696,696,696,0.4827,True,True,
+guilhamon,GBM_4250,904,675,675,675,0.7467,True,True,
+guilhamon,GBM_4275,629,457,457,457,0.7266,True,True,
+guilhamon,GBM_4349,843,504,504,504,0.5979,True,True,
+mathewson_lupien,Wang_pair_16,2,0,0,0,0.0,True,False,zero_cnv_positive_zero_label
+mathewson_lupien,Wang_pair_22,986,638,638,638,0.6471,True,True,
+mathewson_lupien,Wang_pair_25,127,46,46,46,0.3622,True,True,
+mathewson_lupien,Wang_pair_27,8058,893,893,893,0.1108,True,True,
+mathewson_lupien,Wang_pair_37,794,116,116,116,0.1461,True,True,
+mathewson_lupien,Wang_pair_5,4411,509,509,509,0.1154,True,True,
+tcga_scatac,scATAC_GBMx_09C0DCE7_D669_4D28_980D_BF71179116A4_X005_S04_B1_T1,12987,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_193F811A_D110_4C59_86B7_FFDAA205844B_X009_S04_B1_T1,5649,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_6BEE2CB6_9AFD_42A6_9C26_9C4428FBABFA_X004_S04_B1_T1,6820,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_714AA767_CACF_413D_B2FD_FE1882A80C57_X008_S03_B1_T1,64647,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_9976F952_23A5_431A_A431_01E544324A26_X010_S05_B1_T1,27453,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_99D8A126_072F_4485_8D2D_6981505460C2_X007_S04_B1_T1,14877,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_A299027D_1362_4261_95BC_DD25B12F57C2_X011_S04_B1_T1,13697,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_A90B18B6_6056_46D1_BF4E_70710236B8DD_X006_S04_B1_T1,6124,0,0,0,0.0,False,False,CNV_not_run_for_cohort
+tcga_scatac,scATAC_GBMx_ED12A6C9_D96E_49C4_B882_6382A5FB4538_X003_S05_B1_T1,5431,0,0,0,0.0,False,False,CNV_not_run_for_cohort

@@ -1,0 +1,9 @@
+cohort,n_cells,age,sex,location,grade,idh_status,mgmt_status,primary_recurrent,treatment,survival,neftel_state,subtype
+guilhamon,3818,no,no,no,no,yes,no,yes,no,no,no,no
+mathewson_lupien,14378,no,no,no,no,yes,no,yes,no,no,no,no
+gbm_tme_atlas_hra004942,6735,no,no,no,no,yes,no,yes,no,no,no,no
+gse165037,3327,no,no,no,no,yes,no,yes,no,no,no,no
+gse138794_guo,6614,no,no,no,no,yes,no,yes,no,no,no,no
+gbm_space,1041869,no,no,no,no,yes,no,yes,no,no,yes,no
+gse276177_khan_astro,289242,no,no,no,no,yes,no,yes,no,no,yes,no
+tcga_scatac,157685,no,no,no,no,yes,no,yes,no,no,yes,no

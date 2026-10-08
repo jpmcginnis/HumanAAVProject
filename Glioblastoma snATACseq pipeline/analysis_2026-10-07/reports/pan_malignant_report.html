@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html><head>
+<title>Pan-malignant enhancer candidate report — GBM</title>
+<meta charset="utf-8"/>
+<style>
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; max-width: 1400px; margin: 2em auto; padding: 0 2em; color: #111; line-height: 1.5; }
+  h1 { font-size: 1.8em; border-bottom: 2px solid #ddd; padding-bottom: 0.3em; }
+  h2 { font-size: 1.4em; margin-top: 2em; color: #1e40af; }
+  code { font-size: 0.85em; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88em; margin: 1em 0; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 8px; vertical-align: top; }
+  th { background: #f9fafb; text-align: left; font-weight: 600; position: sticky; top: 0; }
+  tr:hover { background: #fafbfc; }
+  .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1em; margin: 1em 0; }
+  .success { background: #d1fae5; border-left: 4px solid #059669; padding: 1em; margin: 1em 0; }
+</style></head>
+<body>
+
+<h1>Pan-malignant enhancer candidate report — GBM atlas 2026-10-07</h1>
+
+<p>Source: 8 cohorts, 51 patients, 1,523,668 nuclei. Pan-malignant pool = cells with
+either CNV-based malignant call (<code>malignant_cnv == 1</code>) OR
+<code>cell_type == "malignant_unresolved"</code> label. Includes 438,994 CNV-malignant cells
+from GBM-Space that marker-peak scoring had mis-labeled as TME types.</p>
+
+<h2>How to read this table</h2>
+
+<ul>
+<li><strong>peak_id</strong> — GRCh38 coordinates (CATLAS 544K peak atlas); ⚠️ flags chr7 (universal CNV-driven in GBM).</li>
+<li><strong>nearest_gene / GBM tags</strong> — closest RefSeq gene by TSS, color-coded for known glioma driver, GSC-lineage TF, Neftel state marker, chromatin remodeler, or TME myeloid marker (flagged suspicious — these cells were likely CNV-malignant mis-labeled).</li>
+<li><strong>Distance to TSS</strong> — signed, kb. Promoter-proximal (|d| < 2 kb) means this is more likely a promoter than a distal enhancer. 2–100 kb = good distal enhancer range. >100 kb = suspicious (far intergenic, may regulate nothing).</li>
+<li><strong>Cohorts (n/8)</strong> — how many of the 8 atlas cohorts had this peak accessible in their malignant cells. ≥4 is the cross-cohort replication bar.</li>
+<li><strong>Patients detected / Patients ≥10%</strong> — how many of the ~33 patients-with-malignant-cells show the peak at all / show it in ≥10% of their malignant cells (the "accessible per patient" bar).</li>
+<li><strong>Consistency</strong> — fraction of detected patients accessible ≥10%. ≥80% is strong, ≥65% is solid.</li>
+<li><strong>Strength (mean)</strong> — mean fraction of malignant cells with the peak open, averaged across patients.</li>
+<li><strong>Cloning rec</strong> — plain-English: ✅ STRONG, 👍 solid, ⚠️ caveats. These are heuristic, not scores.</li>
+</ul>
+
+<div class="note">
+<strong>Chr7 caveat.</strong> chr7+ gain is the defining CNV of GBM — 100% of IDH-WT GBMs
+have it. Peaks on chr7 are inflated by extra DNA copies, not necessarily cell-type-selective
+enhancers. We flag them with ⚠️ but still show them. For first-pass cloning, prefer non-chr7
+candidates (the attached BED file excludes chr7 and shows top 50 clean hits).
+</div>
+
+<div class="success">
+<strong>Top recommended cloning candidates (plain English):</strong>
+<ol>
+<li><code>chr5:41903925-41904424</code> — nearest gene <strong>C5orf51</strong> (-0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>30/32 patients</strong>, mean 46% of malignant cells open.</li>
+<li><code>chr19:11435244-11435743</code> — nearest gene <strong>PRKCSH</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>30/32 patients</strong>, mean 42% of malignant cells open.</li>
+<li><code>chr19:4791326-4791825</code> — nearest gene <strong>FEM1A</strong> (-0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>28/31 patients</strong>, mean 49% of malignant cells open.</li>
+<li><code>chr9:34048977-34049476</code> — nearest gene <strong>UBAP2</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>29/32 patients</strong>, mean 38% of malignant cells open.</li>
+<li><code>chr2:676903-677402</code> — nearest gene <strong>TMEM18</strong> (-0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>26/28 patients</strong>, mean 52% of malignant cells open.</li>
+<li><code>chr19:4471666-4472165</code> — nearest gene <strong>HDGFL2</strong> (-0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>28/32 patients</strong>, mean 49% of malignant cells open.</li>
+<li><code>chr6:52284779-52285278</code> — nearest gene <strong>MCM3</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>29/32 patients</strong>, mean 33% of malignant cells open.</li>
+<li><code>chr5:32312785-32313284</code> — nearest gene <strong>MTMR12</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>27/30 patients</strong>, mean 46% of malignant cells open.</li>
+<li><code>chr19:12551392-12551891</code> — nearest gene <strong>ZNF564</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>28/31 patients</strong>, mean 37% of malignant cells open.</li>
+<li><code>chr12:56360024-56360523</code> — nearest gene <strong>STAT2</strong> (+0 kb from TSS); open in <strong>6/8 cohorts</strong>, <strong>28/31 patients</strong>, mean 37% of malignant cells open.</li>
+
+</ol>
+</div>
+
+<h2>Full top-100 table</h2>
+<table>
+<thead><tr>
+  <th>peak_id (GRCh38)</th>
+  <th>nearest gene<br/>GBM tags</th>
+  <th>dist to TSS</th>
+  <th>cohorts</th>
+  <th>n_pt detected</th>
+  <th>n_pt ≥10%</th>
+  <th>consist.</th>
+  <th>strength</th>
+  <th>cloning note</th>
+</tr></thead>
+<tbody>
+
+      <tr>
+        <td><code>chr5:41903925-41904424</code></td>
+        <td><strong>C5orf51</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">94%</td>
+        <td style="text-align:center;">45.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:11435244-11435743</code></td>
+        <td><strong>PRKCSH</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">94%</td>
+        <td style="text-align:center;">41.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4791326-4791825</code></td>
+        <td><strong>FEM1A</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">48.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:34048977-34049476</code></td>
+        <td><strong>UBAP2</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">91%</td>
+        <td style="text-align:center;">38.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr2:676903-677402</code></td>
+        <td><strong>TMEM18</strong><br/></td>
+        <td style="text-align:right;">-0.3 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">52.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4471666-4472165</code></td>
+        <td><strong>HDGFL2</strong><br/></td>
+        <td style="text-align:right;">-0.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">88%</td>
+        <td style="text-align:center;">48.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:52284779-52285278</code></td>
+        <td><strong>MCM3</strong><br/></td>
+        <td style="text-align:right;">+0.3 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">91%</td>
+        <td style="text-align:center;">32.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:121396124-121396623</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>FAM3C</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">39.3%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:32312785-32313284</code></td>
+        <td><strong>MTMR12</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">45.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:12551392-12551891</code></td>
+        <td><strong>ZNF564</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">36.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr12:56360024-56360523</code></td>
+        <td><strong>STAT2</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">36.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:43313456-43313955</code></td>
+        <td><strong>HMGCS1</strong><br/></td>
+        <td style="text-align:right;">+0.3 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">42.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr12:53625904-53626403</code></td>
+        <td><strong>ATF7-NPFF</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">34.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:35072535-35073034</code></td>
+        <td><strong>VCP</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">88%</td>
+        <td style="text-align:center;">35.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:271275-271774</code></td>
+        <td><strong>HRAT5</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">88%</td>
+        <td style="text-align:center;">34.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:6681455-6681954</code></td>
+        <td><strong>GLDC</strong><br/></td>
+        <td style="text-align:right;">+36.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">35.5%</td>
+        <td><strong style="color:#15803d;">distal enhancer candidate (+36 kb from GLDC TSS); ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:9334469-9334968</code></td>
+        <td><strong>TWSG1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">88%</td>
+        <td style="text-align:center;">32.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:34929238-34929737</code></td>
+        <td><strong>DNAJC21</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">39.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:1490774-1491273</code></td>
+        <td><strong>REEP6</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">89%</td>
+        <td style="text-align:center;">46.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr21:29073522-29074021</code></td>
+        <td><strong>CCT8</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">88%</td>
+        <td style="text-align:center;">29.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:18155014-18155513</code></td>
+        <td><strong>TPMT</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">36.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:34328793-34329292</code></td>
+        <td><strong>KIF24</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">90%</td>
+        <td style="text-align:center;">35.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:53348809-53349308</code></td>
+        <td><strong>ELOVL5</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">28.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:4792504-4793003</code></td>
+        <td><strong>RCL1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">32.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:9475045-9475544</code></td>
+        <td><strong>RALBP1</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">39.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:92764660-92765159</code></td>
+        <td><strong>BICD2</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">92%</td>
+        <td style="text-align:center;">40.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:5003513-5004012</code></td>
+        <td><strong>LYRM4-AS1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">34.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr1:241519497-241519996</code></td>
+        <td><strong>FH</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">29.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:44808506-44809005</code></td>
+        <td><strong>MRPS30-DT</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">33</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">85%</td>
+        <td style="text-align:center;">26.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:34007799-34008298</code></td>
+        <td><strong>AMACR</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">29.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4247254-4247753</code></td>
+        <td><strong>YJU2</strong><br/></td>
+        <td style="text-align:right;">+0.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">36.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4342861-4343360</code></td>
+        <td><strong>MPND</strong><br/></td>
+        <td style="text-align:right;">-0.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">43.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4342311-4342810</code></td>
+        <td><strong>MPND</strong><br/></td>
+        <td style="text-align:right;">-1.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">43.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:2841030-2841529</code></td>
+        <td><strong>ZNF555</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">40.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:34329324-34329823</code></td>
+        <td><strong>NUDT2</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">34.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:44606635-44607134</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>OGDH</strong><br/></td>
+        <td style="text-align:right;">+0.3 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">51.7%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:151028174-151028673</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>ABCB8</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">43.8%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:5422405-5422904</code></td>
+        <td><strong>ICE1</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">41.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr11:3797305-3797804</code></td>
+        <td><strong>NUP98</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">43.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:49766742-49767241</code></td>
+        <td><strong>AP2A1</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">50.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:43483630-43484129</code></td>
+        <td><strong>TMEM267</strong><br/></td>
+        <td style="text-align:right;">-0.5 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">29.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:55994785-55995284</code></td>
+        <td><strong>IL6ST</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">39.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:49766191-49766690</code></td>
+        <td><strong>AP2A1</strong><br/></td>
+        <td style="text-align:right;">-0.6 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">48.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:5421813-5422312</code></td>
+        <td><strong>ICE1</strong><br/></td>
+        <td style="text-align:right;">-0.6 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">38.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:38556513-38557012</code></td>
+        <td><strong>LIFR-AS1</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">30.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:6393271-6393770</code></td>
+        <td><strong>LOC390877</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">35.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:13726076-13726575</code></td>
+        <td><strong>FAM210A</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">30.3%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr2:86623609-86624108</code></td>
+        <td><strong>RNF103</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">27.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:19804594-19805093</code></td>
+        <td><strong>LNC-LBCS</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">34.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:66205063-66205562</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>TPST1</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">44.4%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4007260-4007759</code></td>
+        <td><strong>PIAS4</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">37.5%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:11093529-11094028</code></td>
+        <td><strong>SMIM13</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">32.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr1:42846341-42846840</code></td>
+        <td><strong>ZNF691</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">24.5%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:120950388-120950887</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>ING3</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">44.4%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:13814259-13814758</code></td>
+        <td><strong>MCUR1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">32.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr17:27332749-27333248</code></td>
+        <td><strong>WSB1</strong><br/></td>
+        <td style="text-align:right;">+38.9 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">34.7%</td>
+        <td><strong style="color:#15803d;">distal enhancer candidate (+39 kb from WSB1 TSS); ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr1:202926941-202927440</code></td>
+        <td><strong>KLHL12</strong><br/></td>
+        <td style="text-align:right;">-1.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">33</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">82%</td>
+        <td style="text-align:center;">28.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:36151693-36152192</code></td>
+        <td><strong>LMBRD2</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">31.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:3118370-3118869</code></td>
+        <td><strong>BPHL</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">36.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:8457253-8457752</code></td>
+        <td><strong>LINC02226</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">31.5%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:99504687-99505186</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>ZKSCAN5</strong><br/></td>
+        <td style="text-align:right;">+0.3 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">50.8%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:19049096-19049595</code></td>
+        <td><strong>SAXO1</strong><br/></td>
+        <td style="text-align:right;">-0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">25.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:135662179-135662678</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>STMP1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">35.3%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:108748488-108748987</code></td>
+        <td><strong>FER</strong><br/></td>
+        <td style="text-align:right;">+0.8 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">43.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr1:147172368-147172867</code></td>
+        <td><strong>CHD1L</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">30.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:2245503-2246002</code></td>
+        <td><strong>GMDS-DT</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">30.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr16:29973480-29973979</code></td>
+        <td><strong>TAOK2</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">34.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:12947642-12948141</code></td>
+        <td><strong>SEH1L</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">40.8%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:13726680-13727179</code></td>
+        <td><strong>RNMT</strong><br/></td>
+        <td style="text-align:right;">+0.3 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">84%</td>
+        <td style="text-align:center;">29.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:12990960-12991459</code></td>
+        <td><strong>CEP192</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">34.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:35814803-35815302</code></td>
+        <td><strong>HINT2</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">33.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr16:18801307-18801806</code></td>
+        <td><strong>ARL6IP1</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">37.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:12884118-12884617</code></td>
+        <td><strong>PTPN2</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">31.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:55365639-55366138</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>LANCL2</strong><br/></td>
+        <td style="text-align:right;">+0.6 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">47.0%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr11:66958223-66958722</code></td>
+        <td><strong>PC</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">39.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:37102535-37103034</code></td>
+        <td><strong>PIM1</strong><br/></td>
+        <td style="text-align:right;">-67.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">32.4%</td>
+        <td><strong style="color:#15803d;">distal enhancer candidate (-67 kb from PIM1 TSS); ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:6199581-6200080</code></td>
+        <td><strong>ACSBG2</strong><br/></td>
+        <td style="text-align:right;">+64.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">36.2%</td>
+        <td><strong style="color:#15803d;">distal enhancer candidate (+64 kb from ACSBG2 TSS); ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:44123408-44123907</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>POLD2</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">44.4%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr11:111602132-111602631</code></td>
+        <td><strong>SIK2</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">38.5%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:149028375-149028874</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>PDIA4</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">54.6%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr13:97433216-97433715</code></td>
+        <td><strong>RAP2A</strong><br/></td>
+        <td style="text-align:right;">-0.7 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">46.3%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:92765209-92765708</code></td>
+        <td><strong>BICD2</strong><br/></td>
+        <td style="text-align:right;">+0.6 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">23</td>
+        <td style="text-align:center;">92%</td>
+        <td style="text-align:center;">31.3%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:2783261-2783760</code></td>
+        <td><strong>SGTA</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">35.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:40798052-40798551</code></td>
+        <td><strong>PRKAA1</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">31.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr2:112645556-112646055</code></td>
+        <td><strong>SLC20A1</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">35.1%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr18:158212-158711</code></td>
+        <td><strong>USP14</strong><br/></td>
+        <td style="text-align:right;">-0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">31.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:2945161-2945660</code></td>
+        <td><strong>ZNF77</strong><br/></td>
+        <td style="text-align:right;">+0.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">39.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:2950572-2951071</code></td>
+        <td><strong>ZNF77</strong><br/></td>
+        <td style="text-align:right;">+5.8 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">39.2%</td>
+        <td><strong style="color:#15803d;">distal enhancer candidate (+6 kb from ZNF77 TSS); ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:9819033-9819532</code></td>
+        <td><strong>FBXL12</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">46.0%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:506615-507114</code></td>
+        <td><strong>TPGS1</strong><br/></td>
+        <td style="text-align:right;">-0.6 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">23</td>
+        <td style="text-align:center;">85%</td>
+        <td style="text-align:center;">45.2%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr7:108569672-108570171</code><span style="color:#dc2626;">⚠️</span></td>
+        <td><strong>DNAJB9</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">45.7%</td>
+        <td><span style="color:#1e40af;">⚠️ chr7 — CNV-driven signal possible, re-check in CNV-matched reference; promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; 👍 solid cloning candidate</span></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr14:91060418-91060917</code></td>
+        <td><strong>RPS6KA5</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">96%</td>
+        <td style="text-align:center;">44.6%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:24775159-24775658</code></td>
+        <td><strong>GMNN</strong><br/></td>
+        <td style="text-align:right;">+0.5 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">32</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">30.3%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr5:32585786-32586285</code></td>
+        <td><strong>SUB1</strong><br/></td>
+        <td style="text-align:right;">+0.5 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">30</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">87%</td>
+        <td style="text-align:center;">20.7%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:10654022-10654521</code></td>
+        <td><strong>ILF3</strong><br/></td>
+        <td style="text-align:right;">+0.0 kb</td>
+        <td style="text-align:center;">5/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">26</td>
+        <td style="text-align:center;">93%</td>
+        <td style="text-align:center;">45.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr12:122526494-122526993</code></td>
+        <td><strong>RSRC2</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">28</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">86%</td>
+        <td style="text-align:center;">36.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:5977982-5978481</code></td>
+        <td><strong>RANBP3</strong><br/></td>
+        <td style="text-align:right;">+0.1 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">38.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr19:4402192-4402691</code></td>
+        <td><strong>CHAF1A</strong><br/></td>
+        <td style="text-align:right;">-0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">31</td>
+        <td style="text-align:center;">25</td>
+        <td style="text-align:center;">81%</td>
+        <td style="text-align:center;">38.4%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr6:4135527-4136026</code></td>
+        <td><strong>ECI2</strong><br/></td>
+        <td style="text-align:right;">+0.2 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">29</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">83%</td>
+        <td style="text-align:center;">41.5%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+
+      <tr>
+        <td><code>chr9:19230090-19230589</code></td>
+        <td><strong>DENND4C</strong><br/></td>
+        <td style="text-align:right;">-0.4 kb</td>
+        <td style="text-align:center;">6/8</td>
+        <td style="text-align:center;">27</td>
+        <td style="text-align:center;">24</td>
+        <td style="text-align:center;">89%</td>
+        <td style="text-align:center;">28.9%</td>
+        <td><strong style="color:#15803d;">promoter-proximal (≤2 kb from TSS) — may act as promoter, not distal enhancer; ✅ STRONG cloning candidate</strong></td>
+      </tr>
+    
+</tbody></table>
+
+<h2>Files</h2>
+<ul>
+<li><code>pan_malignant_top100.csv</code> — full top 100 with all columns, Excel-ready.</li>
+<li><code>pan_malignant_top50.bed</code> — top 50 non-chr7 candidates in BED, ready for Benchling / UCSC browser upload.</li>
+<li><code>pan_malignant_scores.parquet</code> — all 301,594 scored peaks (not just top 100). Query locally with polars for any custom filter.</li>
+</ul>
+
+</body></html>

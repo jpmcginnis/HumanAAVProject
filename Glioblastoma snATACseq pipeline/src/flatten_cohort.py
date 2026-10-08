@@ -165,8 +165,28 @@ def main() -> int:
     if "label_tme_gbmap" in merged.obs.columns:
         merged.obs["cell_type"] = merged.obs["label_tme_gbmap"].astype(str)
 
+    # Run CNV calling in-process so malignant_cnv is populated BEFORE write.
+    # Previously this stage was skipped for fragments-mode cohorts, which silently
+    # dropped them from any CNV-based malignant analysis (bug observed 2026-10-07:
+    # 12 patients in tcga_scatac + gse276177_khan_astro contributed zero to the
+    # pan-malignant pool despite being GBM tumor samples).
+    log("running chr7+/chr10- CNV ratio call (matrix-mode path)")
+    try:
+        # Import the matrix-mode CNV helper from the sibling module
+        from cnv_malignant import _parallel_chr7_10_ratio  # type: ignore
+        _parallel_chr7_10_ratio(merged)
+        # Matrix-mode cohorts don't have gene-activity-based inferCNVpy; mirror the
+        # chr7/10 ratio call into malignant_cnv so downstream analyses see it.
+        if "malignant_chr7_10" in merged.obs.columns:
+            merged.obs["malignant_cnv"] = merged.obs["malignant_chr7_10"].clip(lower=0).astype(int)
+            n_mal = int((merged.obs["malignant_cnv"] == 1).sum())
+            log(f"  CNV calling: {n_mal:,} / {merged.n_obs:,} cells called malignant ({100*n_mal/merged.n_obs:.1f}%)")
+    except Exception as e:
+        log(f"  WARNING: CNV calling failed ({e}); falling back to malignant_cnv=0 default")
+        if "malignant_cnv" not in merged.obs.columns:
+            merged.obs["malignant_cnv"] = 0
+
     # Downstream-compat defaults (matrix_build / scoring expect these)
-    merged.obs.setdefault = None  # pandas DataFrame has no setdefault; use conditional set
     for col, default in [("neftel_state", "unresolved"),
                          ("neuron_subtype", "non_neuron"),
                          ("malignant_cnv", 0)]:

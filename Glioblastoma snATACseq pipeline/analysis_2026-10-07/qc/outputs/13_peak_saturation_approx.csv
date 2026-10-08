@@ -1,0 +1,9 @@
+cohort,n_cells,n_peaks_total,total_nnz,avg_peaks_per_cell
+gbm_space,1041869,544735,-1,
+gse276177_khan_astro,289242,544735,-1,
+tcga_scatac,157685,544735,-1,
+guilhamon,3818,544735,-1,
+mathewson_lupien,14378,544735,-1,
+hra004942,6735,544735,-1,
+gse138794_guo,6614,544735,-1,
+gse165037,3327,544735,-1,

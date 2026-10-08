@@ -1,0 +1,11 @@
+column,n_null,frac_null
+patient_id,137364009,1.0
+delta,137364009,1.0
+frac_high,137369502,1.0
+direction,137364009,1.0
+n_low,137369502,1.0
+n_high,137369502,1.0
+peak_id,0,0.0
+detector,0,0.0
+cell_type,5809,0.0
+pattern,6125,0.0

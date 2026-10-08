@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html><head>
+<title>Per-patient pan-malignant audit — GBM atlas</title>
+<meta charset="utf-8"/>
+<style>
+  body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; max-width: 1300px; margin: 2em auto; padding: 0 2em; color: #111; line-height: 1.5; }
+  h1 { font-size: 1.6em; border-bottom: 2px solid #ddd; padding-bottom: 0.3em; }
+  h2 { font-size: 1.2em; margin-top: 1.5em; color: #1e40af; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+  th, td { border: 1px solid #e5e7eb; padding: 5px 8px; }
+  th { background: #f9fafb; text-align: left; }
+  tr.excluded { background: #fee2e2; }
+  tr.warning { background: #fef3c7; }
+  tr.ok { background: #f0fdf4; }
+  code { font-size: 0.85em; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+  .summary { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 1em; margin: 1em 0; }
+  .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1em; margin: 1em 0; }
+</style></head><body>
+
+<h1>Per-patient pan-malignant audit — GBM atlas 2026-10-07</h1>
+
+<div class="summary">
+<strong>33 of 51 patients contribute cells to the pan-malignant pool.
+18 are missing.</strong>
+<p><strong>Reasons for exclusion:</strong></p>
+<ul><li><strong>12 patients</strong>: <code>CNV_not_run_for_cohort</code></li><li><strong>2 patients</strong>: <code>zero_cnv_positive_zero_label</code></li><li><strong>1 patients</strong>: <code>pan_mal_cells=1 &lt; min_threshold=10</code></li><li><strong>1 patients</strong>: <code>pan_mal_cells=5 &lt; min_threshold=10</code></li><li><strong>1 patients</strong>: <code>pan_mal_cells=6 &lt; min_threshold=10</code></li><li><strong>1 patients</strong>: <code>pan_mal_cells=8 &lt; min_threshold=10</code></li></ul>
+</div>
+
+<div class="note">
+<strong>Known pipeline bug:</strong> for fragments-mode cohorts routed through
+<code>src/flatten_cohort.py</code> (tcga_scatac and gse276177_khan_astro),
+CNV calling was not run — <code>malignant_cnv</code> was set to a default of 0.
+This silently drops those cohorts from any CNV-based malignant analysis.
+Fix TODO: add CNV calling into the flatten path (currently only runs in
+<code>src/cnv_malignant.py</code>, which only sees the standard
+qc → cnv → labels chain).
+</div>
+
+<h2>Full per-patient table (sorted by cohort, patient_id)</h2>
+<p>Row colors: 🟢 included, 🟡 included but low cell count, 🔴 excluded (0 cells in pan-malignant pool).</p>
+<table>
+<thead><tr>
+  <th>cohort</th>
+  <th>patient_id</th>
+  <th>total cells (post-QC)</th>
+  <th>n cells malignant_cnv=1</th>
+  <th>n cells cell_type=malignant_unresolved</th>
+  <th>n cells pan-malignant</th>
+  <th>% pan-mal</th>
+  <th>CNV run?</th>
+  <th>exclusion reason</th>
+</tr></thead>
+<tbody>
+
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT10">AT10</code></td>
+        <td style="text-align:right;">86,308</td>
+        <td style="text-align:right;">37,358</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>37,358</strong></td>
+        <td style="text-align:center;">43.3%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT11">AT11</code></td>
+        <td style="text-align:right;">52,625</td>
+        <td style="text-align:right;">21,022</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>21,022</strong></td>
+        <td style="text-align:center;">40.0%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT12">AT12</code></td>
+        <td style="text-align:right;">47,151</td>
+        <td style="text-align:right;">24,340</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>24,340</strong></td>
+        <td style="text-align:center;">51.6%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT13">AT13</code></td>
+        <td style="text-align:right;">121,358</td>
+        <td style="text-align:right;">15,700</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>15,700</strong></td>
+        <td style="text-align:center;">12.9%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT14">AT14</code></td>
+        <td style="text-align:right;">34,702</td>
+        <td style="text-align:right;">2,261</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>2,261</strong></td>
+        <td style="text-align:center;">6.5%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT15">AT15</code></td>
+        <td style="text-align:right;">192,661</td>
+        <td style="text-align:right;">67,181</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>67,181</strong></td>
+        <td style="text-align:center;">34.9%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT3">AT3</code></td>
+        <td style="text-align:right;">77,016</td>
+        <td style="text-align:right;">55,653</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>55,653</strong></td>
+        <td style="text-align:center;">72.3%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT4">AT4</code></td>
+        <td style="text-align:right;">85,235</td>
+        <td style="text-align:right;">45,824</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>45,824</strong></td>
+        <td style="text-align:center;">53.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT5">AT5</code></td>
+        <td style="text-align:right;">74,570</td>
+        <td style="text-align:right;">5,399</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>5,399</strong></td>
+        <td style="text-align:center;">7.2%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT6">AT6</code></td>
+        <td style="text-align:right;">93,795</td>
+        <td style="text-align:right;">72,739</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>72,739</strong></td>
+        <td style="text-align:center;">77.5%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT7">AT7</code></td>
+        <td style="text-align:right;">46,060</td>
+        <td style="text-align:right;">13,463</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>13,463</strong></td>
+        <td style="text-align:center;">29.2%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_space</td>
+        <td><code title="AT9">AT9</code></td>
+        <td style="text-align:right;">130,388</td>
+        <td style="text-align:right;">78,054</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>78,054</strong></td>
+        <td style="text-align:center;">59.9%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P101">P101</code></td>
+        <td style="text-align:right;">688</td>
+        <td style="text-align:right;">54</td>
+        <td style="text-align:right;">54</td>
+        <td style="text-align:right;"><strong>54</strong></td>
+        <td style="text-align:center;">7.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P62">P62</code></td>
+        <td style="text-align:right;">698</td>
+        <td style="text-align:right;">101</td>
+        <td style="text-align:right;">101</td>
+        <td style="text-align:right;"><strong>101</strong></td>
+        <td style="text-align:center;">14.5%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P64">P64</code></td>
+        <td style="text-align:right;">660</td>
+        <td style="text-align:right;">250</td>
+        <td style="text-align:right;">250</td>
+        <td style="text-align:right;"><strong>250</strong></td>
+        <td style="text-align:center;">37.9%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P77">P77</code></td>
+        <td style="text-align:right;">589</td>
+        <td style="text-align:right;">52</td>
+        <td style="text-align:right;">52</td>
+        <td style="text-align:right;"><strong>52</strong></td>
+        <td style="text-align:center;">8.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P78">P78</code></td>
+        <td style="text-align:right;">544</td>
+        <td style="text-align:right;">20</td>
+        <td style="text-align:right;">20</td>
+        <td style="text-align:right;"><strong>20</strong></td>
+        <td style="text-align:center;">3.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="warning">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P79">P79</code></td>
+        <td style="text-align:right;">759</td>
+        <td style="text-align:right;">6</td>
+        <td style="text-align:right;">6</td>
+        <td style="text-align:right;"><strong>6</strong></td>
+        <td style="text-align:center;">0.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td>pan_mal_cells=6 &lt; min_threshold=10</td>
+      </tr>
+    
+      <tr class="warning">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P80">P80</code></td>
+        <td style="text-align:right;">761</td>
+        <td style="text-align:right;">1</td>
+        <td style="text-align:right;">1</td>
+        <td style="text-align:right;"><strong>1</strong></td>
+        <td style="text-align:center;">0.1%</td>
+        <td style="text-align:center;">✓</td>
+        <td>pan_mal_cells=1 &lt; min_threshold=10</td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P83">P83</code></td>
+        <td style="text-align:right;">637</td>
+        <td style="text-align:right;">47</td>
+        <td style="text-align:right;">47</td>
+        <td style="text-align:right;"><strong>47</strong></td>
+        <td style="text-align:center;">7.4%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="warning">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P84">P84</code></td>
+        <td style="text-align:right;">761</td>
+        <td style="text-align:right;">5</td>
+        <td style="text-align:right;">5</td>
+        <td style="text-align:right;"><strong>5</strong></td>
+        <td style="text-align:center;">0.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td>pan_mal_cells=5 &lt; min_threshold=10</td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P92">P92</code></td>
+        <td style="text-align:right;">158</td>
+        <td style="text-align:right;">55</td>
+        <td style="text-align:right;">55</td>
+        <td style="text-align:right;"><strong>55</strong></td>
+        <td style="text-align:center;">34.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>gbm_tme_atlas_hra004942</td>
+        <td><code title="P98">P98</code></td>
+        <td style="text-align:right;">480</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;">✓</td>
+        <td>zero_cnv_positive_zero_label</td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gse138794_guo</td>
+        <td><code title="SF11215">SF11215</code></td>
+        <td style="text-align:right;">766</td>
+        <td style="text-align:right;">350</td>
+        <td style="text-align:right;">350</td>
+        <td style="text-align:right;"><strong>350</strong></td>
+        <td style="text-align:center;">45.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gse138794_guo</td>
+        <td><code title="SF11956">SF11956</code></td>
+        <td style="text-align:right;">3,628</td>
+        <td style="text-align:right;">12</td>
+        <td style="text-align:right;">12</td>
+        <td style="text-align:right;"><strong>12</strong></td>
+        <td style="text-align:center;">0.3%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gse138794_guo</td>
+        <td><code title="SF11979">SF11979</code></td>
+        <td style="text-align:right;">2,220</td>
+        <td style="text-align:right;">1,455</td>
+        <td style="text-align:right;">1,455</td>
+        <td style="text-align:right;"><strong>1,455</strong></td>
+        <td style="text-align:center;">65.5%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gse165037</td>
+        <td><code title="GBM12">GBM12</code></td>
+        <td style="text-align:right;">70</td>
+        <td style="text-align:right;">70</td>
+        <td style="text-align:right;">70</td>
+        <td style="text-align:right;"><strong>70</strong></td>
+        <td style="text-align:center;">100.0%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>gse165037</td>
+        <td><code title="GBM4">GBM4</code></td>
+        <td style="text-align:right;">3,249</td>
+        <td style="text-align:right;">2,912</td>
+        <td style="text-align:right;">2,912</td>
+        <td style="text-align:right;"><strong>2,912</strong></td>
+        <td style="text-align:center;">89.6%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="warning">
+        <td>gse165037</td>
+        <td><code title="GBM9">GBM9</code></td>
+        <td style="text-align:right;">8</td>
+        <td style="text-align:right;">8</td>
+        <td style="text-align:right;">8</td>
+        <td style="text-align:right;"><strong>8</strong></td>
+        <td style="text-align:center;">100.0%</td>
+        <td style="text-align:center;">✓</td>
+        <td>pan_mal_cells=8 &lt; min_threshold=10</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>gse276177_khan_astro</td>
+        <td><code title="GBM20">GBM20</code></td>
+        <td style="text-align:right;">119,652</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>gse276177_khan_astro</td>
+        <td><code title="GBM25">GBM25</code></td>
+        <td style="text-align:right;">129,846</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>gse276177_khan_astro</td>
+        <td><code title="GBM38">GBM38</code></td>
+        <td style="text-align:right;">39,744</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="ok">
+        <td>guilhamon</td>
+        <td><code title="GBM_4218">GBM_4218</code></td>
+        <td style="text-align:right;">1,442</td>
+        <td style="text-align:right;">696</td>
+        <td style="text-align:right;">696</td>
+        <td style="text-align:right;"><strong>696</strong></td>
+        <td style="text-align:center;">48.3%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>guilhamon</td>
+        <td><code title="GBM_4250">GBM_4250</code></td>
+        <td style="text-align:right;">904</td>
+        <td style="text-align:right;">675</td>
+        <td style="text-align:right;">675</td>
+        <td style="text-align:right;"><strong>675</strong></td>
+        <td style="text-align:center;">74.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>guilhamon</td>
+        <td><code title="GBM_4275">GBM_4275</code></td>
+        <td style="text-align:right;">629</td>
+        <td style="text-align:right;">457</td>
+        <td style="text-align:right;">457</td>
+        <td style="text-align:right;"><strong>457</strong></td>
+        <td style="text-align:center;">72.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>guilhamon</td>
+        <td><code title="GBM_4349">GBM_4349</code></td>
+        <td style="text-align:right;">843</td>
+        <td style="text-align:right;">504</td>
+        <td style="text-align:right;">504</td>
+        <td style="text-align:right;"><strong>504</strong></td>
+        <td style="text-align:center;">59.8%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_16">Wang_pair_16</code></td>
+        <td style="text-align:right;">2</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;">✓</td>
+        <td>zero_cnv_positive_zero_label</td>
+      </tr>
+    
+      <tr class="ok">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_22">Wang_pair_22</code></td>
+        <td style="text-align:right;">986</td>
+        <td style="text-align:right;">638</td>
+        <td style="text-align:right;">638</td>
+        <td style="text-align:right;"><strong>638</strong></td>
+        <td style="text-align:center;">64.7%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_25">Wang_pair_25</code></td>
+        <td style="text-align:right;">127</td>
+        <td style="text-align:right;">46</td>
+        <td style="text-align:right;">46</td>
+        <td style="text-align:right;"><strong>46</strong></td>
+        <td style="text-align:center;">36.2%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_27">Wang_pair_27</code></td>
+        <td style="text-align:right;">8,058</td>
+        <td style="text-align:right;">893</td>
+        <td style="text-align:right;">893</td>
+        <td style="text-align:right;"><strong>893</strong></td>
+        <td style="text-align:center;">11.1%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_37">Wang_pair_37</code></td>
+        <td style="text-align:right;">794</td>
+        <td style="text-align:right;">116</td>
+        <td style="text-align:right;">116</td>
+        <td style="text-align:right;"><strong>116</strong></td>
+        <td style="text-align:center;">14.6%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="ok">
+        <td>mathewson_lupien</td>
+        <td><code title="Wang_pair_5">Wang_pair_5</code></td>
+        <td style="text-align:right;">4,411</td>
+        <td style="text-align:right;">509</td>
+        <td style="text-align:right;">509</td>
+        <td style="text-align:right;"><strong>509</strong></td>
+        <td style="text-align:center;">11.5%</td>
+        <td style="text-align:center;">✓</td>
+        <td></td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_09C0DCE7_D669_4D28_980D_BF71179116A4_X005_S04_B1_T1">scATAC_GBMx_09C0DCE7...4_B1_T1</code></td>
+        <td style="text-align:right;">12,987</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_193F811A_D110_4C59_86B7_FFDAA205844B_X009_S04_B1_T1">scATAC_GBMx_193F811A...4_B1_T1</code></td>
+        <td style="text-align:right;">5,649</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_6BEE2CB6_9AFD_42A6_9C26_9C4428FBABFA_X004_S04_B1_T1">scATAC_GBMx_6BEE2CB6...4_B1_T1</code></td>
+        <td style="text-align:right;">6,820</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_714AA767_CACF_413D_B2FD_FE1882A80C57_X008_S03_B1_T1">scATAC_GBMx_714AA767...3_B1_T1</code></td>
+        <td style="text-align:right;">64,647</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_9976F952_23A5_431A_A431_01E544324A26_X010_S05_B1_T1">scATAC_GBMx_9976F952...5_B1_T1</code></td>
+        <td style="text-align:right;">27,453</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_99D8A126_072F_4485_8D2D_6981505460C2_X007_S04_B1_T1">scATAC_GBMx_99D8A126...4_B1_T1</code></td>
+        <td style="text-align:right;">14,877</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_A299027D_1362_4261_95BC_DD25B12F57C2_X011_S04_B1_T1">scATAC_GBMx_A299027D...4_B1_T1</code></td>
+        <td style="text-align:right;">13,697</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_A90B18B6_6056_46D1_BF4E_70710236B8DD_X006_S04_B1_T1">scATAC_GBMx_A90B18B6...4_B1_T1</code></td>
+        <td style="text-align:right;">6,124</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+      <tr class="excluded">
+        <td>tcga_scatac</td>
+        <td><code title="scATAC_GBMx_ED12A6C9_D96E_49C4_B882_6382A5FB4538_X003_S05_B1_T1">scATAC_GBMx_ED12A6C9...5_B1_T1</code></td>
+        <td style="text-align:right;">5,431</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;">0</td>
+        <td style="text-align:right;"><strong>0</strong></td>
+        <td style="text-align:center;">0.0%</td>
+        <td style="text-align:center;"><span style="color:#dc2626">CNV not run</span></td>
+        <td>CNV_not_run_for_cohort</td>
+      </tr>
+    
+</tbody></table>
+
+<h2>Fix path for the 12 CNV-missing patients</h2>
+<p>Spin EC2 back up (<code>./infra/aws_restore.sh snap-04deb97b5e367bedf</code> → ~15 min), then for each of the two cohorts:</p>
+<pre>
+cd /data/projects/atacseq/claude/gbm-enhancer-atlas
+source /data/miniconda3/etc/profile.d/conda.sh && conda activate atacseq
+
+# Run CNV calling on the already-flattened h5ad in-place
+python src/cnv_malignant.py \
+  --in /data/projects/atacseq/processed/sundaram_gbm/catlas_quantified.h5ad \
+  --out /data/projects/atacseq/processed/sundaram_gbm/catlas_quantified.h5ad.withcnv.h5ad
+mv /data/projects/atacseq/processed/sundaram_gbm/catlas_quantified.h5ad.withcnv.h5ad \
+   /data/projects/atacseq/processed/sundaram_gbm/catlas_quantified.h5ad
+
+# Same for khan
+python src/cnv_malignant.py \
+  --in /data/projects/atacseq/processed/gse276177_khan_astro/catlas_quantified.h5ad \
+  --out /data/projects/atacseq/processed/gse276177_khan_astro/catlas_quantified.h5ad.withcnv.h5ad
+mv ...
+
+# Then re-run pan_malignant_matrix.py — should recover all 12 missing patients
+python src/pan_malignant_matrix.py \
+  --inputs /data/projects/atacseq/processed/*/catlas_quantified.h5ad \
+  --matrix matrix/pan_malignant_matrix.parquet \
+  --scores matrix/pan_malignant_scores.parquet
+</pre>
+
+</body></html>

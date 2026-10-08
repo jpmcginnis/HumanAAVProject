@@ -1,0 +1,9 @@
+cohort,n_fragments_files,n_per_sample_h5ad,can_run_AMULET
+gbm_space,0,0,False
+gse276177_khan_astro,0,10,True
+tcga_scatac,0,0,False
+guilhamon,0,0,False
+mathewson_lupien,0,0,False
+hra004942,0,0,False
+gse138794_guo,0,0,False
+gse165037,0,0,False
