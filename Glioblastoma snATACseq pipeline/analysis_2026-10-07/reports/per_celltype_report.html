@@ -26,11 +26,12 @@ hierarchical Bayesian replication (pass1 = closed-form; pass2 = PyMC posterior f
 
 <p><strong>How to use this report:</strong> Pick a cell type you want to target with AAV. Open its
 section below for the top-30 cleaned candidates (distal, selective, non-housekeeping). Pull the
-<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. For malignant-cell
-targeting, use the <a href="pan_malignant_report_v3.html">pan-malignant v3 report</a> (adds
-CNV-called malignant cells that marker-peak scoring misses).</p>
+<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. The
+<strong>pan-malignant</strong> section at the top uses the v4 CNV | label union pool
+(575K cells, 45 patients); for deeper per-cohort breakdowns + aav_score composite see
+<a href="pan_malignant_report_v3.html">pan_malignant_report_v3.html</a>.</p>
 
-<nav><strong>Jump to cell type:</strong><ul><li><a href="#microglia">Microglia (homeostatic / resident)</a> — 154 clean candidates</li><li><a href="#TAM">TAM (tumor-associated macrophage)</a> — 362 clean candidates</li><li><a href="#astrocyte">Astrocyte</a> — 332 clean candidates</li><li><a href="#oligodendrocyte">Oligodendrocyte</a> — 55 clean candidates</li><li><a href="#OPC">OPC</a> — 190 clean candidates</li><li><a href="#neuron">Neuron (excitatory, incl. glutamatergic)</a> — 655 clean candidates</li><li><a href="#GABA_neuron">GABAergic interneuron</a> — 344 clean candidates</li><li><a href="#endothelial">Endothelial</a> — 392 clean candidates</li><li><a href="#T_cell">T cell</a> — 104 clean candidates</li></ul></nav>
+<nav><strong>Jump to cell type:</strong><ul><li><a href="#pan_malignant">Pan-malignant (CNV | label union — 45 patients, 575K cells)</a> — 511 clean candidates</li><li><a href="#microglia">Microglia (homeostatic / resident)</a> — 154 clean candidates</li><li><a href="#TAM">TAM (tumor-associated macrophage)</a> — 362 clean candidates</li><li><a href="#astrocyte">Astrocyte</a> — 332 clean candidates</li><li><a href="#oligodendrocyte">Oligodendrocyte</a> — 55 clean candidates</li><li><a href="#OPC">OPC</a> — 190 clean candidates</li><li><a href="#neuron">Neuron (excitatory, incl. glutamatergic)</a> — 655 clean candidates</li><li><a href="#GABA_neuron">GABAergic interneuron</a> — 344 clean candidates</li><li><a href="#endothelial">Endothelial</a> — 392 clean candidates</li><li><a href="#T_cell">T cell</a> — 104 clean candidates</li></ul></nav>
 
 <div class="success">
 <strong>Filter definitions:</strong>
@@ -44,6 +45,419 @@ CNV-called malignant cells that marker-peak scoring misses).</p>
 </div>
 
 <h2>Per-cell-type sections</h2>
+
+
+<h2 id="pan_malignant">Pan-malignant (CNV | label union — 45 patients, 575K cells)</h2>
+<div class='note'><strong>Pan-malignant pool</strong> uses the 2026-10-07 v4 run: <code>malignant_cnv == 1 OR cell_type == malignant_unresolved</code> across all 8 cohorts — 575,971 cells across 45/51 patients. See <a href='pan_malignant_report_v3.html'>pan_malignant_report_v3.html</a> for the deeper writeup with per-cohort breakdowns, aav_score composite, and methods caveats.</div>
+<p>Candidate pool (≥4/8 cohorts): <strong>170,673</strong> peaks.
+Clean pool (selectivity ≥ 2.0×, ranked by composite/posterior, distal 2-100 kb, non-housekeeping/non-chr7): <strong>511</strong>.
+Shortlist and BED: <code>reports/per_celltype/pan_malignant_top50.csv</code>, <code>reports/per_celltype/pan_malignant_top30.bed</code>.</p>
+
+<table>
+<thead><tr>
+  <th>peak_id (GRCh38)</th>
+  <th>nearest gene / tags</th>
+  <th>dist to TSS</th>
+  <th>cohorts</th>
+  <th>n patients</th>
+  <th>consist.</th>
+  <th>strength</th>
+  <th>selectivity</th>
+  <th>final score</th>
+  <th>pass2?</th>
+</tr></thead>
+<tbody>
+
+        <tr>
+          <td><code>chr3:132135945-132136444</code></td>
+          <td><strong>CPNE4</strong><br/></td>
+          <td style="text-align:right;">+96.6 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">37</td>
+          <td style="text-align:center;">27%</td>
+          <td style="text-align:center;">12.4%</td>
+          <td style="text-align:center;"><strong>2.17×</strong></td>
+          <td style="text-align:center;">0.488</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr1:205600058-205600557</code></td>
+          <td><strong>MFSD4A-AS1</strong><br/></td>
+          <td style="text-align:right;">+31.0 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">36</td>
+          <td style="text-align:center;">19%</td>
+          <td style="text-align:center;">10.2%</td>
+          <td style="text-align:center;"><strong>2.17×</strong></td>
+          <td style="text-align:center;">0.443</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr9:16704564-16705063</code></td>
+          <td><strong>BNC2-AS1</strong><br/></td>
+          <td style="text-align:right;">-22.0 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">32</td>
+          <td style="text-align:center;">19%</td>
+          <td style="text-align:center;">10.4%</td>
+          <td style="text-align:center;"><strong>2.07×</strong></td>
+          <td style="text-align:center;">0.439</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr1:12040526-12041025</code></td>
+          <td><strong>MIR6729</strong><br/></td>
+          <td style="text-align:right;">+11.6 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">37</td>
+          <td style="text-align:center;">19%</td>
+          <td style="text-align:center;">10.1%</td>
+          <td style="text-align:center;"><strong>2.07×</strong></td>
+          <td style="text-align:center;">0.436</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr9:18490562-18491061</code></td>
+          <td><strong>ADAMTSL1</strong><br/></td>
+          <td style="text-align:right;">+16.7 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">37</td>
+          <td style="text-align:center;">24%</td>
+          <td style="text-align:center;">7.0%</td>
+          <td style="text-align:center;"><strong>2.34×</strong></td>
+          <td style="text-align:center;">0.435</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr14:68779943-68780442</code></td>
+          <td><strong>ZFP36L1</strong><br/></td>
+          <td style="text-align:right;">-16.1 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">35</td>
+          <td style="text-align:center;">29%</td>
+          <td style="text-align:center;">9.0%</td>
+          <td style="text-align:center;"><strong>2.10×</strong></td>
+          <td style="text-align:center;">0.431</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:64541581-64542080</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>ZNF680</strong><br/></td>
+          <td style="text-align:right;">-21.3 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">33</td>
+          <td style="text-align:center;">18%</td>
+          <td style="text-align:center;">8.3%</td>
+          <td style="text-align:center;"><strong>2.68×</strong></td>
+          <td style="text-align:center;">0.422</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr1:177178336-177178835</code></td>
+          <td><strong>BRINP2</strong><br/></td>
+          <td style="text-align:right;">+7.6 kb</td>
+          <td style="text-align:center;">4/8</td>
+          <td style="text-align:center;">28</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">6.9%</td>
+          <td style="text-align:center;"><strong>4.10×</strong></td>
+          <td style="text-align:center;">0.417</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:23270385-23270884</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>GPNMB</strong><br/></td>
+          <td style="text-align:right;">+23.9 kb</td>
+          <td style="text-align:center;">4/8</td>
+          <td style="text-align:center;">27</td>
+          <td style="text-align:center;">15%</td>
+          <td style="text-align:center;">6.4%</td>
+          <td style="text-align:center;"><strong>4.10×</strong></td>
+          <td style="text-align:center;">0.414</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:130904070-130904569</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>LINC00513</strong><br/></td>
+          <td style="text-align:right;">-9.1 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">35</td>
+          <td style="text-align:center;">23%</td>
+          <td style="text-align:center;">8.5%</td>
+          <td style="text-align:center;"><strong>2.11×</strong></td>
+          <td style="text-align:center;">0.409</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr4:8508729-8509228</code></td>
+          <td><strong>TRMT44</strong><br/></td>
+          <td style="text-align:right;">+68.2 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">30</td>
+          <td style="text-align:center;">20%</td>
+          <td style="text-align:center;">6.9%</td>
+          <td style="text-align:center;"><strong>2.57×</strong></td>
+          <td style="text-align:center;">0.408</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr12:117986864-117987363</code></td>
+          <td><strong>KSR2</strong><br/></td>
+          <td style="text-align:right;">+18.1 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">30</td>
+          <td style="text-align:center;">13%</td>
+          <td style="text-align:center;">7.1%</td>
+          <td style="text-align:center;"><strong>3.37×</strong></td>
+          <td style="text-align:center;">0.405</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr17:20093226-20093725</code></td>
+          <td><strong>SPECC1</strong><br/></td>
+          <td style="text-align:right;">+84.1 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">28</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">9.2%</td>
+          <td style="text-align:center;"><strong>2.90×</strong></td>
+          <td style="text-align:center;">0.404</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr17:17990917-17991416</code></td>
+          <td><strong>DRC3</strong><br/></td>
+          <td style="text-align:right;">+18.4 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">34</td>
+          <td style="text-align:center;">24%</td>
+          <td style="text-align:center;">7.2%</td>
+          <td style="text-align:center;"><strong>2.23×</strong></td>
+          <td style="text-align:center;">0.404</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr13:95477616-95478115</code></td>
+          <td><strong>CLDN10</strong><br/></td>
+          <td style="text-align:right;">+44.3 kb</td>
+          <td style="text-align:center;">4/8</td>
+          <td style="text-align:center;">28</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">5.9%</td>
+          <td style="text-align:center;"><strong>3.97×</strong></td>
+          <td style="text-align:center;">0.400</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr2:164657135-164657634</code></td>
+          <td><strong>SNORA70F</strong><br/></td>
+          <td style="text-align:right;">-30.4 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">32</td>
+          <td style="text-align:center;">19%</td>
+          <td style="text-align:center;">6.1%</td>
+          <td style="text-align:center;"><strong>3.15×</strong></td>
+          <td style="text-align:center;">0.400</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr5:136058244-136058743</code></td>
+          <td><strong>VTRNA2-1</strong><br/></td>
+          <td style="text-align:right;">-22.1 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">33</td>
+          <td style="text-align:center;">15%</td>
+          <td style="text-align:center;">7.1%</td>
+          <td style="text-align:center;"><strong>2.15×</strong></td>
+          <td style="text-align:center;">0.399</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr1:68202134-68202633</code></td>
+          <td><strong>MIR1262</strong><br/></td>
+          <td style="text-align:right;">+18.8 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">30</td>
+          <td style="text-align:center;">13%</td>
+          <td style="text-align:center;">6.5%</td>
+          <td style="text-align:center;"><strong>2.85×</strong></td>
+          <td style="text-align:center;">0.397</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr5:122181115-122181614</code></td>
+          <td><strong>LOC100505841</strong><br/></td>
+          <td style="text-align:right;">+21.2 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">35</td>
+          <td style="text-align:center;">20%</td>
+          <td style="text-align:center;">7.7%</td>
+          <td style="text-align:center;"><strong>2.20×</strong></td>
+          <td style="text-align:center;">0.397</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:117645391-117645890</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>CFTR-AS1</strong><br/></td>
+          <td style="text-align:right;">+81.0 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">33</td>
+          <td style="text-align:center;">18%</td>
+          <td style="text-align:center;">5.1%</td>
+          <td style="text-align:center;"><strong>2.81×</strong></td>
+          <td style="text-align:center;">0.396</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr11:34653962-34654461</code></td>
+          <td><strong>EHF</strong><br/></td>
+          <td style="text-align:right;">+33.1 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">33</td>
+          <td style="text-align:center;">24%</td>
+          <td style="text-align:center;">8.8%</td>
+          <td style="text-align:center;"><strong>2.20×</strong></td>
+          <td style="text-align:center;">0.395</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr1:183318418-183318917</code></td>
+          <td><strong>NMNAT2</strong><br/></td>
+          <td style="text-align:right;">-99.7 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">37</td>
+          <td style="text-align:center;">16%</td>
+          <td style="text-align:center;">6.0%</td>
+          <td style="text-align:center;"><strong>2.20×</strong></td>
+          <td style="text-align:center;">0.394</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr4:121668430-121668929</code></td>
+          <td><strong>ANXA5</strong><br/></td>
+          <td style="text-align:right;">-28.3 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">31</td>
+          <td style="text-align:center;">16%</td>
+          <td style="text-align:center;">7.6%</td>
+          <td style="text-align:center;"><strong>2.81×</strong></td>
+          <td style="text-align:center;">0.390</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr9:13388126-13388625</code></td>
+          <td><strong>LINC01235</strong><br/></td>
+          <td style="text-align:right;">-43.0 kb</td>
+          <td style="text-align:center;">8/8</td>
+          <td style="text-align:center;">36</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">4.3%</td>
+          <td style="text-align:center;"><strong>2.10×</strong></td>
+          <td style="text-align:center;">0.390</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr18:32383127-32383626</code></td>
+          <td><strong>GAREM1</strong><br/></td>
+          <td style="text-align:right;">-87.5 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">36</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">6.3%</td>
+          <td style="text-align:center;"><strong>2.17×</strong></td>
+          <td style="text-align:center;">0.388</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:131285453-131285952</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>MKLN1-AS</strong><br/></td>
+          <td style="text-align:right;">-42.1 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">31</td>
+          <td style="text-align:center;">19%</td>
+          <td style="text-align:center;">6.5%</td>
+          <td style="text-align:center;"><strong>2.29×</strong></td>
+          <td style="text-align:center;">0.387</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr14:54976370-54976869</code></td>
+          <td><strong>WDHD1</strong><br/></td>
+          <td style="text-align:right;">-50.5 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">27</td>
+          <td style="text-align:center;">15%</td>
+          <td style="text-align:center;">9.5%</td>
+          <td style="text-align:center;"><strong>2.45×</strong></td>
+          <td style="text-align:center;">0.387</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:17275983-17276482</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>AHR</strong><br/></td>
+          <td style="text-align:right;">-22.4 kb</td>
+          <td style="text-align:center;">6/8</td>
+          <td style="text-align:center;">33</td>
+          <td style="text-align:center;">15%</td>
+          <td style="text-align:center;">6.7%</td>
+          <td style="text-align:center;"><strong>2.48×</strong></td>
+          <td style="text-align:center;">0.387</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr7:65216364-65216863</code> <span style="color:#b91c1c;" title="chr7 CNV territory">⚠️</span></td>
+          <td><strong>INTS4P1</strong><br/></td>
+          <td style="text-align:right;">+75.6 kb</td>
+          <td style="text-align:center;">5/8</td>
+          <td style="text-align:center;">29</td>
+          <td style="text-align:center;">14%</td>
+          <td style="text-align:center;">9.4%</td>
+          <td style="text-align:center;"><strong>2.49×</strong></td>
+          <td style="text-align:center;">0.385</td>
+          <td style="text-align:center;"></td>
+        </tr>
+
+        <tr>
+          <td><code>chr3:142853776-142854275</code></td>
+          <td><strong>PCOLCE2</strong><br/></td>
+          <td style="text-align:right;">-35.1 kb</td>
+          <td style="text-align:center;">7/8</td>
+          <td style="text-align:center;">32</td>
+          <td style="text-align:center;">16%</td>
+          <td style="text-align:center;">5.4%</td>
+          <td style="text-align:center;"><strong>2.09×</strong></td>
+          <td style="text-align:center;">0.381</td>
+          <td style="text-align:center;"></td>
+        </tr>
+</tbody></table>
 
 
 <h2 id="microglia">Microglia (homeostatic / resident)</h2>
@@ -3767,8 +4181,8 @@ Shortlist and BED: <code>reports/per_celltype/T_cell_top50.csv</code>, <code>rep
 <ul>
 <li><strong>Selectivity ceilings differ per cell type.</strong> Microglia and oligodendrocyte reach 10×+ selectivity; neuron, OPC, TAM typically max out ≤ 4×. Compare within cell type, not across.</li>
 <li><strong>TAM vs microglia overlap.</strong> Both have overlapping marker panels (CSF1R, ITGAM) and this scoring can't fully resolve them in a mixed tumor — peaks that discriminate TAM-from-microglia specifically require a dedicated contrast (not done here).</li>
-<li><strong>malignant_unresolved label-based pool is incomplete</strong> for CNV-fragmented cohorts. For malignant targeting use pan_malignant v3 (adds malignant_cnv==1 cells).</li>
-<li><strong>Shared cohort QC caveats</strong> — see pan_malignant_report_v3.html for cohort-level notes (hra004942 low-cell, gse165037 sci-ATAC, etc.).</li>
+<li><strong>Pan-malignant pool composition.</strong> Union of CNV-called (chr7+/chr10- ratio) + marker-peak label (malignant_unresolved). Prevents the fragments-mode-cohort bug (tcga_scatac, gse276177) that silently dropped 12 patients from label-only analyses. See qc/FINDINGS.md #1.</li>
+<li><strong>Shared cohort QC caveats</strong> — see <a href="pan_malignant_report_v3.html">pan_malignant_report_v3.html</a> for cohort-level notes (hra004942 low-cell, gse165037 sci-ATAC, etc.).</li>
 </ul>
 
 </body></html>

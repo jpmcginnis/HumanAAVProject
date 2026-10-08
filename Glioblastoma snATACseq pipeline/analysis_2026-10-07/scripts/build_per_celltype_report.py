@@ -36,8 +36,9 @@ OUT_HTML = HERE / "reports/per_celltype_report.html"
 OUT_DIR = HERE / "reports/per_celltype"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Cell types to emit, in display order (malignant last)
+# Cell types to emit, in display order (malignant first — it's the primary therapeutic target)
 CELL_TYPES = [
+    ("pan_malignant",   "Pan-malignant (CNV | label union — 45 patients, 575K cells)"),
     ("microglia",       "Microglia (homeostatic / resident)"),
     ("TAM",             "TAM (tumor-associated macrophage)"),
     ("astrocyte",       "Astrocyte"),
@@ -47,7 +48,6 @@ CELL_TYPES = [
     ("GABA_neuron",     "GABAergic interneuron"),
     ("endothelial",     "Endothelial"),
     ("T_cell",          "T cell"),
-    ("malignant_unresolved", "Malignant (label-based; use pan-malignant v3 for CNV union)"),
 ]
 
 # Gene set tags (same as v3)
@@ -130,10 +130,44 @@ def esc(s): return html.escape(str(s)) if pd.notna(s) else ""
 
 def process_ct(ct, label):
     print(f"\n[per-ct] === {ct} ({label}) ===")
-    sub = ct_df[ct_df["cell_type"] == ct].copy()
-    if len(sub) == 0:
-        print("  no rows; skip")
-        return None
+
+    # Special handling: pan_malignant pulls from v4 pan_malignant_scores
+    # (575K cells, 45 patients, CNV | label union) rather than the label-only
+    # malignant_unresolved cell type (which only has 195K cells).
+    if ct == "pan_malignant":
+        pm = pl.read_parquet(PAN_SCORES).to_pandas()
+        # pan scores columns: peak_id, chrom, start, end, strength_mean,
+        # strength_median, n_patients_accessible, n_patients_detected,
+        # n_cohorts, consistency. Need to compute selectivity vs other cell types.
+        print(f"  loaded pan_malignant_scores_v4: {len(pm):,} rows")
+
+        # max non-malignant strength per peak from candidate_scores
+        other = ct_df[~ct_df["cell_type"].isin(["malignant_unresolved", "unassigned", "pan_malignant"])]
+        nonmal_strength = other.groupby("peak_id")["strength"].max().rename("nonmal_strength_max").reset_index()
+        pm = pm.merge(nonmal_strength, on="peak_id", how="left")
+        pm["nonmal_strength_max"] = pm["nonmal_strength_max"].fillna(0.0)
+        pm["selectivity"] = pm["strength_mean"] / pm["nonmal_strength_max"].clip(lower=0.01)
+
+        # Alias columns to match the per-cell-type schema the rest of process_ct uses
+        pm["strength"] = pm["strength_mean"]
+        pm["n_patients"] = pm["n_patients_detected"]
+        pm["cell_type"] = "pan_malignant"
+        pm["composite_score"] = (
+            pm["strength_mean"] * 1.0
+            + (pm["selectivity"].clip(upper=10) / 10) * 0.5
+            + pm["consistency"] * 0.3
+            + pm["n_cohorts"] / 8 * 0.2
+        )
+        pm["posterior_mean"] = pd.NA  # pass2 wasn't run on pan-malignant here
+        pm["posterior_ci_lo"] = pd.NA
+        pm["posterior_ci_hi"] = pd.NA
+        pm["pass2_was_run"] = False
+        sub = pm
+    else:
+        sub = ct_df[ct_df["cell_type"] == ct].copy()
+        if len(sub) == 0:
+            print("  no rows; skip")
+            return None
 
     # Candidate pool: n_cohorts >= 4
     sub = sub[sub["n_cohorts"] >= 4].copy()
@@ -164,8 +198,8 @@ def process_ct(ct, label):
     # if that yields < 10 candidates, drop the selectivity floor and rely on
     # composite_score ranking (which already weights selectivity jointly).
     is_housekeeping = sub["gene_tags"].str.contains("housekeeping", na=False)
-    sel_floor_strict = 2.0 if ct == "malignant_unresolved" else 1.0
-    skip_chr7 = (ct == "malignant_unresolved")
+    sel_floor_strict = 2.0 if ct == "pan_malignant" else 1.0
+    skip_chr7 = (ct == "pan_malignant")
     base_mask = (
         (sub["dist_to_tss_abs_kb"] >= 2.0)
         & (sub["dist_to_tss_abs_kb"] <= 100.0)
@@ -173,7 +207,7 @@ def process_ct(ct, label):
         & ((~skip_chr7) | (sub["chrom"] != "chr7"))
     )
     strict = sub[base_mask & (sub["selectivity"] >= sel_floor_strict)].copy()
-    if len(strict) >= 10 or ct == "malignant_unresolved":
+    if len(strict) >= 10 or ct == "pan_malignant":
         clean = strict
         filter_mode = f"selectivity ≥ {sel_floor_strict}×, ranked by composite/posterior"
         clean = clean.sort_values("final_score", ascending=False).reset_index(drop=True)
@@ -271,18 +305,19 @@ for s in summaries:
     clean_sz = s["n_clean"]
     top = s["top"]
     header_note = ""
-    if ct == "malignant_unresolved":
-        header_note = ("<div class='note'><strong>For malignant targeting prefer the "
-                       "<a href='pan_malignant_report_v3.html'>pan-malignant v3 report</a></strong> "
-                       "— it includes CNV-called malignant cells that this label-only pool misses "
-                       "(~438K cells in gbm_space alone).</div>")
+    if ct == "pan_malignant":
+        header_note = ("<div class='note'><strong>Pan-malignant pool</strong> uses the 2026-10-07 v4 run: "
+                       "<code>malignant_cnv == 1 OR cell_type == malignant_unresolved</code> across all 8 cohorts "
+                       "— 575,971 cells across 45/51 patients. See "
+                       "<a href='pan_malignant_report_v3.html'>pan_malignant_report_v3.html</a> for the deeper writeup "
+                       "with per-cohort breakdowns, aav_score composite, and methods caveats.</div>")
     top30_html = section_rows(top.head(30)) if clean_sz else ""
     sections_html += f"""
 
 <h2 id="{ct}">{esc(label)}</h2>
 {header_note}
 <p>Candidate pool (≥4/8 cohorts): <strong>{pool_sz:,}</strong> peaks.
-Clean pool ({esc(s['filter_mode'])}, distal 2-100 kb, non-housekeeping{'/non-chr7' if ct=='malignant_unresolved' else ''}): <strong>{clean_sz:,}</strong>.
+Clean pool ({esc(s['filter_mode'])}, distal 2-100 kb, non-housekeeping{'/non-chr7' if ct=='pan_malignant' else ''}): <strong>{clean_sz:,}</strong>.
 Shortlist and BED: <code>reports/per_celltype/{ct}_top50.csv</code>, <code>reports/per_celltype/{ct}_top30.bed</code>.</p>
 """
     if clean_sz:
@@ -339,9 +374,10 @@ hierarchical Bayesian replication (pass1 = closed-form; pass2 = PyMC posterior f
 
 <p><strong>How to use this report:</strong> Pick a cell type you want to target with AAV. Open its
 section below for the top-30 cleaned candidates (distal, selective, non-housekeeping). Pull the
-<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. For malignant-cell
-targeting, use the <a href="pan_malignant_report_v3.html">pan-malignant v3 report</a> (adds
-CNV-called malignant cells that marker-peak scoring misses).</p>
+<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. The
+<strong>pan-malignant</strong> section at the top uses the v4 CNV | label union pool
+(575K cells, 45 patients); for deeper per-cohort breakdowns + aav_score composite see
+<a href="pan_malignant_report_v3.html">pan_malignant_report_v3.html</a>.</p>
 
 <nav><strong>Jump to cell type:</strong>{toc}</nav>
 
@@ -363,8 +399,8 @@ CNV-called malignant cells that marker-peak scoring misses).</p>
 <ul>
 <li><strong>Selectivity ceilings differ per cell type.</strong> Microglia and oligodendrocyte reach 10×+ selectivity; neuron, OPC, TAM typically max out ≤ 4×. Compare within cell type, not across.</li>
 <li><strong>TAM vs microglia overlap.</strong> Both have overlapping marker panels (CSF1R, ITGAM) and this scoring can't fully resolve them in a mixed tumor — peaks that discriminate TAM-from-microglia specifically require a dedicated contrast (not done here).</li>
-<li><strong>malignant_unresolved label-based pool is incomplete</strong> for CNV-fragmented cohorts. For malignant targeting use pan_malignant v3 (adds malignant_cnv==1 cells).</li>
-<li><strong>Shared cohort QC caveats</strong> — see pan_malignant_report_v3.html for cohort-level notes (hra004942 low-cell, gse165037 sci-ATAC, etc.).</li>
+<li><strong>Pan-malignant pool composition.</strong> Union of CNV-called (chr7+/chr10- ratio) + marker-peak label (malignant_unresolved). Prevents the fragments-mode-cohort bug (tcga_scatac, gse276177) that silently dropped 12 patients from label-only analyses. See qc/FINDINGS.md #1.</li>
+<li><strong>Shared cohort QC caveats</strong> — see <a href="pan_malignant_report_v3.html">pan_malignant_report_v3.html</a> for cohort-level notes (hra004942 low-cell, gse165037 sci-ATAC, etc.).</li>
 </ul>
 
 </body></html>
