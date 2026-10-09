@@ -1,4 +1,4 @@
-# CHANGELOG — GBM Enhancer Atlas
+# CHANGELOG — Human Glioblastoma Enhancer Atlas (snATAC-seq)
 
 Semantic versioning: major = schema change, minor = new data / new reports, patch = fixes with same schema.
 

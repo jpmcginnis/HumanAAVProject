@@ -17,8 +17,9 @@ Under the following terms:
     manner, but not in any way that suggests the licensor endorses you or your use.
 
 Preferred citation:
-  McGinnis JP (2026). GBM Enhancer Atlas v1.0.0: cross-cohort scATAC-seq
-  derived AAV enhancer candidates. Zenodo. https://doi.org/<pending>
+  McGinnis JP (2026). Human Glioblastoma Enhancer Atlas (snATAC-seq, 51 patients,
+  8 cohorts, 1.52M nuclei): AAV cell-type-targeting peak candidates. Zenodo.
+  https://doi.org/<pending>
 
 Note on upstream data: this deposit is derived from eight publicly deposited
 cohorts (see cohort_attribution.csv). Each upstream dataset carries its own

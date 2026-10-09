@@ -1,4 +1,4 @@
-# Frozen schema — GBM Enhancer Atlas v1.0.0 (2026-10-08)
+# Frozen schema — Human Glioblastoma Enhancer Atlas v1.0.0 (2026-10-08)
 
 **This schema is frozen for deposit.** Zenodo deposits are versioned but not editable,
 so column names and types below are the contract. Any future renames or additions

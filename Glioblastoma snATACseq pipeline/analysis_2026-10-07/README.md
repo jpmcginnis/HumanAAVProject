@@ -1,6 +1,7 @@
-# GBM Enhancer Atlas v1.0.0
+# Human Glioblastoma Enhancer Atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
 
-**Deposit:** cross-cohort scATAC-seq-derived AAV enhancer candidates for glioblastoma cell-type targeting.
+**Deposit title:** Human Glioblastoma Enhancer Atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei): AAV cell-type-targeting peak candidates
+**Short name:** GBM Enhancer Atlas v1.0.0
 **Version:** 1.0.0 (2026-10-08)
 **License:** CC-BY-4.0 for data (`LICENSE_DATA`), MIT for code (`LICENSE_CODE`)
 **DOI:** pending Zenodo deposit
