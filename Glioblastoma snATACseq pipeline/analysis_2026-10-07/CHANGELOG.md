@@ -1,4 +1,4 @@
-# CHANGELOG — Human Glioblastoma Enhancer Atlas (snATAC-seq)
+# CHANGELOG — A harmonized human glioblastoma enhancer atlas (snATAC-seq)
 
 Semantic versioning: major = schema change, minor = new data / new reports, patch = fixes with same schema.
 

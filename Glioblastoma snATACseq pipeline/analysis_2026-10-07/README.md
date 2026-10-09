@@ -1,7 +1,8 @@
-# Human Glioblastoma Enhancer Atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
+# A harmonized human glioblastoma enhancer atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
 
-**Deposit title:** Human Glioblastoma Enhancer Atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei): AAV cell-type-targeting peak candidates
+**Deposit title:** A harmonized human glioblastoma enhancer atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
 **Short name:** GBM Enhancer Atlas v1.0.0
+**Deliverable focus:** AAV cell-type-targeting peak candidates (pan-malignant, per-cell-type, pan-myeloid) with Daigle Z-score cell-type-specificity annotation.
 **Version:** 1.0.0 (2026-10-08)
 **License:** CC-BY-4.0 for data (`LICENSE_DATA`), MIT for code (`LICENSE_CODE`)
 **DOI:** pending Zenodo deposit
