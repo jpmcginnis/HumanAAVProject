@@ -117,6 +117,14 @@ other_cols = [c for c in OTHER_CELL_TYPES if c in pivot.columns]
 myeloid["strength_other_max"] = pivot[other_cols].max(axis=1)
 myeloid["selectivity_myeloid"] = myeloid["strength_myeloid"] / myeloid["strength_other_max"].clip(lower=0.01)
 
+# Daigle Z-score vs non-myeloid cell types: Z = (strength_myeloid - mean_other) / sd_other
+other_mean = pivot[other_cols].mean(axis=1)
+other_sd = pivot[other_cols].std(axis=1)
+myeloid["other_mean"] = other_mean
+myeloid["other_sd"] = other_sd
+myeloid["z_daigle"] = (myeloid["strength_myeloid"] - other_mean) / other_sd.clip(lower=0.001)
+myeloid["passes_daigle_z2"] = myeloid["z_daigle"] >= 2.0
+
 # Replication: use max of TAM & microglia cohorts/patients/consistency
 myeloid["n_cohorts"] = pivot_cohorts[["TAM","microglia"]].max(axis=1)
 myeloid["n_patients"] = pivot_npatients[["TAM","microglia"]].max(axis=1)
@@ -161,6 +169,14 @@ for _, r in myeloid.iterrows():
     annots.append(nearest_gene(r["chrom"], center))
 myeloid[["nearest_gene","dist_to_tss_signed"]] = pd.DataFrame(annots, index=myeloid.index)
 myeloid["dist_to_tss_abs_kb"] = (myeloid["dist_to_tss_signed"].abs() / 1000).round(1)
+def _dist_cat(kb):
+    if pd.isna(kb): return "unknown"
+    if kb < 2:    return "promoter"
+    if kb < 10:   return "near"
+    if kb < 100:  return "distal"
+    if kb < 500:  return "far-distal"
+    return "gene-desert"
+myeloid["distance_category"] = myeloid["dist_to_tss_abs_kb"].map(_dist_cat)
 myeloid["gene_tags_list"] = [gene_tags(g if pd.notna(g) else "") for g in myeloid["nearest_gene"]]
 myeloid["gene_tags"] = myeloid["gene_tags_list"].map(lambda L: ", ".join(L))
 
@@ -173,7 +189,9 @@ print(f"[myeloid] pool (≥4 cohorts, strength ≥ 0.03): {len(pool):,}")
 is_hk = pool["gene_tags"].str.contains("housekeeping", na=False)
 base_clean = pool[
     (pool["dist_to_tss_abs_kb"] >= 2.0)
-    & (pool["dist_to_tss_abs_kb"] <= 100.0)
+    # NOTE 2026-10-08: dropped the 100 kb upper cap (AAV extracts enhancer
+    # from genomic context — native distance irrelevant). Keeping 2 kb floor
+    # to exclude promoter-proximal peaks.
     & (~is_hk)
 ].copy()
 
@@ -208,7 +226,7 @@ microglia_only = clean[(clean["strength_TAM"] < 0.03) & (clean["strength_microgl
 print(f"[myeloid]   within Table A: TAM+microglia shared: {len(shared):,}  TAM-only: {len(tam_only):,}  microglia-only: {len(microglia_only):,}")
 
 # Write CSV: Table A (selective) + Table B (shared), both as separate CSVs
-cols = ["peak_id","chrom","start","end","nearest_gene","dist_to_tss_signed","gene_tags",
+cols = ["peak_id","chrom","start","end","nearest_gene","dist_to_tss_signed","distance_category","gene_tags","z_daigle","passes_daigle_z2",
         "dominant_source","strength_TAM","strength_microglia","strength_myeloid","strength_other_max",
         "selectivity_myeloid","n_cohorts","n_patients","consistency","composite_score_myeloid"]
 clean[cols].head(50).to_csv(OUT_CSV, index=False)
@@ -278,6 +296,7 @@ def section_rows(df):
           <td style="text-align:center;">{mic_s:.1f}%</td>
           <td style="text-align:center;">{other_s:.1f}%</td>
           <td style="text-align:center;"><strong>{r['selectivity_myeloid']:.2f}×</strong></td>
+          <td style="text-align:center;">{('<strong style="color:#059669;">' if pd.notna(r['z_daigle']) and r['z_daigle'] >= 2 else '')}{r['z_daigle']:.2f}{'</strong>' if pd.notna(r['z_daigle']) and r['z_daigle'] >= 2 else ''}</td>
           <td style="text-align:center;">{src_badge}</td>
           <td style="text-align:center;">{r['composite_score_myeloid']:.3f}</td>
         </tr>""")
@@ -323,7 +342,7 @@ endothelial, T_cell — malignant and unassigned excluded as separate / noise po
 <strong>Headline numbers:</strong>
 <ul>
 <li>Candidate pool (n_cohorts ≥ 4, strength_myeloid ≥ 0.03): <strong>{len(pool):,}</strong> peaks</li>
-<li><strong>Table A — SELECTIVE</strong> (distal 2-100 kb, selectivity ≥ 1.0×, non-housekeeping): <strong>{len(clean):,}</strong> peaks</li>
+<li><strong>Table A — SELECTIVE</strong> (|dist TSS| ≥ 2 kb no upper cap, selectivity ≥ 1.0×, non-housekeeping): <strong>{len(clean):,}</strong> peaks</li>
 <li><strong>Table B — SHARED</strong> (TAM ≥ 5% AND microglia ≥ 5%, distal, non-housekeeping — <em>the primary deliverable</em>): <strong>{len(shared_both):,}</strong> peaks</li>
 <li>Within Table A: <strong>{len(shared):,} shared</strong>, <strong>{len(tam_only):,} TAM-only</strong>, <strong>{len(microglia_only):,} microglia-only</strong></li>
 </ul>
@@ -375,6 +394,7 @@ pan-myeloid AAV targeting — they were being penalized in per-cell-type reports
   <th>str micro</th>
   <th>str other (max)</th>
   <th>selectivity</th>
+  <th>Z<sub>Daigle</sub></th>
   <th>stronger in</th>
   <th>score</th>
 </tr></thead>
@@ -399,6 +419,7 @@ that fall just below selectivity 1.0 due to astrocyte/OPC crossover in GBM.</p>
   <th>str micro</th>
   <th>str other (max)</th>
   <th>selectivity</th>
+  <th>Z<sub>Daigle</sub></th>
   <th>stronger in</th>
   <th>score</th>
 </tr></thead>

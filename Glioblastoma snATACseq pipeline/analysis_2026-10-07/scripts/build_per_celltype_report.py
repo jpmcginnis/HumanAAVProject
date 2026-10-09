@@ -36,9 +36,8 @@ OUT_HTML = HERE / "reports/per_celltype_report.html"
 OUT_DIR = HERE / "reports/per_celltype"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Cell types to emit, in display order (malignant first — it's the primary therapeutic target)
+# Cell types to emit, in display order (malignant last)
 CELL_TYPES = [
-    ("pan_malignant",   "Pan-malignant (CNV | label union — 45 patients, 575K cells)"),
     ("microglia",       "Microglia (homeostatic / resident)"),
     ("TAM",             "TAM (tumor-associated macrophage)"),
     ("astrocyte",       "Astrocyte"),
@@ -48,6 +47,7 @@ CELL_TYPES = [
     ("GABA_neuron",     "GABAergic interneuron"),
     ("endothelial",     "Endothelial"),
     ("T_cell",          "T cell"),
+    ("pan_malignant",   "Pan-malignant (CNV | label union — 45 patients, 575K cells)"),
 ]
 
 # Gene set tags (same as v3)
@@ -131,24 +131,17 @@ def esc(s): return html.escape(str(s)) if pd.notna(s) else ""
 def process_ct(ct, label):
     print(f"\n[per-ct] === {ct} ({label}) ===")
 
-    # Special handling: pan_malignant pulls from v4 pan_malignant_scores
-    # (575K cells, 45 patients, CNV | label union) rather than the label-only
-    # malignant_unresolved cell type (which only has 195K cells).
+    # pan_malignant pulls from v4 pan_malignant_scores (575K cells, 45 patients,
+    # CNV | label union) rather than the label-only malignant_unresolved pool
+    # (which only has 195K cells).
     if ct == "pan_malignant":
         pm = pl.read_parquet(PAN_SCORES).to_pandas()
-        # pan scores columns: peak_id, chrom, start, end, strength_mean,
-        # strength_median, n_patients_accessible, n_patients_detected,
-        # n_cohorts, consistency. Need to compute selectivity vs other cell types.
         print(f"  loaded pan_malignant_scores_v4: {len(pm):,} rows")
-
-        # max non-malignant strength per peak from candidate_scores
         other = ct_df[~ct_df["cell_type"].isin(["malignant_unresolved", "unassigned", "pan_malignant"])]
         nonmal_strength = other.groupby("peak_id")["strength"].max().rename("nonmal_strength_max").reset_index()
         pm = pm.merge(nonmal_strength, on="peak_id", how="left")
         pm["nonmal_strength_max"] = pm["nonmal_strength_max"].fillna(0.0)
         pm["selectivity"] = pm["strength_mean"] / pm["nonmal_strength_max"].clip(lower=0.01)
-
-        # Alias columns to match the per-cell-type schema the rest of process_ct uses
         pm["strength"] = pm["strength_mean"]
         pm["n_patients"] = pm["n_patients_detected"]
         pm["cell_type"] = "pan_malignant"
@@ -158,7 +151,7 @@ def process_ct(ct, label):
             + pm["consistency"] * 0.3
             + pm["n_cohorts"] / 8 * 0.2
         )
-        pm["posterior_mean"] = pd.NA  # pass2 wasn't run on pan-malignant here
+        pm["posterior_mean"] = pd.NA
         pm["posterior_ci_lo"] = pd.NA
         pm["posterior_ci_hi"] = pd.NA
         pm["pass2_was_run"] = False
@@ -184,6 +177,33 @@ def process_ct(ct, label):
         annots.append(nearest_gene(r["chrom"], center))
     sub[["nearest_gene","dist_to_tss_signed"]] = pd.DataFrame(annots, index=sub.index)
     sub["dist_to_tss_abs_kb"] = (sub["dist_to_tss_signed"].abs() / 1000).round(1)
+
+    # Daigle Z-score: (target_strength - mean_other) / sd_other, where "other" = all
+    # cell types EXCEPT the target (and malignant_unresolved + unassigned if target is NOT
+    # pan_malignant; for pan_malignant we already computed its own non-malignant stats below).
+    OTHER_EXCLUDED_FOR_Z = {"unassigned", "malignant_unresolved", "pan_malignant"}
+    if ct == "pan_malignant":
+        # Already have selectivity (vs max non-malignant); recompute Z against non-malignant mean/sd.
+        other = ct_df[~ct_df["cell_type"].isin(["unassigned", "malignant_unresolved", "pan_malignant"])]
+        stats = other.groupby("peak_id")["strength"].agg(nonmal_mean="mean", nonmal_sd="std").reset_index()
+        sub = sub.merge(stats, on="peak_id", how="left")
+        sub["nonmal_mean"] = sub["nonmal_mean"].fillna(0.0)
+        sub["z_daigle"] = (sub["strength"] - sub["nonmal_mean"]) / sub["nonmal_sd"].clip(lower=0.001)
+    else:
+        other = ct_df[~ct_df["cell_type"].isin(OTHER_EXCLUDED_FOR_Z | {ct})]
+        stats = other.groupby("peak_id")["strength"].agg(other_mean="mean", other_sd="std").reset_index()
+        sub = sub.merge(stats, on="peak_id", how="left")
+        sub["other_mean"] = sub["other_mean"].fillna(0.0)
+        sub["z_daigle"] = (sub["strength"] - sub["other_mean"]) / sub["other_sd"].clip(lower=0.001)
+    sub["passes_daigle_z2"] = sub["z_daigle"] >= 2.0
+    def _dist_cat(kb):
+        if pd.isna(kb): return "unknown"
+        if kb < 2:    return "promoter"
+        if kb < 10:   return "near"
+        if kb < 100:  return "distal"
+        if kb < 500:  return "far-distal"
+        return "gene-desert"
+    sub["distance_category"] = sub["dist_to_tss_abs_kb"].map(_dist_cat)
     sub["gene_tags_list"] = [gene_tags(g if pd.notna(g) else "", ct) for g in sub["nearest_gene"]]
     sub["gene_tags"] = sub["gene_tags_list"].map(lambda L: ", ".join(L))
 
@@ -202,7 +222,9 @@ def process_ct(ct, label):
     skip_chr7 = (ct == "pan_malignant")
     base_mask = (
         (sub["dist_to_tss_abs_kb"] >= 2.0)
-        & (sub["dist_to_tss_abs_kb"] <= 100.0)
+        # NOTE 2026-10-08: dropped the 100 kb upper cap. AAV cassette extracts
+        # the enhancer from genomic context, so native-genome distance is
+        # irrelevant. 2 kb floor still excludes promoter-proximal peaks.
         & (~is_housekeeping)
         & ((~skip_chr7) | (sub["chrom"] != "chr7"))
     )
@@ -234,7 +256,7 @@ def process_ct(ct, label):
     out_bed = OUT_DIR / f"{ct}_top30.bed"
     cols = [
         "peak_id","chrom","start","end",
-        "nearest_gene","dist_to_tss_signed","gene_tags",
+        "nearest_gene","dist_to_tss_signed","distance_category","gene_tags","z_daigle","passes_daigle_z2",
         "n_cohorts","n_patients","consistency",
         "strength","selectivity",
         "composite_score","posterior_mean","posterior_ci_lo","posterior_ci_hi",
@@ -291,6 +313,7 @@ def section_rows(df):
           <td style="text-align:center;">{r['consistency']*100:.0f}%</td>
           <td style="text-align:center;">{r['strength']*100:.1f}%</td>
           <td style="text-align:center;"><strong>{r['selectivity']:.2f}×</strong></td>
+          <td style="text-align:center;">{('<strong style="color:#059669;">' if pd.notna(r['z_daigle']) and r['z_daigle'] >= 2 else '')}{r['z_daigle']:.2f}{'</strong>' if pd.notna(r['z_daigle']) and r['z_daigle'] >= 2 else ''}</td>
           <td style="text-align:center;">{r['final_score']:.3f}</td>
           <td style="text-align:center;">{pass2}</td>
         </tr>""")
@@ -317,7 +340,7 @@ for s in summaries:
 <h2 id="{ct}">{esc(label)}</h2>
 {header_note}
 <p>Candidate pool (≥4/8 cohorts): <strong>{pool_sz:,}</strong> peaks.
-Clean pool ({esc(s['filter_mode'])}, distal 2-100 kb, non-housekeeping{'/non-chr7' if ct=='pan_malignant' else ''}): <strong>{clean_sz:,}</strong>.
+Clean pool ({esc(s['filter_mode'])}, |dist TSS| ≥ 2 kb (no upper cap), non-housekeeping{'/non-chr7' if ct=='pan_malignant' else ''}): <strong>{clean_sz:,}</strong>.
 Shortlist and BED: <code>reports/per_celltype/{ct}_top50.csv</code>, <code>reports/per_celltype/{ct}_top30.bed</code>.</p>
 """
     if clean_sz:
@@ -332,6 +355,7 @@ Shortlist and BED: <code>reports/per_celltype/{ct}_top50.csv</code>, <code>repor
   <th>consist.</th>
   <th>strength</th>
   <th>selectivity</th>
+  <th>Z<sub>Daigle</sub></th>
   <th>final score</th>
   <th>pass2?</th>
 </tr></thead>
@@ -374,10 +398,9 @@ hierarchical Bayesian replication (pass1 = closed-form; pass2 = PyMC posterior f
 
 <p><strong>How to use this report:</strong> Pick a cell type you want to target with AAV. Open its
 section below for the top-30 cleaned candidates (distal, selective, non-housekeeping). Pull the
-<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. The
-<strong>pan-malignant</strong> section at the top uses the v4 CNV | label union pool
-(575K cells, 45 patients); for deeper per-cohort breakdowns + aav_score composite see
-<a href="pan_malignant_report_v3.html">pan_malignant_report_v3.html</a>.</p>
+<code>_top50.csv</code> or <code>_top30.bed</code> for full detail / cloning. For malignant-cell
+targeting, use the <a href="pan_malignant_report_v3.html">pan-malignant v3 report</a> (adds
+CNV-called malignant cells that marker-peak scoring misses).</p>
 
 <nav><strong>Jump to cell type:</strong>{toc}</nav>
 
@@ -385,7 +408,7 @@ section below for the top-30 cleaned candidates (distal, selective, non-housekee
 <strong>Filter definitions:</strong>
 <ul>
 <li><strong>n_cohorts ≥ 4</strong> — peak must be scored in at least 4/8 cohorts for cross-cohort reproducibility.</li>
-<li><strong>distal</strong> — nearest TSS is 2-100 kb away. Excludes promoter-proximal peaks (which drive broad expression) and gene deserts.</li>
+<li><strong>|dist to TSS| ≥ 2 kb (no upper cap)</strong> — excludes promoter-proximal peaks that drive broad expression. No upper cap: in AAV the enhancer is extracted from genomic context, so native distance to its "regulated" gene is irrelevant. See the <code>distance_category</code> column for context (near 2-10 kb / distal 10-100 kb / far-distal 100-500 kb / gene-desert >500 kb).</li>
 <li><strong>selectivity ≥ 1.0×</strong> (2.0× for malignant) — strength in target cell type exceeds max strength in any other cell type. Soft floor — tumor-microenvironment cell types in snATAC-of-GBM have low selectivity ceilings (microglia tops ~5×, neuron/OPC ~2×) because of cell-type mixing. Ranking is by composite_score (and pass2 posterior when available), which already weights selectivity jointly with strength and replication.</li>
 <li><strong>non-housekeeping</strong> — nearest gene is not in a standard housekeeping panel (ACTB, GAPDH, UBC, RPL/RPS, etc.).</li>
 <li><strong>pass2</strong> — hierarchical Bayesian posterior was run on this peak (top 2000 per cell type by pass1 score); when available, posterior_mean is used for final ranking.</li>

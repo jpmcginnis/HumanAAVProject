@@ -53,21 +53,33 @@ the shortlist reflects distal, malignant-selective enhancer candidates.
 <strong>Headline numbers (v2):</strong>
 <ul>
 <li>Candidate pool (n_cohorts ≥ 4): <strong>170,673</strong> peaks</li>
-<li>AAV-clean pool (distal 2-100 kb + selective ≥2× + non-chr7 + non-housekeeping): <strong>461</strong> peaks</li>
+<li>AAV-clean pool (|dist to TSS| ≥ 2 kb, no upper cap + selective ≥2× + non-chr7 + non-housekeeping): <strong>617</strong> peaks</li>
+<li><strong>Pass Daigle Z ≥ 2</strong> (Allen Institute Armamentarium criterion for cell-type specificity): <strong>617</strong> peaks within the AAV-clean pool, <strong>11,641</strong> atlas-wide.</li>
 <li>Highest aav_score in the clean pool: <strong>0.494</strong></li>
 <li>Max cross-cohort replication achieved: <strong>8/8 cohorts</strong></li>
 </ul>
 </div>
 
+<div class="note">
+<strong>Daigle Z-score</strong> — Z = (strength<sub>pan-mal</sub> − mean<sub>other</sub>) / sd<sub>other</sub>,
+where "other" = non-malignant / non-unassigned cell types (astrocyte, oligo, OPC, neuron,
+GABA_neuron, microglia, TAM, endothelial, T_cell). Z ≥ 2 is the standard Armamentarium
+threshold for calling a peak "cell-type specific." Columns in the output: <code>z_daigle</code>,
+<code>passes_daigle_z2</code>, <code>nonmal_mean</code>, <code>nonmal_sd</code>.
+</div>
+
 <h2>Top 10 AAV-cloning candidates (distal, selective, replicated)</h2>
 
 <p>Reading each entry: a short English blurb, then the full numeric row below.</p>
-<div class="pick"><strong>#1: <code>chr3:132135945-132136444</code></strong><br/><strong>+96 kb</strong> from <strong>CPNE4</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 10/37 patients ≥10% open</div><div class="pick"><strong>#2: <code>chr9:18490562-18491061</code></strong><br/><strong>+16 kb</strong> from <strong>ADAMTSL1</strong> TSS · <span style='color:#059669'>2.3× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 9/37 patients ≥10% open</div><div class="pick"><strong>#3: <code>chr1:205600058-205600557</code></strong><br/><strong>+31 kb</strong> from <strong>MFSD4A-AS1</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 7/36 patients ≥10% open</div><div class="pick"><strong>#4: <code>chr1:12040526-12041025</code></strong><br/><strong>+11 kb</strong> from <strong>MIR6729</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 7/37 patients ≥10% open</div><div class="pick"><strong>#5: <code>chr9:13388126-13388625</code></strong><br/><strong>-42 kb</strong> from <strong>LINC01235</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 8/8 cohorts, 5/36 patients ≥10% open</div><div class="pick"><strong>#6: <code>chr14:68779943-68780442</code></strong><br/><strong>-16 kb</strong> from <strong>ZFP36L1</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 10/35 patients ≥10% open</div><div class="pick"><strong>#7: <code>chr1:183318418-183318917</code></strong><br/><strong>-99 kb</strong> from <strong>NMNAT2</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 6/37 patients ≥10% open</div><div class="pick"><strong>#8: <code>chr9:16704564-16705063</code></strong><br/><strong>-22 kb</strong> from <strong>BNC2-AS1</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 6/32 patients ≥10% open</div><div class="pick"><strong>#9: <code>chr18:32383127-32383626</code></strong><br/><strong>-87 kb</strong> from <strong>GAREM1</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 5/36 patients ≥10% open</div><div class="pick"><strong>#10: <code>chr17:17990917-17991416</code></strong><br/><strong>+18 kb</strong> from <strong>DRC3</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 8/34 patients ≥10% open</div>
+<div class="pick"><strong>#1: <code>chr3:132135945-132136444</code></strong><br/><strong>+96 kb</strong> from <strong>CPNE4</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 10/37 patients ≥10% open</div><div class="pick"><strong>#2: <code>chr2:65662544-65663043</code></strong><br/>intergenic (<strong>+230 kb</strong> from SPRED2) · <span style='color:#059669'>2.0× more open in malignant vs non-malignant</span> · replicated in 8/8 cohorts, 7/35 patients ≥10% open</div><div class="pick"><strong>#3: <code>chr9:18490562-18491061</code></strong><br/><strong>+16 kb</strong> from <strong>ADAMTSL1</strong> TSS · <span style='color:#059669'>2.3× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 9/37 patients ≥10% open</div><div class="pick"><strong>#4: <code>chr4:71553549-71554048</code></strong><br/>intergenic (<strong>-251 kb</strong> from GC) · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 8/36 patients ≥10% open</div><div class="pick"><strong>#5: <code>chr1:205600058-205600557</code></strong><br/><strong>+31 kb</strong> from <strong>MFSD4A-AS1</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 7/36 patients ≥10% open</div><div class="pick"><strong>#6: <code>chr1:12040526-12041025</code></strong><br/><strong>+11 kb</strong> from <strong>MIR6729</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 7/37 patients ≥10% open</div><div class="pick"><strong>#7: <code>chr9:13388126-13388625</code></strong><br/><strong>-42 kb</strong> from <strong>LINC01235</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 8/8 cohorts, 5/36 patients ≥10% open</div><div class="pick"><strong>#8: <code>chr14:68779943-68780442</code></strong><br/><strong>-16 kb</strong> from <strong>ZFP36L1</strong> TSS · <span style='color:#059669'>2.1× more open in malignant vs non-malignant</span> · replicated in 6/8 cohorts, 10/35 patients ≥10% open</div><div class="pick"><strong>#9: <code>chr1:183318418-183318917</code></strong><br/><strong>-99 kb</strong> from <strong>NMNAT2</strong> TSS · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 6/37 patients ≥10% open</div><div class="pick"><strong>#10: <code>chr5:64331772-64332271</code></strong><br/>intergenic (<strong>+166 kb</strong> from RNF180) · <span style='color:#059669'>2.2× more open in malignant vs non-malignant</span> · replicated in 7/8 cohorts, 6/33 patients ≥10% open</div>
 
 <h2>Top 50 AAV-cloning candidates — full table</h2>
 
 <p>Sorted by <code>aav_score</code> (consistency × 0.35 + n_cohorts/8 × 0.25 + n_patients/33 × 0.15 + selectivity/10 × 0.15 + strength × 0.10).
-Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non-malignant cell type.</p>
+Non-chr7, |dist to TSS| ≥ 2 kb (no upper cap — AAV extracts the enhancer from genomic context,
+so native distance to the nominally regulated gene is irrelevant), ≥2× more open in malignant than
+any non-malignant cell type. See <code>distance_category</code> column for context
+(near 2-10 kb / distal 10-100 kb / far-distal 100-500 kb / gene-desert >500 kb).</p>
 
 <table>
 <thead><tr>
@@ -81,6 +93,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
   <th>strength (mal)</th>
   <th>strength (max non-mal)</th>
   <th>selectivity</th>
+  <th>Z<sub>Daigle</sub></th>
 </tr></thead>
 <tbody>
 
@@ -95,6 +108,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">12.4%</td>
             <td style="text-align:center;">5.7%</td>
             <td style="text-align:center;"><strong>2.17×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.22</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:65662544-65663043</code> </td>
+            <td><strong>SPRED2</strong><br/></td>
+            <td style="text-align:right;">+230.2 kb</td>
+            <td style="text-align:center;">8/8</td>
+            <td style="text-align:center;">35</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">20%</td>
+            <td style="text-align:center;">7.3%</td>
+            <td style="text-align:center;">3.6%</td>
+            <td style="text-align:center;"><strong>2.01×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.09</strong></td>
           </tr>
         
 
@@ -109,6 +138,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.0%</td>
             <td style="text-align:center;">3.0%</td>
             <td style="text-align:center;"><strong>2.34×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">8.11</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr4:71553549-71554048</code> </td>
+            <td><strong>GC</strong><br/></td>
+            <td style="text-align:right;">-251.7 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">36</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">22%</td>
+            <td style="text-align:center;">10.6%</td>
+            <td style="text-align:center;">5.1%</td>
+            <td style="text-align:center;"><strong>2.06×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.67</strong></td>
           </tr>
         
 
@@ -123,6 +168,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">10.2%</td>
             <td style="text-align:center;">4.7%</td>
             <td style="text-align:center;"><strong>2.17×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.19</strong></td>
           </tr>
         
 
@@ -137,6 +183,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">10.1%</td>
             <td style="text-align:center;">4.9%</td>
             <td style="text-align:center;"><strong>2.07×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.05</strong></td>
           </tr>
         
 
@@ -151,6 +198,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">4.3%</td>
             <td style="text-align:center;">2.1%</td>
             <td style="text-align:center;"><strong>2.10×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.78</strong></td>
           </tr>
         
 
@@ -165,6 +213,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">9.0%</td>
             <td style="text-align:center;">4.3%</td>
             <td style="text-align:center;"><strong>2.10×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.73</strong></td>
           </tr>
         
 
@@ -179,6 +228,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.0%</td>
             <td style="text-align:center;">2.7%</td>
             <td style="text-align:center;"><strong>2.20×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.37</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr5:64331772-64332271</code> </td>
+            <td><strong>RNF180</strong><br/></td>
+            <td style="text-align:right;">+166.2 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">18%</td>
+            <td style="text-align:center;">9.3%</td>
+            <td style="text-align:center;">4.3%</td>
+            <td style="text-align:center;"><strong>2.18×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.74</strong></td>
           </tr>
         
 
@@ -193,6 +258,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">10.4%</td>
             <td style="text-align:center;">5.0%</td>
             <td style="text-align:center;"><strong>2.07×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">5.66</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr18:32956877-32957376</code> </td>
+            <td><strong>KLHL14</strong><br/></td>
+            <td style="text-align:right;">+184.1 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">36</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">17%</td>
+            <td style="text-align:center;">4.6%</td>
+            <td style="text-align:center;">2.2%</td>
+            <td style="text-align:center;"><strong>2.07×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.18</strong></td>
           </tr>
         
 
@@ -207,6 +288,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.3%</td>
             <td style="text-align:center;">2.9%</td>
             <td style="text-align:center;"><strong>2.17×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.68</strong></td>
           </tr>
         
 
@@ -221,6 +303,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.2%</td>
             <td style="text-align:center;">3.2%</td>
             <td style="text-align:center;"><strong>2.23×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.85</strong></td>
           </tr>
         
 
@@ -235,6 +318,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.1%</td>
             <td style="text-align:center;">3.3%</td>
             <td style="text-align:center;"><strong>2.15×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.25</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:44706838-44707337</code> </td>
+            <td><strong>LINC01833</strong><br/></td>
+            <td style="text-align:right;">-232.1 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">36</td>
+            <td style="text-align:center;">8</td>
+            <td style="text-align:center;">22%</td>
+            <td style="text-align:center;">5.2%</td>
+            <td style="text-align:center;">2.4%</td>
+            <td style="text-align:center;"><strong>2.15×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.11</strong></td>
           </tr>
         
 
@@ -249,6 +348,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">4.3%</td>
             <td style="text-align:center;">2.1%</td>
             <td style="text-align:center;"><strong>2.07×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">8.04</strong></td>
           </tr>
         
 
@@ -263,6 +363,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.7%</td>
             <td style="text-align:center;">3.5%</td>
             <td style="text-align:center;"><strong>2.20×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.78</strong></td>
           </tr>
         
 
@@ -277,6 +378,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.4%</td>
             <td style="text-align:center;">2.6%</td>
             <td style="text-align:center;"><strong>2.09×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.95</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr3:34843020-34843519</code> </td>
+            <td><strong>LOC101928135</strong><br/></td>
+            <td style="text-align:right;">-550.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">7</td>
+            <td style="text-align:center;">21%</td>
+            <td style="text-align:center;">8.2%</td>
+            <td style="text-align:center;">3.9%</td>
+            <td style="text-align:center;"><strong>2.12×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.20</strong></td>
           </tr>
         
 
@@ -291,6 +408,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">4.0%</td>
             <td style="text-align:center;">1.9%</td>
             <td style="text-align:center;"><strong>2.10×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.62</strong></td>
           </tr>
         
 
@@ -305,6 +423,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.1%</td>
             <td style="text-align:center;">3.0%</td>
             <td style="text-align:center;"><strong>2.02×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.06</strong></td>
           </tr>
         
 
@@ -319,6 +438,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">4.8%</td>
             <td style="text-align:center;">2.3%</td>
             <td style="text-align:center;"><strong>2.05×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.08</strong></td>
           </tr>
         
 
@@ -333,6 +453,37 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.9%</td>
             <td style="text-align:center;">2.7%</td>
             <td style="text-align:center;"><strong>2.57×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">9.34</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:22892434-22892933</code> </td>
+            <td><strong>LOC105374972</strong><br/></td>
+            <td style="text-align:right;">+174.8 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">35</td>
+            <td style="text-align:center;">3</td>
+            <td style="text-align:center;">9%</td>
+            <td style="text-align:center;">3.7%</td>
+            <td style="text-align:center;">1.7%</td>
+            <td style="text-align:center;"><strong>2.15×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.05</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr11:34213869-34214368</code> </td>
+            <td><strong>NAT10</strong><br/></td>
+            <td style="text-align:right;">+108.5 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">35</td>
+            <td style="text-align:center;">5</td>
+            <td style="text-align:center;">14%</td>
+            <td style="text-align:center;">7.3%</td>
+            <td style="text-align:center;">3.1%</td>
+            <td style="text-align:center;"><strong>2.38×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">8.74</strong></td>
           </tr>
         
 
@@ -347,6 +498,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">8.8%</td>
             <td style="text-align:center;">4.0%</td>
             <td style="text-align:center;"><strong>2.20×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.76</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr1:199272625-199273124</code> </td>
+            <td><strong>LINC02789</strong><br/></td>
+            <td style="text-align:right;">+124.3 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">3</td>
+            <td style="text-align:center;">9%</td>
+            <td style="text-align:center;">5.4%</td>
+            <td style="text-align:center;">2.7%</td>
+            <td style="text-align:center;"><strong>2.00×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.09</strong></td>
           </tr>
         
 
@@ -361,6 +528,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.2%</td>
             <td style="text-align:center;">2.4%</td>
             <td style="text-align:center;"><strong>2.12×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.43</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr15:35657793-35658292</code> </td>
+            <td><strong>DPH6-DT</strong><br/></td>
+            <td style="text-align:right;">+111.8 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">5</td>
+            <td style="text-align:center;">16%</td>
+            <td style="text-align:center;">5.9%</td>
+            <td style="text-align:center;">2.5%</td>
+            <td style="text-align:center;"><strong>2.37×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.27</strong></td>
           </tr>
         
 
@@ -375,6 +558,67 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.7%</td>
             <td style="text-align:center;">2.8%</td>
             <td style="text-align:center;"><strong>2.03×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.70</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:109781831-109782330</code> </td>
+            <td><strong>PALM2AKAP2</strong><br/></td>
+            <td style="text-align:right;">+141.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">35</td>
+            <td style="text-align:center;">5</td>
+            <td style="text-align:center;">14%</td>
+            <td style="text-align:center;">4.2%</td>
+            <td style="text-align:center;">1.9%</td>
+            <td style="text-align:center;"><strong>2.20×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">8.02</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr9:115333216-115333715</code> </td>
+            <td><strong>DELEC1</strong><br/></td>
+            <td style="text-align:right;">+191.6 kb</td>
+            <td style="text-align:center;">7/8</td>
+            <td style="text-align:center;">30</td>
+            <td style="text-align:center;">3</td>
+            <td style="text-align:center;">10%</td>
+            <td style="text-align:center;">4.1%</td>
+            <td style="text-align:center;">2.0%</td>
+            <td style="text-align:center;"><strong>2.01×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.17</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:45590028-45590527</code> </td>
+            <td><strong>SUPT3H</strong><br/></td>
+            <td style="text-align:right;">+212.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">5</td>
+            <td style="text-align:center;">16%</td>
+            <td style="text-align:center;">5.2%</td>
+            <td style="text-align:center;">2.5%</td>
+            <td style="text-align:center;"><strong>2.10×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.83</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr12:88299395-88299894</code> </td>
+            <td><strong>TMTC3</strong><br/></td>
+            <td style="text-align:right;">+157.3 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">33</td>
+            <td style="text-align:center;">4</td>
+            <td style="text-align:center;">12%</td>
+            <td style="text-align:center;">4.3%</td>
+            <td style="text-align:center;">1.5%</td>
+            <td style="text-align:center;"><strong>2.82×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">9.56</strong></td>
           </tr>
         
 
@@ -389,6 +633,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.5%</td>
             <td style="text-align:center;">2.3%</td>
             <td style="text-align:center;"><strong>2.85×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">8.41</strong></td>
           </tr>
         
 
@@ -403,6 +648,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">6.1%</td>
             <td style="text-align:center;">2.0%</td>
             <td style="text-align:center;"><strong>3.15×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">10.92</strong></td>
           </tr>
         
 
@@ -417,6 +663,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.3%</td>
             <td style="text-align:center;">2.5%</td>
             <td style="text-align:center;"><strong>2.12×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.09</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr2:110859060-110859559</code> </td>
+            <td><strong>ACOXL</strong><br/></td>
+            <td style="text-align:right;">+126.7 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">31</td>
+            <td style="text-align:center;">4</td>
+            <td style="text-align:center;">13%</td>
+            <td style="text-align:center;">8.2%</td>
+            <td style="text-align:center;">3.8%</td>
+            <td style="text-align:center;"><strong>2.16×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.43</strong></td>
           </tr>
         
 
@@ -431,6 +693,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.5%</td>
             <td style="text-align:center;">2.2%</td>
             <td style="text-align:center;"><strong>2.42×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.41</strong></td>
           </tr>
         
 
@@ -445,6 +708,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.0%</td>
             <td style="text-align:center;">3.1%</td>
             <td style="text-align:center;"><strong>2.27×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.45</strong></td>
           </tr>
         
 
@@ -459,6 +723,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.9%</td>
             <td style="text-align:center;">3.4%</td>
             <td style="text-align:center;"><strong>2.30×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.17</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr11:34214838-34215337</code> </td>
+            <td><strong>NAT10</strong><br/></td>
+            <td style="text-align:right;">+109.5 kb</td>
+            <td style="text-align:center;">5/8</td>
+            <td style="text-align:center;">34</td>
+            <td style="text-align:center;">6</td>
+            <td style="text-align:center;">18%</td>
+            <td style="text-align:center;">7.8%</td>
+            <td style="text-align:center;">3.6%</td>
+            <td style="text-align:center;"><strong>2.20×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.01</strong></td>
           </tr>
         
 
@@ -473,6 +753,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">4.5%</td>
             <td style="text-align:center;">2.0%</td>
             <td style="text-align:center;"><strong>2.24×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.93</strong></td>
           </tr>
         
 
@@ -487,6 +768,22 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.1%</td>
             <td style="text-align:center;">3.4%</td>
             <td style="text-align:center;"><strong>2.10×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.00</strong></td>
+          </tr>
+        
+
+          <tr>
+            <td><code>chr6:100175690-100176189</code> </td>
+            <td><strong>MCHR2</strong><br/></td>
+            <td style="text-align:right;">+181.7 kb</td>
+            <td style="text-align:center;">6/8</td>
+            <td style="text-align:center;">32</td>
+            <td style="text-align:center;">4</td>
+            <td style="text-align:center;">12%</td>
+            <td style="text-align:center;">4.1%</td>
+            <td style="text-align:center;">2.0%</td>
+            <td style="text-align:center;"><strong>2.07×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">5.67</strong></td>
           </tr>
         
 
@@ -501,6 +798,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">5.5%</td>
             <td style="text-align:center;">2.7%</td>
             <td style="text-align:center;"><strong>2.01×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">7.53</strong></td>
           </tr>
         
 
@@ -515,6 +813,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">8.1%</td>
             <td style="text-align:center;">4.0%</td>
             <td style="text-align:center;"><strong>2.00×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.31</strong></td>
           </tr>
         
 
@@ -529,6 +828,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">7.6%</td>
             <td style="text-align:center;">2.7%</td>
             <td style="text-align:center;"><strong>2.81×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">9.07</strong></td>
           </tr>
         
 
@@ -543,244 +843,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">3.7%</td>
             <td style="text-align:center;">1.8%</td>
             <td style="text-align:center;"><strong>2.02×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr1:162660573-162661072</code> </td>
-            <td><strong>DDR2</strong><br/></td>
-            <td style="text-align:right;">+30.0 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">34</td>
-            <td style="text-align:center;">5</td>
-            <td style="text-align:center;">15%</td>
-            <td style="text-align:center;">3.6%</td>
-            <td style="text-align:center;">1.4%</td>
-            <td style="text-align:center;"><strong>2.67×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr11:107043766-107044265</code> </td>
-            <td><strong>GUCY1A2</strong><br/></td>
-            <td style="text-align:right;">+25.5 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">32</td>
-            <td style="text-align:center;">6</td>
-            <td style="text-align:center;">19%</td>
-            <td style="text-align:center;">4.5%</td>
-            <td style="text-align:center;">2.2%</td>
-            <td style="text-align:center;"><strong>2.04×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr12:117986864-117987363</code> </td>
-            <td><strong>KSR2</strong><br/></td>
-            <td style="text-align:right;">+18.1 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">30</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">13%</td>
-            <td style="text-align:center;">7.1%</td>
-            <td style="text-align:center;">2.1%</td>
-            <td style="text-align:center;"><strong>3.37×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr6:85361134-85361633</code> </td>
-            <td><strong>LINC02535</strong><br/></td>
-            <td style="text-align:right;">-43.4 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">32</td>
-            <td style="text-align:center;">5</td>
-            <td style="text-align:center;">16%</td>
-            <td style="text-align:center;">5.8%</td>
-            <td style="text-align:center;">2.3%</td>
-            <td style="text-align:center;"><strong>2.55×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr1:53685589-53686088</code> </td>
-            <td><strong>GLIS1</strong><br/></td>
-            <td style="text-align:right;">-53.3 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">30</td>
-            <td style="text-align:center;">5</td>
-            <td style="text-align:center;">17%</td>
-            <td style="text-align:center;">8.6%</td>
-            <td style="text-align:center;">3.8%</td>
-            <td style="text-align:center;"><strong>2.23×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr2:77552879-77553378</code> </td>
-            <td><strong>LRRTM4</strong><br/></td>
-            <td style="text-align:right;">+30.7 kb</td>
-            <td style="text-align:center;">6/8</td>
-            <td style="text-align:center;">31</td>
-            <td style="text-align:center;">3</td>
-            <td style="text-align:center;">10%</td>
-            <td style="text-align:center;">3.8%</td>
-            <td style="text-align:center;">1.7%</td>
-            <td style="text-align:center;"><strong>2.19×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr1:15271162-15271661</code> </td>
-            <td><strong>FHAD1</strong><br/></td>
-            <td style="text-align:right;">+24.2 kb</td>
-            <td style="text-align:center;">6/8</td>
-            <td style="text-align:center;">28</td>
-            <td style="text-align:center;">3</td>
-            <td style="text-align:center;">11%</td>
-            <td style="text-align:center;">5.4%</td>
-            <td style="text-align:center;">2.4%</td>
-            <td style="text-align:center;"><strong>2.23×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr12:106840130-106840629</code> </td>
-            <td><strong>LOC100287944</strong><br/></td>
-            <td style="text-align:right;">+65.5 kb</td>
-            <td style="text-align:center;">6/8</td>
-            <td style="text-align:center;">33</td>
-            <td style="text-align:center;">2</td>
-            <td style="text-align:center;">6%</td>
-            <td style="text-align:center;">4.5%</td>
-            <td style="text-align:center;">2.0%</td>
-            <td style="text-align:center;"><strong>2.24×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr17:20093226-20093725</code> </td>
-            <td><strong>SPECC1</strong><br/></td>
-            <td style="text-align:right;">+84.1 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">28</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">14%</td>
-            <td style="text-align:center;">9.2%</td>
-            <td style="text-align:center;">3.2%</td>
-            <td style="text-align:center;"><strong>2.90×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr11:19366905-19367404</code> </td>
-            <td><strong>NAV2</strong><br/></td>
-            <td style="text-align:right;">+21.9 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">31</td>
-            <td style="text-align:center;">5</td>
-            <td style="text-align:center;">16%</td>
-            <td style="text-align:center;">5.5%</td>
-            <td style="text-align:center;">2.6%</td>
-            <td style="text-align:center;"><strong>2.11×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr3:190386284-190386783</code> </td>
-            <td><strong>TMEM207</strong><br/></td>
-            <td style="text-align:right;">-63.3 kb</td>
-            <td style="text-align:center;">6/8</td>
-            <td style="text-align:center;">31</td>
-            <td style="text-align:center;">2</td>
-            <td style="text-align:center;">6%</td>
-            <td style="text-align:center;">4.4%</td>
-            <td style="text-align:center;">1.9%</td>
-            <td style="text-align:center;"><strong>2.36×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr1:85607409-85607908</code> </td>
-            <td><strong>CCN1</strong><br/></td>
-            <td style="text-align:right;">+26.9 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">30</td>
-            <td style="text-align:center;">5</td>
-            <td style="text-align:center;">17%</td>
-            <td style="text-align:center;">5.1%</td>
-            <td style="text-align:center;">2.4%</td>
-            <td style="text-align:center;"><strong>2.15×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr2:128273543-128274042</code> </td>
-            <td><strong>HS6ST1</strong><br/></td>
-            <td style="text-align:right;">-45.1 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">29</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">14%</td>
-            <td style="text-align:center;">5.4%</td>
-            <td style="text-align:center;">1.9%</td>
-            <td style="text-align:center;"><strong>2.93×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr5:38872155-38872654</code> </td>
-            <td><strong>OSMR</strong><br/></td>
-            <td style="text-align:right;">+26.5 kb</td>
-            <td style="text-align:center;">6/8</td>
-            <td style="text-align:center;">32</td>
-            <td style="text-align:center;">2</td>
-            <td style="text-align:center;">6%</td>
-            <td style="text-align:center;">3.3%</td>
-            <td style="text-align:center;">1.5%</td>
-            <td style="text-align:center;"><strong>2.21×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr17:20092341-20092840</code> </td>
-            <td><strong>SPECC1</strong><br/></td>
-            <td style="text-align:right;">+83.2 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">29</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">14%</td>
-            <td style="text-align:center;">8.9%</td>
-            <td style="text-align:center;">3.7%</td>
-            <td style="text-align:center;"><strong>2.43×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr14:100438312-100438811</code> </td>
-            <td><strong>WDR25</strong><br/></td>
-            <td style="text-align:right;">+62.1 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">33</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">12%</td>
-            <td style="text-align:center;">7.5%</td>
-            <td style="text-align:center;">3.6%</td>
-            <td style="text-align:center;"><strong>2.10×</strong></td>
-          </tr>
-        
-
-          <tr>
-            <td><code>chr2:54053910-54054409</code> </td>
-            <td><strong>ACYP2</strong><br/></td>
-            <td style="text-align:right;">+83.0 kb</td>
-            <td style="text-align:center;">5/8</td>
-            <td style="text-align:center;">29</td>
-            <td style="text-align:center;">4</td>
-            <td style="text-align:center;">14%</td>
-            <td style="text-align:center;">5.8%</td>
-            <td style="text-align:center;">2.1%</td>
-            <td style="text-align:center;"><strong>2.81×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">6.94</strong></td>
           </tr>
         
 </tbody></table>
@@ -802,6 +865,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
   <th>str (mal)</th>
   <th>str (max non-mal)</th>
   <th>sel</th>
+  <th>Z<sub>Daigle</sub></th>
 </tr></thead>
 <tbody>
 
@@ -816,6 +880,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.5%</td>
             <td style="text-align:center;">28.4%</td>
             <td style="text-align:center;"><strong>0.76×</strong></td>
+            <td style="text-align:center;">-0.55</td>
           </tr>
         
 
@@ -830,6 +895,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.1%</td>
             <td style="text-align:center;">35.8%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-1.92</td>
           </tr>
         
 
@@ -844,6 +910,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.4%</td>
             <td style="text-align:center;">32.2%</td>
             <td style="text-align:center;"><strong>0.73×</strong></td>
+            <td style="text-align:center;">-0.94</td>
           </tr>
         
 
@@ -858,6 +925,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.8%</td>
             <td style="text-align:center;">35.3%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.68</td>
           </tr>
         
 
@@ -872,6 +940,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.4%</td>
             <td style="text-align:center;">36.6%</td>
             <td style="text-align:center;"><strong>0.64×</strong></td>
+            <td style="text-align:center;">-1.99</td>
           </tr>
         
 
@@ -886,6 +955,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.0%</td>
             <td style="text-align:center;">31.7%</td>
             <td style="text-align:center;"><strong>0.73×</strong></td>
+            <td style="text-align:center;">-0.94</td>
           </tr>
         
 
@@ -900,6 +970,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.9%</td>
             <td style="text-align:center;">28.0%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-0.23</td>
           </tr>
         
 
@@ -914,6 +985,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.9%</td>
             <td style="text-align:center;">25.7%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">-1.13</td>
           </tr>
         
 
@@ -928,6 +1000,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.5%</td>
             <td style="text-align:center;">31.0%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.44</td>
           </tr>
         
 
@@ -942,6 +1015,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.5%</td>
             <td style="text-align:center;">34.4%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.56</td>
           </tr>
         
 
@@ -956,6 +1030,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.2%</td>
             <td style="text-align:center;">27.6%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.29</td>
           </tr>
         
 
@@ -970,6 +1045,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.7%</td>
             <td style="text-align:center;">34.0%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.66</td>
           </tr>
         
 
@@ -984,6 +1060,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.2%</td>
             <td style="text-align:center;">23.3%</td>
             <td style="text-align:center;"><strong>0.83×</strong></td>
+            <td style="text-align:center;">0.20</td>
           </tr>
         
 
@@ -998,6 +1075,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.7%</td>
             <td style="text-align:center;">25.9%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-0.42</td>
           </tr>
         
 
@@ -1012,6 +1090,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.9%</td>
             <td style="text-align:center;">29.4%</td>
             <td style="text-align:center;"><strong>0.64×</strong></td>
+            <td style="text-align:center;">-1.83</td>
           </tr>
         
 
@@ -1026,6 +1105,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">16.8%</td>
             <td style="text-align:center;">27.4%</td>
             <td style="text-align:center;"><strong>0.61×</strong></td>
+            <td style="text-align:center;">-1.83</td>
           </tr>
         
 
@@ -1040,6 +1120,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">13.0%</td>
             <td style="text-align:center;">19.2%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.17</td>
           </tr>
         
 
@@ -1054,6 +1135,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">14.9%</td>
             <td style="text-align:center;">22.2%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.97</td>
           </tr>
         
 
@@ -1068,6 +1150,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.7%</td>
             <td style="text-align:center;">28.7%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-1.72</td>
           </tr>
         
 
@@ -1082,6 +1165,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">16.8%</td>
             <td style="text-align:center;">26.7%</td>
             <td style="text-align:center;"><strong>0.63×</strong></td>
+            <td style="text-align:center;">-1.90</td>
           </tr>
         
 
@@ -1096,6 +1180,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">13.8%</td>
             <td style="text-align:center;">17.1%</td>
             <td style="text-align:center;"><strong>0.81×</strong></td>
+            <td style="text-align:center;">0.43</td>
           </tr>
         
 
@@ -1110,6 +1195,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.3%</td>
             <td style="text-align:center;">22.2%</td>
             <td style="text-align:center;"><strong>0.78×</strong></td>
+            <td style="text-align:center;">-0.16</td>
           </tr>
         
 
@@ -1124,6 +1210,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.3%</td>
             <td style="text-align:center;">25.7%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.03</td>
           </tr>
         
 
@@ -1138,6 +1225,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">13.0%</td>
             <td style="text-align:center;">19.9%</td>
             <td style="text-align:center;"><strong>0.66×</strong></td>
+            <td style="text-align:center;">-1.28</td>
           </tr>
         
 
@@ -1152,6 +1240,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.0%</td>
             <td style="text-align:center;">32.2%</td>
             <td style="text-align:center;"><strong>0.56×</strong></td>
+            <td style="text-align:center;">-2.42</td>
           </tr>
         
 
@@ -1166,6 +1255,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">11.2%</td>
             <td style="text-align:center;">21.7%</td>
             <td style="text-align:center;"><strong>0.52×</strong></td>
+            <td style="text-align:center;">-2.41</td>
           </tr>
         
 
@@ -1180,6 +1270,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">11.8%</td>
             <td style="text-align:center;">14.4%</td>
             <td style="text-align:center;"><strong>0.82×</strong></td>
+            <td style="text-align:center;">0.37</td>
           </tr>
         
 
@@ -1194,6 +1285,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">12.2%</td>
             <td style="text-align:center;">10.0%</td>
             <td style="text-align:center;"><strong>1.22×</strong></td>
+            <td style="text-align:center;"><strong style="color:#059669;">2.23</strong></td>
           </tr>
         
 
@@ -1208,6 +1300,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">37.1%</td>
             <td style="text-align:center;">51.8%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-2.01</td>
           </tr>
         
 
@@ -1222,6 +1315,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">34.1%</td>
             <td style="text-align:center;">54.7%</td>
             <td style="text-align:center;"><strong>0.62×</strong></td>
+            <td style="text-align:center;">-3.01</td>
           </tr>
         
 
@@ -1236,6 +1330,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">39.5%</td>
             <td style="text-align:center;">56.5%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">-2.13</td>
           </tr>
         
 
@@ -1250,6 +1345,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">26.7%</td>
             <td style="text-align:center;">37.6%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.35</td>
           </tr>
         
 
@@ -1264,6 +1360,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">30.8%</td>
             <td style="text-align:center;">44.3%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">-1.87</td>
           </tr>
         
 
@@ -1278,6 +1375,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.0%</td>
             <td style="text-align:center;">40.5%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.92</td>
           </tr>
         
 
@@ -1292,6 +1390,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.5%</td>
             <td style="text-align:center;">40.1%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.47</td>
           </tr>
         
 
@@ -1306,6 +1405,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">30.4%</td>
             <td style="text-align:center;">47.9%</td>
             <td style="text-align:center;"><strong>0.63×</strong></td>
+            <td style="text-align:center;">-2.59</td>
           </tr>
         
 
@@ -1320,6 +1420,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">24.0%</td>
             <td style="text-align:center;">40.2%</td>
             <td style="text-align:center;"><strong>0.60×</strong></td>
+            <td style="text-align:center;">-2.49</td>
           </tr>
         
 
@@ -1334,6 +1435,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.7%</td>
             <td style="text-align:center;">35.9%</td>
             <td style="text-align:center;"><strong>0.80×</strong></td>
+            <td style="text-align:center;">-0.16</td>
           </tr>
         
 
@@ -1348,6 +1450,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">30.4%</td>
             <td style="text-align:center;">43.7%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">-1.99</td>
           </tr>
         
 
@@ -1362,6 +1465,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.8%</td>
             <td style="text-align:center;">40.1%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.63</td>
           </tr>
         
 
@@ -1376,6 +1480,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">26.4%</td>
             <td style="text-align:center;">38.2%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-0.78</td>
           </tr>
         
 
@@ -1390,6 +1495,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">29.6%</td>
             <td style="text-align:center;">43.1%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.91</td>
           </tr>
         
 
@@ -1404,6 +1510,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.3%</td>
             <td style="text-align:center;">33.4%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.41</td>
           </tr>
         
 
@@ -1418,6 +1525,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">26.0%</td>
             <td style="text-align:center;">40.0%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-2.30</td>
           </tr>
         
 
@@ -1432,6 +1540,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.4%</td>
             <td style="text-align:center;">43.7%</td>
             <td style="text-align:center;"><strong>0.63×</strong></td>
+            <td style="text-align:center;">-2.47</td>
           </tr>
         
 
@@ -1446,6 +1555,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.5%</td>
             <td style="text-align:center;">29.5%</td>
             <td style="text-align:center;"><strong>0.80×</strong></td>
+            <td style="text-align:center;">-0.04</td>
           </tr>
         
 
@@ -1460,6 +1570,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">24.5%</td>
             <td style="text-align:center;">33.0%</td>
             <td style="text-align:center;"><strong>0.74×</strong></td>
+            <td style="text-align:center;">-1.08</td>
           </tr>
         
 
@@ -1474,6 +1585,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.0%</td>
             <td style="text-align:center;">37.4%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-1.25</td>
           </tr>
         
 
@@ -1488,6 +1600,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.5%</td>
             <td style="text-align:center;">38.6%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.24</td>
           </tr>
         
 
@@ -1502,6 +1615,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.1%</td>
             <td style="text-align:center;">30.4%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.16</td>
           </tr>
         
 
@@ -1516,6 +1630,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.9%</td>
             <td style="text-align:center;">42.6%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.93</td>
           </tr>
         
 
@@ -1530,6 +1645,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">20.3%</td>
             <td style="text-align:center;">30.3%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.66</td>
           </tr>
         
 
@@ -1544,6 +1660,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.9%</td>
             <td style="text-align:center;">44.9%</td>
             <td style="text-align:center;"><strong>0.62×</strong></td>
+            <td style="text-align:center;">-2.90</td>
           </tr>
         
 
@@ -1558,6 +1675,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.9%</td>
             <td style="text-align:center;">19.6%</td>
             <td style="text-align:center;"><strong>0.91×</strong></td>
+            <td style="text-align:center;">0.69</td>
           </tr>
         
 
@@ -1572,6 +1690,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.2%</td>
             <td style="text-align:center;">24.3%</td>
             <td style="text-align:center;"><strong>0.87×</strong></td>
+            <td style="text-align:center;">0.80</td>
           </tr>
         
 
@@ -1586,6 +1705,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.9%</td>
             <td style="text-align:center;">28.9%</td>
             <td style="text-align:center;"><strong>0.76×</strong></td>
+            <td style="text-align:center;">-0.31</td>
           </tr>
         
 
@@ -1600,6 +1720,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.5%</td>
             <td style="text-align:center;">25.4%</td>
             <td style="text-align:center;"><strong>0.73×</strong></td>
+            <td style="text-align:center;">-1.13</td>
           </tr>
         
 
@@ -1614,6 +1735,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">27.2%</td>
             <td style="text-align:center;">37.6%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-1.37</td>
           </tr>
         
 
@@ -1628,6 +1750,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">25.4%</td>
             <td style="text-align:center;">35.1%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-0.62</td>
           </tr>
         
 
@@ -1642,6 +1765,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.2%</td>
             <td style="text-align:center;">25.1%</td>
             <td style="text-align:center;"><strong>0.72×</strong></td>
+            <td style="text-align:center;">-0.32</td>
           </tr>
         
 
@@ -1656,6 +1780,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.5%</td>
             <td style="text-align:center;">27.9%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">0.10</td>
           </tr>
         
 
@@ -1670,6 +1795,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.2%</td>
             <td style="text-align:center;">32.0%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-0.96</td>
           </tr>
         
 
@@ -1684,6 +1810,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">25.1%</td>
             <td style="text-align:center;">36.9%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.93</td>
           </tr>
         
 
@@ -1698,6 +1825,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.1%</td>
             <td style="text-align:center;">32.7%</td>
             <td style="text-align:center;"><strong>0.68×</strong></td>
+            <td style="text-align:center;">-1.37</td>
           </tr>
         
 
@@ -1712,6 +1840,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.4%</td>
             <td style="text-align:center;">29.3%</td>
             <td style="text-align:center;"><strong>0.66×</strong></td>
+            <td style="text-align:center;">-1.62</td>
           </tr>
         
 
@@ -1726,6 +1855,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.7%</td>
             <td style="text-align:center;">26.9%</td>
             <td style="text-align:center;"><strong>0.66×</strong></td>
+            <td style="text-align:center;">-1.36</td>
           </tr>
         
 
@@ -1740,6 +1870,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">26.7%</td>
             <td style="text-align:center;">41.2%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-2.13</td>
           </tr>
         
 
@@ -1754,6 +1885,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.0%</td>
             <td style="text-align:center;">35.4%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-1.77</td>
           </tr>
         
 
@@ -1768,6 +1900,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.8%</td>
             <td style="text-align:center;">37.0%</td>
             <td style="text-align:center;"><strong>0.64×</strong></td>
+            <td style="text-align:center;">-2.07</td>
           </tr>
         
 
@@ -1782,6 +1915,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.2%</td>
             <td style="text-align:center;">26.5%</td>
             <td style="text-align:center;"><strong>0.80×</strong></td>
+            <td style="text-align:center;">0.15</td>
           </tr>
         
 
@@ -1796,6 +1930,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">20.2%</td>
             <td style="text-align:center;">25.9%</td>
             <td style="text-align:center;"><strong>0.78×</strong></td>
+            <td style="text-align:center;">-0.28</td>
           </tr>
         
 
@@ -1810,6 +1945,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.4%</td>
             <td style="text-align:center;">24.2%</td>
             <td style="text-align:center;"><strong>0.76×</strong></td>
+            <td style="text-align:center;">-0.24</td>
           </tr>
         
 
@@ -1824,6 +1960,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.0%</td>
             <td style="text-align:center;">30.6%</td>
             <td style="text-align:center;"><strong>0.75×</strong></td>
+            <td style="text-align:center;">-0.29</td>
           </tr>
         
 
@@ -1838,6 +1975,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.4%</td>
             <td style="text-align:center;">30.0%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.06</td>
           </tr>
         
 
@@ -1852,6 +1990,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.4%</td>
             <td style="text-align:center;">31.4%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.31</td>
           </tr>
         
 
@@ -1866,6 +2005,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.3%</td>
             <td style="text-align:center;">39.9%</td>
             <td style="text-align:center;"><strong>0.71×</strong></td>
+            <td style="text-align:center;">-1.38</td>
           </tr>
         
 
@@ -1880,6 +2020,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">25.7%</td>
             <td style="text-align:center;">37.5%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.74</td>
           </tr>
         
 
@@ -1894,6 +2035,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.4%</td>
             <td style="text-align:center;">25.7%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.12</td>
           </tr>
         
 
@@ -1908,6 +2050,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">20.4%</td>
             <td style="text-align:center;">30.6%</td>
             <td style="text-align:center;"><strong>0.67×</strong></td>
+            <td style="text-align:center;">-1.17</td>
           </tr>
         
 
@@ -1922,6 +2065,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.6%</td>
             <td style="text-align:center;">35.5%</td>
             <td style="text-align:center;"><strong>0.66×</strong></td>
+            <td style="text-align:center;">-1.99</td>
           </tr>
         
 
@@ -1936,6 +2080,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">25.8%</td>
             <td style="text-align:center;">39.1%</td>
             <td style="text-align:center;"><strong>0.66×</strong></td>
+            <td style="text-align:center;">-1.98</td>
           </tr>
         
 
@@ -1950,6 +2095,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">17.4%</td>
             <td style="text-align:center;">26.7%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-2.22</td>
           </tr>
         
 
@@ -1964,6 +2110,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">24.2%</td>
             <td style="text-align:center;">37.3%</td>
             <td style="text-align:center;"><strong>0.65×</strong></td>
+            <td style="text-align:center;">-1.94</td>
           </tr>
         
 
@@ -1978,6 +2125,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.9%</td>
             <td style="text-align:center;">32.6%</td>
             <td style="text-align:center;"><strong>0.61×</strong></td>
+            <td style="text-align:center;">-2.30</td>
           </tr>
         
 
@@ -1992,6 +2140,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">23.9%</td>
             <td style="text-align:center;">39.5%</td>
             <td style="text-align:center;"><strong>0.60×</strong></td>
+            <td style="text-align:center;">-2.81</td>
           </tr>
         
 
@@ -2006,6 +2155,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">24.1%</td>
             <td style="text-align:center;">40.3%</td>
             <td style="text-align:center;"><strong>0.60×</strong></td>
+            <td style="text-align:center;">-2.76</td>
           </tr>
         
 
@@ -2020,6 +2170,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">21.7%</td>
             <td style="text-align:center;">36.7%</td>
             <td style="text-align:center;"><strong>0.59×</strong></td>
+            <td style="text-align:center;">-2.55</td>
           </tr>
         
 
@@ -2034,6 +2185,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.0%</td>
             <td style="text-align:center;">32.2%</td>
             <td style="text-align:center;"><strong>0.59×</strong></td>
+            <td style="text-align:center;">-2.80</td>
           </tr>
         
 
@@ -2048,6 +2200,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">16.1%</td>
             <td style="text-align:center;">17.6%</td>
             <td style="text-align:center;"><strong>0.91×</strong></td>
+            <td style="text-align:center;">0.88</td>
           </tr>
         
 
@@ -2062,6 +2215,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.4%</td>
             <td style="text-align:center;">21.4%</td>
             <td style="text-align:center;"><strong>0.86×</strong></td>
+            <td style="text-align:center;">0.74</td>
           </tr>
         
 
@@ -2076,6 +2230,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">19.3%</td>
             <td style="text-align:center;">24.8%</td>
             <td style="text-align:center;"><strong>0.78×</strong></td>
+            <td style="text-align:center;">0.31</td>
           </tr>
         
 
@@ -2090,6 +2245,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.3%</td>
             <td style="text-align:center;">24.3%</td>
             <td style="text-align:center;"><strong>0.75×</strong></td>
+            <td style="text-align:center;">-0.37</td>
           </tr>
         
 
@@ -2104,6 +2260,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">13.1%</td>
             <td style="text-align:center;">17.4%</td>
             <td style="text-align:center;"><strong>0.75×</strong></td>
+            <td style="text-align:center;">0.05</td>
           </tr>
         
 
@@ -2118,6 +2275,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">20.3%</td>
             <td style="text-align:center;">27.4%</td>
             <td style="text-align:center;"><strong>0.74×</strong></td>
+            <td style="text-align:center;">-0.61</td>
           </tr>
         
 
@@ -2132,6 +2290,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">15.6%</td>
             <td style="text-align:center;">21.0%</td>
             <td style="text-align:center;"><strong>0.74×</strong></td>
+            <td style="text-align:center;">-0.04</td>
           </tr>
         
 
@@ -2146,6 +2305,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">22.9%</td>
             <td style="text-align:center;">30.9%</td>
             <td style="text-align:center;"><strong>0.74×</strong></td>
+            <td style="text-align:center;">-0.83</td>
           </tr>
         
 
@@ -2160,6 +2320,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.9%</td>
             <td style="text-align:center;">25.6%</td>
             <td style="text-align:center;"><strong>0.74×</strong></td>
+            <td style="text-align:center;">-0.89</td>
           </tr>
         
 
@@ -2174,6 +2335,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">24.1%</td>
             <td style="text-align:center;">32.9%</td>
             <td style="text-align:center;"><strong>0.73×</strong></td>
+            <td style="text-align:center;">-0.79</td>
           </tr>
         
 
@@ -2188,6 +2350,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">18.3%</td>
             <td style="text-align:center;">26.0%</td>
             <td style="text-align:center;"><strong>0.70×</strong></td>
+            <td style="text-align:center;">-0.82</td>
           </tr>
         
 
@@ -2202,6 +2365,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
             <td style="text-align:center;">28.2%</td>
             <td style="text-align:center;">40.7%</td>
             <td style="text-align:center;"><strong>0.69×</strong></td>
+            <td style="text-align:center;">-1.50</td>
           </tr>
         
 </tbody></table>

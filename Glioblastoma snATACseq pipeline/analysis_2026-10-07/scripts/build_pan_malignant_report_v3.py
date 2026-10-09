@@ -89,6 +89,26 @@ nonmal_strength = (
 pan_enriched = pan.merge(nonmal_strength, on="peak_id", how="left")
 pan_enriched["strength_max_nonmalignant"] = pan_enriched["strength_max_nonmalignant"].fillna(0.0)
 pan_enriched["selectivity_vs_nonmal"] = pan_enriched["strength_mean"] / pan_enriched["strength_max_nonmalignant"].clip(lower=0.01)
+
+# Daigle-style Z-score (Allen Institute Armamentarium vocabulary):
+# Z = (target_strength - mean_other_strengths) / sd_other_strengths
+# Lets us report "Z > 2 by Daigle criterion" in the R01, the field-standard
+# threshold for cell-type-specific peak nomination.
+# "Other" = non-malignant, non-unassigned cell types (as above).
+nonmal_stats = (
+    ct_nonmal.groupby("peak_id")["strength"]
+    .agg(nonmal_mean="mean", nonmal_sd="std")
+    .reset_index()
+)
+pan_enriched = pan_enriched.merge(nonmal_stats, on="peak_id", how="left")
+pan_enriched["nonmal_mean"] = pan_enriched["nonmal_mean"].fillna(0.0)
+# Floor sd at a small epsilon so peaks absent from most cell types don't get infinite Z
+pan_enriched["z_daigle"] = (
+    (pan_enriched["strength_mean"] - pan_enriched["nonmal_mean"])
+    / pan_enriched["nonmal_sd"].clip(lower=0.001)
+)
+pan_enriched["passes_daigle_z2"] = pan_enriched["z_daigle"] >= 2.0
+print(f"[v2] Daigle Z >= 2 peaks (atlas-wide): {int(pan_enriched['passes_daigle_z2'].sum()):,}")
 print(f"[v2] joined non-malignant strengths; median selectivity = {pan_enriched['selectivity_vs_nonmal'].median():.2f}")
 
 
@@ -127,6 +147,17 @@ for _, r in pool.iterrows():
     annots.append((name, strand, dist))
 pool[["nearest_gene","gene_strand","dist_to_tss_signed"]] = pd.DataFrame(annots, index=pool.index)
 pool["dist_to_tss_abs_kb"] = (pool["dist_to_tss_signed"].abs() / 1000).round(1)
+# Annotation (not a filter): where this peak sits relative to the nearest gene.
+# For AAV cloning the enhancer sequence is extracted from genomic context, so
+# this is context for the reader, not a reason to drop any row.
+def _dist_cat(kb):
+    if pd.isna(kb): return "unknown"
+    if kb < 2:    return "promoter"       # excluded by the 2 kb floor
+    if kb < 10:   return "near"            # 2-10 kb
+    if kb < 100:  return "distal"          # classic 10-100 kb enhancer range
+    if kb < 500:  return "far-distal"      # common for cell-type-specific enhancers
+    return "gene-desert"                   # >500 kb — often enhancer-dense regions
+pool["distance_category"] = pool["dist_to_tss_abs_kb"].map(_dist_cat)
 pool["gbm_tags"] = pool["nearest_gene"].fillna("").map(lambda g: ", ".join(gbm_tags(g)))
 
 # Clean/scored for AAV cloning: distal (>=2 kb from TSS) + selective (>=2x non-malignant)
@@ -135,7 +166,15 @@ HOUSEKEEPING_PAT = pool["gbm_tags"].str.contains("housekeeping", na=False)
 TME_PAT = pool["gbm_tags"].str.contains("TME myeloid", na=False)
 clean = pool[
     (pool["dist_to_tss_abs_kb"] >= 2.0)
-    & (pool["dist_to_tss_abs_kb"] <= 100.0)
+    # NOTE 2026-10-08: dropped the 100 kb upper cap. For AAV, the enhancer is
+    # extracted from its native context and placed next to a minimal promoter,
+    # so native-genome distance to the "regulated" gene is irrelevant. TF binding
+    # is a sequence property, not a location property. Keeping the 2 kb floor to
+    # exclude promoter-proximal peaks (not enhancers in the regulatory sense).
+    # Armamentarium precedent: Mich et al. + Hooks striatum papers both used
+    # ~500 kb search windows around marker-gene loci; several Hunker hits sit
+    # 200-400 kb from their marker genes, AiE0387m sits in a gene desert.
+    # See README.md "distance filter" note.
     & (pool["selectivity_vs_nonmal"] >= 2.0)
     & (pool["chrom"] != "chr7")
     & (~HOUSEKEEPING_PAT)
@@ -161,15 +200,16 @@ all100 = pool.sort_values(
 # Output columns
 cols_clean = [
     "peak_id","chrom","start","end",
-    "nearest_gene","dist_to_tss_signed","gbm_tags",
+    "nearest_gene","dist_to_tss_signed","distance_category","gbm_tags",
     "n_cohorts","n_patients_detected","n_patients_accessible",
     "consistency","strength_mean","strength_max_nonmalignant","selectivity_vs_nonmal",
+    "nonmal_mean","nonmal_sd","z_daigle","passes_daigle_z2",
     "aav_score",
 ]
 clean[cols_clean].head(50).to_csv(OUT_CSV_CLEAN, index=False)
 print(f"[v2] wrote {OUT_CSV_CLEAN}")
 
-all100[["peak_id","chrom","start","end","nearest_gene","dist_to_tss_signed","gbm_tags",
+all100[["peak_id","chrom","start","end","nearest_gene","dist_to_tss_signed","distance_category","gbm_tags","z_daigle","passes_daigle_z2",
         "n_cohorts","n_patients_detected","n_patients_accessible",
         "consistency","strength_mean","strength_max_nonmalignant","selectivity_vs_nonmal"]
       ].to_csv(OUT_CSV_ALL, index=False)
@@ -226,6 +266,7 @@ def table_rows(df):
             <td style="text-align:center;">{r['strength_mean']*100:.1f}%</td>
             <td style="text-align:center;">{r['strength_max_nonmalignant']*100:.1f}%</td>
             <td style="text-align:center;"><strong>{r['selectivity_vs_nonmal']:.2f}×</strong></td>
+            <td style="text-align:center;">{('<strong style="color:#059669;">' if r['z_daigle'] >= 2 else '')}{r['z_daigle']:.2f}{'</strong>' if r['z_daigle'] >= 2 else ''}</td>
           </tr>
         """)
     return "\n".join(rows)
@@ -286,10 +327,19 @@ the shortlist reflects distal, malignant-selective enhancer candidates.
 <strong>Headline numbers (v2):</strong>
 <ul>
 <li>Candidate pool (n_cohorts ≥ 4): <strong>{len(pool):,}</strong> peaks</li>
-<li>AAV-clean pool (distal 2-100 kb + selective ≥2× + non-chr7 + non-housekeeping): <strong>{len(clean):,}</strong> peaks</li>
+<li>AAV-clean pool (|dist to TSS| ≥ 2 kb, no upper cap + selective ≥2× + non-chr7 + non-housekeeping): <strong>{len(clean):,}</strong> peaks</li>
+<li><strong>Pass Daigle Z ≥ 2</strong> (Allen Institute Armamentarium criterion for cell-type specificity): <strong>{int(clean['passes_daigle_z2'].sum()):,}</strong> peaks within the AAV-clean pool, <strong>{int(pan_enriched['passes_daigle_z2'].sum()):,}</strong> atlas-wide.</li>
 <li>Highest aav_score in the clean pool: <strong>{clean['aav_score'].iloc[0]:.3f}</strong></li>
 <li>Max cross-cohort replication achieved: <strong>{int(clean['n_cohorts'].max())}/8 cohorts</strong></li>
 </ul>
+</div>
+
+<div class="note">
+<strong>Daigle Z-score</strong> — Z = (strength<sub>pan-mal</sub> − mean<sub>other</sub>) / sd<sub>other</sub>,
+where "other" = non-malignant / non-unassigned cell types (astrocyte, oligo, OPC, neuron,
+GABA_neuron, microglia, TAM, endothelial, T_cell). Z ≥ 2 is the standard Armamentarium
+threshold for calling a peak "cell-type specific." Columns in the output: <code>z_daigle</code>,
+<code>passes_daigle_z2</code>, <code>nonmal_mean</code>, <code>nonmal_sd</code>.
 </div>
 
 <h2>Top 10 AAV-cloning candidates (distal, selective, replicated)</h2>
@@ -305,7 +355,10 @@ html_doc += f"""
 <h2>Top 50 AAV-cloning candidates — full table</h2>
 
 <p>Sorted by <code>aav_score</code> (consistency × 0.35 + n_cohorts/8 × 0.25 + n_patients/33 × 0.15 + selectivity/10 × 0.15 + strength × 0.10).
-Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non-malignant cell type.</p>
+Non-chr7, |dist to TSS| ≥ 2 kb (no upper cap — AAV extracts the enhancer from genomic context,
+so native distance to the nominally regulated gene is irrelevant), ≥2× more open in malignant than
+any non-malignant cell type. See <code>distance_category</code> column for context
+(near 2-10 kb / distal 10-100 kb / far-distal 100-500 kb / gene-desert >500 kb).</p>
 
 <table>
 <thead><tr>
@@ -319,6 +372,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
   <th>strength (mal)</th>
   <th>strength (max non-mal)</th>
   <th>selectivity</th>
+  <th>Z<sub>Daigle</sub></th>
 </tr></thead>
 <tbody>
 {table_rows(clean.head(50))}
@@ -341,6 +395,7 @@ Non-chr7, distal (2-100 kb from TSS), ≥2× more open in malignant than any non
   <th>str (mal)</th>
   <th>str (max non-mal)</th>
   <th>sel</th>
+  <th>Z<sub>Daigle</sub></th>
 </tr></thead>
 <tbody>
 {table_rows(all100)}
