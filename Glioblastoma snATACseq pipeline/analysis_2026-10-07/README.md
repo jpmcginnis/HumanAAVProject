@@ -1,8 +1,8 @@
-# A harmonized human glioblastoma enhancer atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
+# A harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
 
-**Deposit title:** A harmonized human glioblastoma enhancer atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
-**Short name:** GBM Enhancer Atlas v1.0.0
-**Deliverable focus:** AAV cell-type-targeting peak candidates (pan-malignant, per-cell-type, pan-myeloid) with Daigle Z-score cell-type-specificity annotation.
+**Deposit title:** A harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei)
+**Short name:** GBM chromatin atlas v1.0.0
+**Deliverable focus:** AAV cell-type-targeting enhancer peak candidates (pan-malignant, per-cell-type, pan-myeloid) with Daigle Z-score cell-type-specificity annotation.
 **Version:** 1.0.0 (2026-10-08)
 **License:** CC-BY-4.0 for data (`LICENSE_DATA`), MIT for code (`LICENSE_CODE`)
 **DOI:** pending Zenodo deposit
@@ -13,7 +13,7 @@
 
 ## What this is
 
-A harmonized AAV-targeting enhancer atlas built from **8 published scATAC-seq GBM cohorts**
+A harmonized human GBM chromatin accessibility atlas built from **8 published scATAC-seq cohorts**
 (51 patients, 1.52M nuclei, 544,735 CATLAS peaks), with:
 
 - A **pan-malignant** peak shortlist (575,971 cells across 45/51 patients; CNV | marker-peak-label union).
@@ -118,8 +118,9 @@ The folder/column slug **`gse276177_khan_astro`** should be read as **Sojka et a
 ## Citation
 
 ```
-McGinnis JP (2026). GBM Enhancer Atlas v1.0.0: cross-cohort scATAC-seq
-derived AAV enhancer candidates. Zenodo. https://doi.org/<pending>
+McGinnis JP (2026). A harmonized human glioblastoma chromatin accessibility
+atlas (snATAC-seq, 51 patients, 8 cohorts, 1.52M nuclei). Zenodo.
+https://doi.org/<pending>
 ```
 
 Please also cite the eight upstream cohorts (see `cohort_attribution.csv`).
