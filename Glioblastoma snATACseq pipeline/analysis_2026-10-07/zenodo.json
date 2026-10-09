@@ -1,0 +1,49 @@
+{
+  "upload_type": "dataset",
+  "title": "GBM Enhancer Atlas v1.0.0: cross-cohort scATAC-seq derived AAV enhancer candidates for glioblastoma cell-type targeting",
+  "description": "<p>Harmonized scATAC-seq atlas across 8 published GBM cohorts (51 patients, 1,523,668 nuclei, 544,735 CATLAS peaks) with pan-malignant, per-cell-type, and pan-myeloid AAV enhancer candidate shortlists. Pan-malignant pool covers 45/51 patients (575,971 cells; CNV | label union). Reports apply the Allen Institute Armamentarium Daigle Z-score (Z &ge; 2) criterion and distal-promoter (|dist to TSS| &ge; 2 kb, no upper cap for AAV).</p><p><b>Cohorts (see cohort_attribution.csv for full citation and accession):</b> gbm_space (Greenwald 2024 Cell / E-MTAB-17183), gse276177 (Sojka 2025 Nat Cell Biol / GSE276177 &mdash; slug 'khan_astro' is a misnomer), tcga_scatac (Sundaram 2024 / GDC dbGaP phs001287), gbm_tme_atlas_hra004942 (Zhao 2024 CRM / HRA004942), mathewson_lupien (Mathewson 2021 Cell / GSE163654 + Wang 2024 Sci Adv), gse138794 (Guo 2020 Nat Commun), guilhamon (Guilhamon 2021 eLife / GSE139860), gse165037 (Nagaraja 2021 sci-ATAC / GSE165037).</p><p><b>Primary deliverables:</b> pan_malignant_report_v3.html (617 clean AAV candidates for pan-malignant), per_celltype_report.html (10 cell types), pan_myeloid_report.html (TAM &cup; microglia, 380 shared peaks), FINDINGS.md (11 QC checks), methods_comparison.md (per-cohort snATAC methods appendix).</p><p>Pipeline source: <a href='https://github.com/jpmcginnis/HumanAAVProject'>github.com/jpmcginnis/HumanAAVProject</a> (Glioblastoma snATACseq pipeline subdirectory). CNV fix for fragments-mode cohorts documented in CHANGELOG.md &mdash; previously 12 patients (9 tcga_scatac + 3 Sojka/GSE276177) were silently excluded; v1.0.0 includes them.</p>",
+  "creators": [
+    {
+      "name": "McGinnis, JP",
+      "affiliation": "Department of Neurosurgery, Baylor College of Medicine",
+      "orcid": null
+    }
+  ],
+  "keywords": [
+    "glioblastoma",
+    "GBM",
+    "scATAC-seq",
+    "snATAC-seq",
+    "enhancer",
+    "AAV",
+    "gene therapy",
+    "cell-type-specific regulation",
+    "tumor microenvironment",
+    "TAM",
+    "microglia",
+    "Daigle score",
+    "Armamentarium",
+    "CATLAS",
+    "GRCh38",
+    "cross-cohort",
+    "atlas"
+  ],
+  "license": "CC-BY-4.0",
+  "access_right": "open",
+  "communities": [],
+  "related_identifiers": [
+    {"relation": "isDerivedFrom", "identifier": "10.1016/j.cell.2024.03.029", "resource_type": "publication-article", "scheme": "doi", "name": "Greenwald et al. 2024 Cell (gbm_space / E-MTAB-17183)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE276177", "resource_type": "dataset", "scheme": "geo", "name": "Sojka et al. 2025 Nat Cell Biol (slug 'gse276177_khan_astro')"},
+    {"relation": "isDerivedFrom", "identifier": "phs001287", "resource_type": "dataset", "scheme": "dbgap", "name": "TCGA PanCanAtlas scATAC (tcga_scatac)"},
+    {"relation": "isDerivedFrom", "identifier": "HRA004942", "resource_type": "dataset", "scheme": "other", "name": "Zhao 2024 CRM GBM-TME (HRA / CNCB-GSA)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE163654", "resource_type": "dataset", "scheme": "geo", "name": "Mathewson et al. 2021 Cell (mathewson_lupien)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE138794", "resource_type": "dataset", "scheme": "geo", "name": "Guo et al. 2020 Nat Commun (gse138794_guo)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE139860", "resource_type": "dataset", "scheme": "geo", "name": "Guilhamon et al. 2021 eLife (guilhamon)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE165037", "resource_type": "dataset", "scheme": "geo", "name": "Nagaraja et al. 2021 sci-ATAC (gse165037)"},
+    {"relation": "isDerivedFrom", "identifier": "GSE244618", "resource_type": "dataset", "scheme": "geo", "name": "CATLAS 544K peak atlas (Li et al. 2023 Science)"},
+    {"relation": "isSupplementTo", "identifier": "https://github.com/jpmcginnis/HumanAAVProject", "resource_type": "software", "scheme": "url", "name": "GBM enhancer atlas pipeline source"}
+  ],
+  "notes": "Prepared in support of a June 2026 NIH R01 submission for AAV-delivered cell-type-specific enhancer therapy in GBM. 100 kb distance cap deliberately omitted for AAV enhancer nomination (enhancer is extracted from genomic context in the viral cassette; native-genome distance to the nominally regulated gene is irrelevant). See SCHEMA.md for frozen column definitions and CHANGELOG.md for version history.",
+  "version": "1.0.0",
+  "language": "eng"
+}

@@ -1,114 +1,129 @@
-# GBM Enhancer Atlas — 2026-10-07 (v4)
+# GBM Enhancer Atlas v1.0.0
 
-**Project:** AAV-delivered cell-type-specific enhancer discovery for GBM. Backs an R01 due June 2026.
-**Owner:** JP McGinnis (jpmcginnis1@gmail.com), BCM Neurosurgery.
-**Pipeline repo:** <https://github.com/jpmcginnis/HumanAAVProject> → `Glioblastoma snATACseq pipeline/`
-**Atlas scope:** 8 cohorts, 51 patients (45 with ≥10 pan-malignant cells), 1,523,668 nuclei, 544,735 CATLAS peaks.
+**Deposit:** cross-cohort scATAC-seq-derived AAV enhancer candidates for glioblastoma cell-type targeting.
+**Version:** 1.0.0 (2026-10-08)
+**License:** CC-BY-4.0 for data (`LICENSE_DATA`), MIT for code (`LICENSE_CODE`)
+**DOI:** pending Zenodo deposit
+**Pipeline source:** <https://github.com/jpmcginnis/HumanAAVProject> → `Glioblastoma snATACseq pipeline/`
+**Contact:** JP McGinnis (jpmcginnis1@gmail.com), Baylor College of Medicine, Department of Neurosurgery.
 
 ---
 
-## Where to start if you are a new Claude session
+## What this is
 
-1. **Open `reports/pan_malignant_report_v3.html`** — current primary deliverable. Top-50 AAV cloning shortlist for pan-malignant targeting, with full methods caveats.
-2. **Open `reports/per_celltype_report.html`** — same workflow but across 10 cell types (pan-malignant section at top, then microglia, TAM, astrocyte, oligodendrocyte, OPC, neuron, GABA_neuron, endothelial, T_cell).
-3. **Open `reports/pan_myeloid_report.html`** — TAM + microglia merged for pan-myeloid AAV targeting (JP's call: no therapeutic reason to hit one without the other).
-4. **Read `qc/FINDINGS.md`** — synopsis of 11 QC checks, all triaged or resolved. No blocking issues.
-5. **Read `reports/methods_comparison.md`** — per-cohort snATAC methods extracted from GEO/EBI/papers. Flags for low-cell cohorts (hra004942), orthogonal tech (gse165037 sci-ATAC), and cohort slug misnomers (gse276177 is Sojka et al., not Khan).
+A harmonized AAV-targeting enhancer atlas built from **8 published scATAC-seq GBM cohorts**
+(51 patients, 1.52M nuclei, 544,735 CATLAS peaks), with:
 
-## Current state (what's deliverable now — 2026-10-08 refresh)
+- A **pan-malignant** peak shortlist (575,971 cells across 45/51 patients; CNV | marker-peak-label union).
+- **Per-cell-type** peak shortlists for all 10 non-noise cell types (microglia, TAM, astrocyte, oligodendrocyte, OPC, neuron, GABA_neuron, endothelial, T cell, pan-malignant).
+- A **pan-myeloid** peak shortlist (TAM ∪ microglia) — because for AAV targeting of the myeloid compartment there's no therapeutic reason to split those apart.
+- All peaks carry the **Allen Institute Armamentarium Daigle Z-score** (`z_daigle`, `passes_daigle_z2`) so results are reportable in the field-standard vocabulary.
 
-- **Pan-malignant pool:** 575,971 cells across 45 patients × 8 cohorts (CNV | label union). Pre-CNV-fix (v3 and earlier) was 33 patients due to a bug in `src/flatten_cohort.py` that silently defaulted `malignant_cnv=0` for fragments-mode cohorts (tcga_scatac + gse276177). Fixed 2026-10-07, patch is in the GitHub repo.
-- **Distance filter:** |dist to TSS| ≥ 2 kb floor (excludes promoter-proximal non-enhancers). **No upper cap** — for AAV the enhancer is extracted from genomic context and placed next to a minimal promoter, so native-genome distance is irrelevant. `distance_category` column (near / distal / far-distal / gene-desert) is informational, not a filter.
-- **Daigle Z-score:** every peak carries `z_daigle = (strength_target - mean_strength_other) / sd_strength_other` and a `passes_daigle_z2` boolean. Z ≥ 2 is the Allen Institute Armamentarium criterion for cell-type specificity. **11,641 peaks** pass Z ≥ 2 atlas-wide for pan-malignant; subset within the AAV-clean pool is highlighted in each report.
-- **Candidate AAV peaks (pan-malignant, |TSS|≥2kb + sel≥2× + non-chr7 + non-housekeeping):** **617 clean candidates** (up from 461 after dropping the 100 kb cap). Top-ranked near CPNE4, ADAMTSL1, ZFP36L1, GPNMB (4.1× selectivity), LINC01235.
-- **Per-cell-type candidates:** 690 for pan-malignant, 684 for neuron, 406 for endothelial, 373 for TAM, 358 for GABA_neuron, 346 for astrocyte, 208 for OPC, 161 for microglia, 108 for T_cell, 57 for oligodendrocyte. Strict mode (sel ≥ 1.0×) holds for OPC + neuron + pan-malignant; fallback mode for the glia-confounded types ranks by selectivity × composite.
-- **Pan-myeloid:** 380 peaks accessible in both TAM AND microglia (≥5% strength each; Table B is primary). Strict selectivity table (Table A, sel ≥ 1.0×) has 10 peaks because reactive glia confound the non-myeloid baseline.
+The deposit is **ready to query** without any pipeline rerun: all shortlists are in CSV + BED, all underlying scores are in `data/matrix/*.parquet`, HTML reports render in any browser.
+
+## For a reviewer: four files that tell the whole story
+
+1. **`reports/pan_malignant_report_v3.html`** — primary deliverable. Headline numbers, methods, caveats, top-50 cloning shortlist.
+2. **`cohort_attribution.csv`** — one row per cohort: citation, accession, data-use conditions, usage justification.
+3. **`qc/FINDINGS.md`** — 11 QC checks (per-patient audit, ENCODE blacklist, CN-region flags, TSS reclass, batch metadata, etc.); all triaged or resolved.
+4. **`reports/methods_comparison.md`** — per-cohort snATAC methods extracted verbatim from source papers (tissue harvest → nuclei isolation → library prep → sequencing). Flags for low-cell cohorts and orthogonal technology.
 
 ## Directory contents
 
 ```
 .
 ├── README.md                                 ← you are here
+├── SCHEMA.md                                 ← frozen column definitions for every parquet/CSV
+├── CHANGELOG.md                              ← version history (v0.1 → v1.0.0)
+├── cohort_attribution.csv                    ← reviewer-ready cohort metadata table
+├── zenodo.json                               ← Zenodo deposit metadata (upload with the record)
+├── LICENSE_DATA                              ← CC-BY-4.0
+├── LICENSE_CODE                              ← MIT
+│
 ├── data/
 │   ├── matrix/
-│   │   ├── enhancer_candidate_matrix.parquet (3.5 GB, 209M rows, peak × patient × cohort × cell_type)
-│   │   ├── candidate_scores.parquet          (134 MB, per-peak × per-cell-type scores)
-│   │   ├── surprises.parquet                 (1.1 GB, pattern-detector outputs — some columns 100% null, see FINDINGS #15)
-│   │   ├── pan_malignant_matrix_v4.parquet   (188 MB, pan-malignant long-form, 45 patients)
-│   │   ├── pan_malignant_scores_v4.parquet   (14 MB, per-peak pan-mal scores — primary for v3 report)
-│   │   ├── panmal_v4_run.log
-│   │   ├── top_candidates.parquet
-│   │   ├── provenance.parquet
-│   │   ├── dataset_issues.parquet
-│   │   └── MATRIX_SCHEMA.md                  ← start here for schema questions
+│   │   ├── MATRIX_SCHEMA.md                  ← detailed schema for enhancer_candidate_matrix
+│   │   ├── pan_malignant_matrix_v4.parquet   (188 MB, 10.4M rows, peak × patient × cohort — pan-mal pool)
+│   │   ├── pan_malignant_scores_v4.parquet   (14 MB, 544,735 peaks — per-peak summary)
+│   │   ├── panmal_v4_run.log                 (log of pan-malignant v4 build)
+│   │   ├── candidate_scores.parquet          (134 MB, 5.6M peaks × cell_type scores with pass-2 posterior for top 2000 each)
+│   │   ├── enhancer_candidate_matrix.parquet (3.5 GB, 209M rows — atlas workhorse, peak × patient × cohort × cell_type)
+│   │   ├── surprises.parquet                 (1.1 GB, pattern detector outputs — some columns null, see FINDINGS #15)
+│   │   ├── top_candidates.parquet, provenance.parquet, dataset_issues.parquet
 │   └── processed_h5ads/                      (69 GB, per-cohort CATLAS-quantified h5ads with CNV + labels)
-│       ├── gbm_space/                        (62 GB — the whale; 1.04M cells, 12 patients)
-│       ├── gse276177_khan_astro/             (2.9 GB; Sojka et al. 2025, 3 patients)
-│       ├── sundaram_gbm/                     (2.1 GB; TCGA scATAC, 9 patients)
-│       ├── gbm_tme_atlas_hra004942/          (1.1 GB; 7 patients, low cells per patient — see QC caveats)
-│       ├── mathewson_lupien/                 (260 MB; 5 patients)
-│       ├── gse138794_guo/                    (270 MB; 3 patients)
-│       ├── guilhamon/                        (140 MB; 4 patients, hg38 verified)
-│       └── gse165037/                        (80 MB; 2 patients, sci-ATAC not 10x)
+│       ├── gbm_space/                        (62 GB; 12 patients, 1.04M cells)
+│       ├── gse276177_khan_astro/             (2.9 GB; see slug note below — actually Sojka et al. 2025)
+│       ├── sundaram_gbm/                     (2.1 GB; = tcga_scatac in the matrix cohort column)
+│       ├── gbm_tme_atlas_hra004942/          (1.1 GB; low cells-per-patient)
+│       ├── mathewson_lupien/, gse138794_guo/, guilhamon/, gse165037/
 ├── reports/
-│   ├── pan_malignant_report_v3.html          ← PRIMARY report (45 patients, methods caveats)
-│   ├── per_celltype_report.html              (10 cell types incl. pan-malignant)
-│   ├── pan_myeloid_report.html               (TAM+microglia merged)
-│   ├── methods_comparison.md                 (per-cohort snATAC methods appendix)
-│   ├── pan_malignant_top50_distal_selective_v3.csv
-│   ├── pan_malignant_top100_all_v3.csv
-│   ├── pan_malignant_top30_distal_selective_v3.bed
-│   ├── pan_myeloid_top50_shared.csv          (primary pan-myeloid output)
-│   ├── pan_myeloid_top30_shared.bed
-│   ├── pan_myeloid_top50_distal_selective.csv (strict/selective)
-│   ├── pan_myeloid_top30.bed
-│   ├── per_celltype/                         (per-cell-type top-50 CSVs + top-30 BEDs)
-│   ├── per_patient_audit.csv / .html
+│   ├── pan_malignant_report_v3.html          ← PRIMARY (45 patients, methods caveats, Daigle Z)
+│   ├── per_celltype_report.html              (10 cell types incl. pan_malignant top section)
+│   ├── pan_myeloid_report.html               (TAM ∪ microglia, Table B = SHARED is primary)
+│   ├── methods_comparison.md                 (per-cohort methods appendix)
+│   ├── pan_malignant_top50_distal_selective_v3.csv  ← AAV cloning shortlist
+│   ├── pan_malignant_top100_all_v3.csv              ← fuller top-100 (includes promoters/chr7 for reference)
+│   ├── pan_malignant_top30_distal_selective_v3.bed  ← GRCh38 BED, Benchling-ready
+│   ├── pan_myeloid_top50_shared.csv + _top30_shared.bed   ← PRIMARY pan-myeloid
+│   ├── pan_myeloid_top50_distal_selective.csv + _top30.bed  ← strict pan-myeloid
+│   ├── per_celltype/*_top50.csv + *_top30.bed  (one pair per cell type)
+│   ├── per_patient_audit_v2.html + .csv       ← post-fix 45/51 audit
 ├── qc/
-│   ├── FINDINGS.md                           ← synopsis of 11 QC checks
-│   ├── scripts/                              (QC scripts: per-patient audit, blacklist intersect, TSS reclass)
-│   └── outputs/                              (12 CSVs — per-patient, CN flags, batch metadata, blacklist, TSS, saturation, clinical, surprises-null)
-└── scripts/
-    ├── build_pan_malignant_report_v3.py
-    ├── build_per_celltype_report.py
-    ├── build_pan_myeloid_report.py
-    └── per_patient_audit.py
+│   ├── FINDINGS.md                           ← 11 QC checks, synopsis + triage
+│   ├── scripts/                              (QC audit scripts)
+│   └── outputs/                              (12 CSVs: per-patient, blacklist, TSS, saturation, clinical, batch, …)
+├── scripts/
+│   ├── build_pan_malignant_report_v3.py
+│   ├── build_per_celltype_report.py
+│   ├── build_pan_myeloid_report.py
+│   ├── per_patient_audit_v2.py               (post-CNV-fix)
+│   └── per_patient_audit.py                  (original)
+└── reference/
+    ├── refgene_hg38.bed                      (nearest-gene annotation source — GENCODE basic v45 TSSes)
+    ├── encode_blacklist_hg38.v2.bed          (ENCODE blacklist used in QC #8)
+    └── refGene.txt.gz                        (UCSC refGene source for refgene_hg38.bed)
 ```
 
-## Where everything else lives (not in this folder)
+## Reproducing from source
 
-- **S3 archive (authoritative, encrypted at rest):** `s3://jpm-atacseq-archive-2026/final_atlas_2026_10_07/`
-- **GitHub (pipeline source):** <https://github.com/jpmcginnis/HumanAAVProject> → `Glioblastoma snATACseq pipeline/`
-- **EBS snapshot (full compute env for restore):** `snap-0e28e2cef18747e24` (us-east-1, 2026-10-08). Restore procedure in the GitHub repo's `RESTORE.md`. Scheduled check 2026-11-09 to move to Archive tier (~75% cheaper storage).
-- **EC2:** currently spun down. No running instance.
-- **Google Drive mirror** (previously used as working copy; JP is moving away from it due to Mirror-mode sync surprises that wipe the Desktop folder).
+1. Clone pipeline: `git clone https://github.com/jpmcginnis/HumanAAVProject.git`
+2. Install env: `conda env create -f atacseq_env.yml` (in `Glioblastoma snATACseq pipeline/`)
+3. Point `config/paths.yml` at your local raw-fragments storage (originals from the 8 cohorts' accessions; see `cohort_attribution.csv`).
+4. Run `snakemake --use-conda --cores 16` on an r6i.4xlarge-equivalent box (we used EC2 with a 500 GB EBS volume; takes ~24 h end-to-end).
+5. Re-run the three report builders: `python scripts/build_pan_malignant_report_v3.py && python scripts/build_per_celltype_report.py && python scripts/build_pan_myeloid_report.py` (<10 min from parquets).
 
-## Known caveats (short list — see methods_comparison.md and FINDINGS.md for detail)
+For a one-shot restore of the full compute environment, the EBS snapshot ID is `snap-0e28e2cef18747e24` (us-east-1). See `RESTORE.md` in the GitHub pipeline repo.
 
-- **chr7 excluded from pan-malignant clean pool.** Universal chr7+ CNV in GBM inflates strength independent of cell-type specificity.
-- **hra004942** has 20-250 malignant cells per patient (vs 10K-80K in gbm_space). Low-cell replication contributes less information. Suspect low-throughput platform.
-- **gse165037** is sci-ATAC (combinatorial indexing), not 10x. Peaks per cell are shallower; co-opening patterns can diverge from droplet. Replication here is orthogonal technology — extra-strong evidence when it agrees.
-- **gse276177 slug is misnomer.** Actually Sojka et al. 2025 Nature Cell Biol, not Khan. Data content and analysis are correct; just the folder name.
-- **guilhamon confirmed hg38** (pan-malignant pool matches CATLAS peaks across 4 patients × 500-700 malignant cells each).
-- **surprises.parquet has 100% null in some columns** (`patient_id`, `delta`, `direction`, `n_low`, `n_high`, `frac_high`) — upstream artifact. Use the populated columns (peak_id, detector, cell_type, pattern) only. Regenerate on next scoring pass.
-- **batch metadata absent.** Only patient_id/sample_id across all 8 cohorts. Batch effects collapse into patient-level random effects (handled by the Bayesian pass2).
-- **Per-patient TSS enrichment / FRiP not in processed data.** Relying on upstream paper QC thresholds; cross-cohort QC compared in methods_comparison.md.
+## Known cohort slug misnomer
 
-## Open to-do
+The folder/column slug **`gse276177_khan_astro`** should be read as **Sojka et al. 2025 Nature Cell Biology**. The slug came from an early typo and was kept rather than regenerating the matrix. Use the real citation in any publication derived from this deposit. See `cohort_attribution.csv` row for `gse276177_khan_astro`.
 
-- (Non-blocking) Pilot TCGA scATAC end-to-end before scaling further.
-- (Non-blocking) Resolve TCGA scATAC — pull from GDC manifest.
-- (Non-blocking) Wang Sci Adv DNBelab adapter if we want to add that cohort.
-- JP to email Marco Gallo for spatial_epigenomic data (external dependency).
-- R-side RDS extraction (ArchR/Signac/SnapATAC → h5ad) — in progress.
+## Known limits (summary — see FINDINGS.md for detail)
 
----
+- **chr7 excluded** from pan-malignant clean pool: universal chr7+ CNV in GBM inflates strength independent of cell-type specificity.
+- **hra004942** has 20-250 malignant cells per patient (vs 10K-80K in gbm_space). Low-cell replication contributes less information.
+- **gse165037** is sci-ATAC (combinatorial indexing), not 10x. Peaks per cell are shallower; co-opening patterns can diverge. Replication here is orthogonal-technology evidence.
+- **guilhamon** confirmed hg38 (pan-malignant pool matches CATLAS peaks across 4 patients × 500-700 malignant cells each).
+- **surprises.parquet has 100% null in some columns** (`patient_id`, `delta`, `direction`, `n_low`, `n_high`, `frac_high`) — upstream artifact. Use populated columns only.
+- **Batch metadata absent** — only patient_id/sample_id across all 8 cohorts. Batch effects collapse into patient-level random effects (handled by the Bayesian pass-2 model).
+- **Per-patient TSS enrichment / FRiP not in processed data.** Rely on upstream paper QC thresholds; cross-cohort QC compared in methods_comparison.md.
+- **CNV calling** uses the chr7+/chr10- ratio method (not full inferCNV); mirrored into `malignant_cnv` for all cohorts (fragments-mode fix in v1.0.0).
 
-## For the next Claude session
+## Citation
 
-- **Start by reading this file.** Then the three HTML reports in order: pan_malignant_report_v3, per_celltype_report, pan_myeloid_report.
-- **Primary matrix file for ad-hoc queries:** `data/matrix/pan_malignant_scores_v4.parquet` + `data/matrix/candidate_scores.parquet`. Both polars-queryable at ~10M rows/sec locally.
-- **For a new cohort to add:** the pipeline is in GitHub HumanAAVProject. Spin up EC2 from snapshot `snap-0e28e2cef18747e24` (see repo RESTORE.md).
-- **For a bug or refinement in the scoring:** report builders are self-contained in `scripts/build_*.py` and read parquets from `data/matrix/`. Re-run locally in `atacseq` conda env (`source /usr/local/Caskroom/miniconda/base/etc/profile.d/conda.sh && conda activate atacseq`).
-- **Avoid pushing data to Google Drive from a script** — JP's experience is that Drive File Stream in Mirror mode can trigger adjacent-folder re-materialization that fills the disk. Direct-upload via the Drive app or S3 instead.
-- **This folder is the working copy for JP.** The S3 archive is the authoritative version; GitHub holds pipeline source. Avoid auto-sync'ing between the two without JP's explicit say-so.
+```
+McGinnis JP (2026). GBM Enhancer Atlas v1.0.0: cross-cohort scATAC-seq
+derived AAV enhancer candidates. Zenodo. https://doi.org/<pending>
+```
+
+Please also cite the eight upstream cohorts (see `cohort_attribution.csv`).
+
+## For the next Claude / future reader
+
+- **Start here:** this file + `reports/pan_malignant_report_v3.html`.
+- **Primary parquets for ad-hoc queries:** `data/matrix/pan_malignant_scores_v4.parquet` and `data/matrix/candidate_scores.parquet`. Both polars-queryable at ~10M rows/sec locally.
+- **Full atlas (bigger):** `data/matrix/enhancer_candidate_matrix.parquet` (209M rows).
+- **For a new cohort to add:** pipeline is in GitHub (`jpmcginnis/HumanAAVProject`); spin up EC2 from snapshot `snap-0e28e2cef18747e24` (see repo's `RESTORE.md`).
+- **For a bug or refinement in scoring:** report builders are self-contained in `scripts/build_*.py`; re-run locally in the atacseq conda env.
+- **Avoid pushing data to Google Drive from a script.** Drive File Stream in Mirror mode can trigger adjacent-folder re-materialization that fills the disk. Direct-upload via the Drive app or S3 instead.
+- **This folder is the working copy.** The authoritative version at upload is on Zenodo; GitHub holds pipeline source. Avoid auto-sync between the two without explicit intent.
