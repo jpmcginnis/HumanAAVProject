@@ -45,6 +45,12 @@ the CNV-missing bug that excluded 12 patients in fragments-mode cohorts.
   `cohort_attribution.csv` (reviewer-ready attribution), `LICENSE_DATA` (CC-BY-4.0),
   `LICENSE_CODE` (MIT), `zenodo.json` (metadata).
 
+### Tests
+
+- `tests/` added with **27 unit tests** covering schema contract (parquet columns + dtypes),
+  computations (distance_category, Daigle Z, selectivity, aav_score), and filter logic
+  (pool size, bounds, cell-type coverage). Run with `pytest tests/`.
+
 ### Known slug misnomer
 
 - Cohort slug `gse276177_khan_astro` is actually **Sojka et al. 2025 Nature Cell Biology**,

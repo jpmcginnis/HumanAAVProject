@@ -78,6 +78,10 @@ The deposit is **ready to query** without any pipeline rerun: all shortlists are
 │   ├── build_pan_myeloid_report.py
 │   ├── per_patient_audit_v2.py               (post-CNV-fix)
 │   └── per_patient_audit.py                  (original)
+├── tests/                                     ← pytest harness; run `pytest tests/` from this dir
+│   ├── test_schema.py                        (schema contract tests on parquet files)
+│   ├── test_computations.py                  (unit tests for distance_category / Daigle Z / selectivity / aav_score)
+│   └── test_filters.py                       (filter logic + pool size assertions)
 └── reference/
     ├── refgene_hg38.bed                      (nearest-gene annotation source — GENCODE basic v45 TSSes)
     ├── encode_blacklist_hg38.v2.bed          (ENCODE blacklist used in QC #8)
