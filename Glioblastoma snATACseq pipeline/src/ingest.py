@@ -184,34 +184,26 @@ def ingest_gse276177_khan_fragments(src: Path, out: Path) -> None:
         })
 
 
-def ingest_tcga_scatac(src: Path, out: Path) -> None:
-    """TCGA scATAC-seq GBM subset — Terekhanova et al. 2024 Science
-    (PMID 39236169), "Epigenetic regulation during cancer transitions
-    across 11 tumour types".
+def ingest_sundaram_gbm(src: Path, out: Path) -> None:
+    """Sundaram et al. 2024 Science "Single-cell chromatin accessibility
+    reveals malignant regulatory programs in primary human cancers".
 
-    Open-access distribution via Zenodo (``full_cancer_scatacseq.tar.gz``,
-    which bundles processed fragments for 11 cancer types). The GBM subset
-    is 9 samples named ``scATAC_GBMx_<UUID>_X<N>_S<N>_B1_T1.fragments.tsv.gz``.
-    All are stated as primary IDH-wildtype GBM in the paper's Data Availability
-    section; we accept that on faith (no per-sample IDH table in the deposit).
+    GDC-hosted pan-cancer scATAC-seq (BRCA, BLCA, LUAD, KIRC, KIRP, SKCM,
+    GBM, etc). The GBM subset includes samples named like
+    `scATAC_GBMx_<UUID>_X<N>_S<N>_B1_T1.fragments.tsv.gz`. All sample-level
+    IDH filtering is deferred to the paper's own curation: the manuscript's
+    data availability says these are primary IDH-wildtype GBMs; we accept
+    that on faith.
 
-    5 of 9 fragments are directly extractable from the Zenodo tar. The other 4
-    require dbGaP phs000178 controlled access for the raw BAMs; running them
-    yourself gives you the full 9-sample cohort.
-
-    Each UUID segment is treated as its own patient_id. Fragment format is
-    10x-standard (fragments.tsv.gz + .tbi); ``_import_fragments_set`` writes
-    one per-sample snapatac2 h5ad each, then ``src/flatten_cohort.py`` turns
-    the per-sample files into a flat CATLAS-space cohort h5ad.
-
-    Previously slugged ``sundaram_gbm`` — the "Sundaram" release is actually
-    the same TCGA scATAC data, so the cohort is now called ``tcga_scatac`` to
-    reflect the true primary source.
+    Each UUID is treated as its own patient_id (deeper paper-level mapping
+    to GBM-39/GBM-45 subclone labels is a Phase B refinement). Fragment
+    format is 10x-standard (fragments.tsv.gz + .tbi); _import_fragments_set
+    handles it directly via snapatac2.
     """
-    log(f"TCGA scATAC GBM ingest from {src}")
+    log(f"Sundaram GBM scATAC ingest from {src}")
     frags = sorted(f for f in src.rglob("scATAC_GBMx_*.fragments.tsv.gz") if f.is_file())
     require(len(frags) >= 2,
-            f"Expected >=2 TCGA GBM fragments files, found {len(frags)}. "
+            f"Expected ≥2 Sundaram GBM fragments files, found {len(frags)}. "
             f"Verify the pan-cancer tar was extracted (look under "
             f"Cancer_scATACseq_data/).")
     log(f"  found {len(frags)} GBM scATAC samples")
@@ -222,7 +214,7 @@ def ingest_tcga_scatac(src: Path, out: Path) -> None:
         return m.group(1) if m else sample_id
 
     _import_fragments_set(
-        frags, cohort="tcga_scatac", out=out,
+        frags, cohort="sundaram_gbm", out=out,
         obs_setters={
             "patient_id": patient_from_path,
             "region": lambda s: "unknown",
@@ -530,10 +522,11 @@ HANDLERS = {
     "guilhamon": ingest_guilhamon,
     "raviram": ingest_raviram,
     "gse165037": ingest_rds_cohort_stub,          # R SnapATAC .rds.gz
-    "tcga_scatac": ingest_tcga_scatac,            # TCGA scATAC GBM (ex-"sundaram_gbm")
+    "tcga_scatac": ingest_tcga_scatac,
     "mathewson_lupien": ingest_mathewson_lupien,
     "gbm_space": ingest_gbm_space,
     "gbm_tme_atlas_hra004942": ingest_rds_cohort_stub,   # Signac/ArchR .rds
+    "sundaram_gbm": ingest_sundaram_gbm,          # fragment-mode from pan-cancer tar
     "gse276177_khan_astro": ingest_gse276177_khan_fragments,  # fragment-mode (not matrix)
 }
 

@@ -33,7 +33,7 @@ with open("config/datasets.yaml") as f:
 # Phase A.4 — adds gse165037 (SnapATAC v1 RDS extracted via raw-slot bypass in
 # src/extract_rds.R, no SnapATAC package needed). GBM-Space (gbm_space) still
 # fetching; will join as a fragment-mode cohort when done.
-PHASE_A_COHORTS = ["gbm_space", "gse276177_khan_astro", "tcga_scatac"]  # fragment-mode cohorts
+PHASE_A_COHORTS = ["gbm_space", "gse276177_khan_astro", "sundaram_gbm"]  # fragment-mode cohorts
 PHASE_A2_MATRIX_COHORTS = ["guilhamon", "mathewson_lupien", "gbm_tme_atlas_hra004942", "gse165037", "gse138794_guo"]  # gse276177 moved to fragment-mode
 PHASE = os.environ.get("GBM_PHASE", "A")
 if PHASE == "A":
@@ -135,10 +135,6 @@ rule fetch_gse165037:
         "python -u src/fetch.py --cohort gse165037 --out {output} 2>&1 | tee {log}"
 
 rule fetch_tcga_scatac:
-    """TCGA scATAC-seq GBM subset (Terekhanova 2024 Science, PMID 39236169).
-    Downloads the Zenodo-hosted cancer-pan-cancer fragments tarball and extracts
-    the 9 GBMx samples. 5 are open-access on Zenodo; 4 require dbGaP phs000178.
-    Previously slugged ``sundaram_gbm`` — renamed to accurately reflect source."""
     output: directory(RAW / "tcga_scatac")
     log: DATA_ROOT / "logs" / "fetch_tcga_scatac.log"
     shell:
@@ -189,8 +185,13 @@ rule fetch_wang_sciadv_tc_ptb:
     shell:
         "python -u src/fetch.py --cohort wang_sciadv_tc_ptb --out {output} 2>&1 | tee {log}"
 
-# (rule fetch_sundaram_gbm removed 2026-10-07; the "Sundaram" tar is actually
-# the TCGA scATAC pan-cancer release — merged into fetch_tcga_scatac above.)
+rule fetch_sundaram_gbm:
+    """Sundaram 2024 Science pan-cancer scATAC-seq — GBM subset.
+    Open-access GDC download. ≥2 primary IDH-WT GBM scATAC samples."""
+    output: directory(RAW / "sundaram_gbm_gdc")
+    log: DATA_ROOT / "logs" / "fetch_sundaram.log"
+    shell:
+        "python -u src/fetch.py --cohort sundaram_gbm --out {output} 2>&1 | tee {log}"
 
 rule fetch_spatial_epigenomic_niches:
     """Kint/Gallo 2025 — no public deposit; stub that fails loudly with contact info."""
@@ -226,38 +227,6 @@ rule ingest:
             python -u src/ingest.py --cohort {wildcards.cohort} \
                 --in {input.raw} --out {output} 2>&1 | tee {log}
         fi
-        """
-
-# -----------------------------------------------------------------------------
-# Flatten (fragment-mode only) — replaces the QC/CNV/labels/quantify chain
-# -----------------------------------------------------------------------------
-# ``src/ingest.py`` writes per-sample snapatac2 h5ads alongside an AnnDataSet
-# shell. Downstream vanilla-anndata loads see n_vars=0 and the chain breaks.
-# This rule flattens the per-sample h5ads into one cohort-level
-# catlas_quantified.h5ad in CATLAS peak space, with marker-peak-based
-# cell type labels baked in. Fragment-mode cohorts should use this rule
-# instead of the qc → cnv → label_transfer → peak_quantify chain.
-
-rule flatten_cohort:
-    """Per-sample snapatac2 h5ads → cohort-level catlas_quantified.h5ad.
-    Fragment-mode-only replacement for qc + cnv + labels + peak_quantify."""
-    input:
-        # Depend on ingested.h5ad as a signal that per-sample files are ready.
-        ingested = PROCESSED / "{cohort}" / "ingested.h5ad",
-        catlas_bed = REF / "catlas_peaks.bed",
-        markers = "config/marker_tsses.tsv",
-    output: PROCESSED / "{cohort}" / "catlas_quantified_flat.h5ad"
-    log: DATA_ROOT / "logs" / "flatten_{cohort}.log"
-    wildcard_constraints:
-        cohort = "|".join(c for c in PHASE_A_COHORTS)
-    shell:
-        """
-        python -u src/flatten_cohort.py \
-          --per-sample-glob "{PROCESSED}/{wildcards.cohort}/*.h5ad" \
-          --cohort {wildcards.cohort} \
-          --catlas-bed {input.catlas_bed} \
-          --markers-tsv {input.markers} \
-          --out {output} 2>&1 | tee {log}
         """
 
 # -----------------------------------------------------------------------------

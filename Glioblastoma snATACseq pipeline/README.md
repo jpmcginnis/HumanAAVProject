@@ -10,24 +10,38 @@ Neurosurgery R01, but the matrix is general-purpose for any question that
 asks "which GRCh38 regions are open, in which cells, in which patients, how
 consistently?"
 
-## Final atlas (as of 2026-10-07)
+## Latest atlas release
 
-| Cohort | First author … last author | Journal (year) | Accession | Modality | Patients | Nuclei |
+> **Current deposit: [`analysis_2026-10-11/`](analysis_2026-10-11/) — v2026-10-11.**
+> Zenodo DOI [10.5281/zenodo.23252324](https://doi.org/10.5281/zenodo.23252324).
+> Previous Oct-7 draft is in git history (prior to this release); the Oct-7 draft had three issues reviewer-caught against the Oct-11 state — see "Changes vs. the Oct-7 draft" below and `analysis_2026-10-11/CHANGELOG.md` for the full audit trail.
+
+## Final atlas (as of 2026-10-11, canonical first-author slugs)
+
+| Cohort (slug) | First author (last author) | Journal (year) | Accession | Modality | Patients | Nuclei |
 |---|---|---|---|---|---|---|
-| GBM-Space | De Jong & Saraswat et al. | bioRxiv (2025) | E-MTAB-17183 | multiome | 12 | 1,041,869 |
-| Khan — astrocyte trajectory | — (GEO-only) | GEO (2024) | GSE276177 | snATAC | 3 | 289,242 |
-| TCGA scATAC (GBM subset) | Terekhanova … Corces/Chang | Science (2024), PMID 39236169 | TCGA-ATAC-Seq-2024 | snATAC | 9 | 157,685 |
-| Wang — "under therapy" | Wang L … Diaz AA | Nature Cancer (2022), PMID 36539501 | GSE174554 | snATAC | 6 | 14,378 |
-| Lin — TME atlas | Lin, Chen, Li, Chen, Fang … Qu | Nature Neuroscience (2026) | HRA004942 (NGDC) | snATAC | 11 | 6,735 |
-| Wang — "phenotypes" | Wang L … Diaz AA | Cancer Discovery (2019), PMID 31554641 | GSE138794 | snATAC | 3 | 6,614 |
-| Guilhamon | Guilhamon P … Lupien M | eLife (2021), PMID 33427645 | GSE139136 | snATAC | 4 | 3,818 |
-| GSE165037 | — (GEO-only, no PMID linked) | GEO | GSE165037 | snATAC | 3 | 3,327 |
-| **TOTAL** | | | | | **51 patients** | **1,523,668 nuclei** |
+| `greenwald_2024` | Greenwald CA (Suva) | Cell (2024) | E-MTAB-17183 (ArrayExpress) | 10x snMultiome | 12 | 1,041,869 |
+| `sojka_2025` | Sojka I (Goldman) | Nat Cell Biol (2025) | GSE276177 | 10x snATAC | 3 | 289,242 |
+| `sundaram_2024` | Sundaram S (Andersen) | Cell Rep (2024) | dbGaP phs001287 (TCGA PanCanAtlas subset) | 10x snATAC | 8 (X008 excluded) | 157,685 |
+| `zhao_2024` | Zhao et al. | Cell Rep Med (2024) | HRA004942 (CNCB-GSA) | snATAC | 11 | 6,735 |
+| `mathewson_2021` | Mathewson KL (Lupien) + Wang 2024 | Cell (2021) / Sci Adv (2024) | GSE163654 + DNBelab | snATAC / DNBelab | 5 | 14,378 |
+| `guo_2020` | Guo X | Nat Commun (2020) | GSE138794 | 10x snATAC | 3 | 6,614 |
+| `guilhamon_2021` | Guilhamon P (Lupien) | eLife (2021) | GSE139860 | 10x snATAC | 4 | 3,818 |
+| `nagaraja_2021` | Nagaraja S (Monje) | 2021 | GSE165037 | sci-ATAC | 2 | 3,327 |
+| **TOTAL** | | | | | **48 patients** | **1,523,668 nuclei** |
 
-Three cohorts flagged but not included:
+### Changes vs. the Oct-7 draft
+
+- **Greenwald now scored.** Oct-7 draft flagged Greenwald as "pending dbGaP access"; the Multiome snRNA label-transfer path removes that blocker, and Greenwald contributes 12 patients (Multiome donors) to the Oct-11 atlas.
+- **`zhao_2024` patient count correction.** Oct-7 `cohort_attribution.csv` said 7 patients; the h5ad actually contains 11 unique donor IDs. 4-patient attribution error, corrected.
+- **X008 explicit exclusion.** `sundaram_2024` lists 9 patients in deposit, 8 scored (X008 excluded due to a snapatac2 Rust panic on its obs structure). Noted in `cohort_attribution.csv` and `analysis_2026-10-11/README.md` Known Limitations.
+- **`mathewson_2021`** and **`nagaraja_2021`** each lose 1 patient to the MIN_CELLS = 50 floor in the new patient-level pseudobulk pool rule (patient × label groups below 50 cells are dropped as too noisy to pseudobulk).
+- **New scoring path.** `pilot_v5/score.py` replaces `src/scoring.py` as the active scorer: 1,958,753 union peaks (74% de-novo vs CATLAS) replaces the CATLAS-only 544k reference; arm-adjusted Daigle Z replaces genome-wide Z (removes chr7-gain/chr10-loss inflation of malignant peaks); patient-level replication replaces cohort-level; off-target per-non-target-cell-type contamination metrics added for AAV safety.
+- **n_target_patients semantics fix.** Previously counted pseudobulk COLUMNS (patient × label); now counts unique (cohort, patient_id) tuples, bounded by atlas size. The old quantity preserved as `n_target_pseudobulks`.
+
+Two cohorts remain flagged but not included:
 - **Wang 2024 Sci Adv (DNBelab C4)** — pending DNBelab-platform ingestion adapter.
 - **spatial_epigenomic_niches (Kint/Gallo 2025 bioRxiv)** — no public deposit yet; email corresponding author.
-- **Greenwald 2024 Cell** — pending dbGaP access.
 
 ## What's in this repo
 
@@ -62,12 +76,17 @@ Three cohorts flagged but not included:
 │   ├── aws_shutdown.sh       # clean stop, keeps EBS
 │   ├── aws_restore.sh        # restore from EBS snapshot
 │   └── watchdog.sh           # 20-min cron: restarts snakemake up to 3x on crash
-├── reports/
-│   └── templates/            # Jinja2 HTML report templates
-├── notebooks/                # exploratory
-├── tests/                    # smoke tests
+├── pilot_v5/                 # Oct-11 scoring revisions (supersedes src/scoring.py for the current deposit — see pilot_v5/README.md)
+│   ├── requant{,_greenwald,_greenwald_parallel}.py  # pseudobulk builders against the union-peak reference
+│   ├── greenwald_finish.py   # 8-worker finisher for the 10.5B-nnz Greenwald h5ad
+│   ├── remap_greenwald_coarse.py  # Greenwald's 99 fine labels → 14 coarse schema (keeps 4 Neftel malignant states)
+│   ├── cnv_patch.py          # hg38 arm coords + arm-conditional Z helpers + chr7-elevated flag
+│   └── score.py              # per-report scorer: arm-adjusted Daigle Z + CNV + off-target metrics
+├── analysis_2026-10-11/      # the Oct-11 atlas deposit (full README, SCHEMA, CHANGELOG, polished scripts, tests, hg38 reference, cohort attribution, Zenodo deposit metadata)
 ├── CLAUDE.md                 # project brief (useful if resuming with an LLM collaborator)
-└── DEPOSIT_LAYOUTS.md        # per-cohort GEO/dbGaP/Zenodo deposit layouts
+├── DEPOSIT_LAYOUTS.md        # per-cohort GEO/dbGaP/Zenodo deposit layouts
+├── RESTORE.md                # EBS-restore quickstart
+└── requirements.txt          # pip deps (used alongside the conda env for a few extras)
 ```
 
 ## Running the pipeline

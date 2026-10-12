@@ -1,115 +1,45 @@
 #!/usr/bin/env bash
-# Restore the GBM Enhancer Atlas EC2 environment from an EBS snapshot.
+# Restore a prior pipeline run from an EBS snapshot and resume where we left off.
 #
 # Usage:
-#   ./infra/aws_restore.sh <snapshot-id> [--instance-type r6i.4xlarge] [--region us-east-1]
+#     ./infra/aws_restore.sh snap-01234abcd
+#     ./infra/aws_restore.sh                  # auto-pick the most recent snapshot
+#                                             # tagged project=gbm-enhancer-atlas
 #
-# What this does:
-#   1. Creates a new 500 GB gp3 volume from the snapshot in us-east-1a.
-#   2. Launches a new r6i.4xlarge Ubuntu 22.04 instance (defaults).
-#   3. Attaches the restored volume to /dev/sdf.
-#   4. SSHes in, mounts to /data, verifies the conda env + matrix artifacts.
-#   5. Prints the public IP for subsequent work.
-#
-# The snapshot was created 2026-10-07 after the first full pipeline run
-# finished (1.52M cells, 51 patients, 8 cohorts, matrix v2 complete).
-# Keeping the snapshot costs ~$20/month for 500GB; restoring takes ~15 min.
+# The snapshot becomes a new volume (same AZ as the EC2), attached to the
+# instance at /dev/sdf. aws_spinup.sh is then invoked with EBS_VOLUME_ID set.
+# Takes ~2-5 minutes end-to-end (snapshot → volume creation is immediate; the
+# volume is usable while blocks lazy-load in the background).
 
 set -euo pipefail
 
-SNAPSHOT_ID="${1:-}"
-INSTANCE_TYPE="${2:-r6i.4xlarge}"
-REGION="${3:-us-east-1}"
-AZ="${REGION}a"
-AMI_ID="${AMI_ID:-ami-0c7217cdde317cfec}"  # Ubuntu 22.04 LTS us-east-1
-KEY_NAME="${KEY_NAME:-bioinfo-key}"
-SEC_GROUP="${SEC_GROUP:-sg-0ab95934ea158c30a}"
+INSTANCE_ID="i-000dddf603f4bde12"
+REGION="us-east-1"
+AZ="us-east-1a"
+PROJECT_TAG="gbm-enhancer-atlas"
 
-if [ -z "$SNAPSHOT_ID" ]; then
-    echo "Usage: $0 <snapshot-id> [instance-type] [region]"
-    echo ""
-    echo "Known snapshot(s):"
-    aws ec2 describe-snapshots --owner-ids self --region "$REGION" \
-        --filters "Name=tag:Project,Values=GBMEnhancerAtlas" \
-        --query 'Snapshots[].[SnapshotId,StartTime,VolumeSize,State,Description]' \
-        --output table
-    exit 2
+step() { printf "\n[%s] >>> %s\n" "$(date +%H:%M:%S)" "$1"; }
+
+SNAP="${1:-}"
+if [[ -z "$SNAP" ]]; then
+    step "No snapshot id passed; picking most recent snapshot tagged project=$PROJECT_TAG"
+    SNAP=$(aws ec2 describe-snapshots --region "$REGION" --owner-ids self \
+        --filters "Name=tag:project,Values=$PROJECT_TAG" \
+        --query 'reverse(sort_by(Snapshots,&StartTime))[0].SnapshotId' --output text)
+    if [[ "$SNAP" == "None" || -z "$SNAP" ]]; then
+        echo "    No snapshot found. Run infra/aws_spinup.sh for a fresh volume instead."
+        exit 1
+    fi
+    echo "    using $SNAP"
 fi
 
-echo "=== Restoring from $SNAPSHOT_ID in $AZ ($INSTANCE_TYPE) ==="
-
-# 1. Create volume from snapshot
-echo "Creating 500 GB gp3 volume from snapshot..."
-VOL_ID=$(aws ec2 create-volume \
-    --region "$REGION" \
-    --availability-zone "$AZ" \
-    --snapshot-id "$SNAPSHOT_ID" \
-    --volume-type gp3 \
-    --size 500 \
-    --tag-specifications 'ResourceType=volume,Tags=[{Key=Project,Value=GBMEnhancerAtlas},{Key=Source,Value=restored-snapshot}]' \
+step "Creating volume from snapshot $SNAP in $AZ"
+VOL=$(aws ec2 create-volume --region "$REGION" --availability-zone "$AZ" \
+    --snapshot-id "$SNAP" --volume-type gp3 \
+    --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=atacseq-data},{Key=project,Value=$PROJECT_TAG},{Key=restored_from,Value=$SNAP}]" \
     --query 'VolumeId' --output text)
-echo "  volume: $VOL_ID"
+echo "    new volume: $VOL"
+aws ec2 wait volume-available --volume-ids "$VOL" --region "$REGION"
 
-# Wait for availability
-echo "  waiting for volume to become available..."
-aws ec2 wait volume-available --region "$REGION" --volume-ids "$VOL_ID"
-
-# 2. Launch new instance
-echo "Launching new $INSTANCE_TYPE instance..."
-INSTANCE_ID=$(aws ec2 run-instances \
-    --region "$REGION" \
-    --image-id "$AMI_ID" \
-    --instance-type "$INSTANCE_TYPE" \
-    --key-name "$KEY_NAME" \
-    --security-group-ids "$SEC_GROUP" \
-    --placement "AvailabilityZone=$AZ" \
-    --tag-specifications 'ResourceType=instance,Tags=[{Key=Project,Value=GBMEnhancerAtlas},{Key=Source,Value=restored-snapshot}]' \
-    --query 'Instances[0].InstanceId' --output text)
-echo "  instance: $INSTANCE_ID"
-
-echo "  waiting for instance to be running..."
-aws ec2 wait instance-running --region "$REGION" --instance-ids "$INSTANCE_ID"
-
-# 3. Attach volume
-echo "Attaching $VOL_ID to $INSTANCE_ID as /dev/sdf..."
-aws ec2 attach-volume --region "$REGION" --volume-id "$VOL_ID" \
-    --instance-id "$INSTANCE_ID" --device /dev/sdf > /dev/null
-
-echo "  waiting for attach..."
-aws ec2 wait volume-in-use --region "$REGION" --volume-ids "$VOL_ID"
-
-# 4. SSH + mount + verify
-PUBLIC_IP=$(aws ec2 describe-instances --region "$REGION" \
-    --instance-ids "$INSTANCE_ID" \
-    --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-echo "  public IP: $PUBLIC_IP"
-
-echo ""
-echo "Waiting 60s for SSH to come up..."
-sleep 60
-
-echo "Mounting /data and verifying..."
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-    -i ~/atacseq_project/bioinfo-key.pem "ubuntu@$PUBLIC_IP" bash <<'REMOTE'
-sudo mkdir -p /data
-# nvme1n1 is the typical name for a secondary EBS volume on nitro instances
-if lsblk | grep -q nvme1n1; then
-    sudo mount /dev/nvme1n1 /data
-else
-    sudo mount /dev/xvdf /data
-fi
-df -h /data
-echo "--- conda env ---"
-ls /data/miniconda3/envs/atacseq/bin/python 2>&1 | head
-echo "--- matrix artifacts ---"
-ls -lh /data/projects/atacseq/claude/gbm-enhancer-atlas/matrix/ 2>&1 | head
-REMOTE
-
-echo ""
-echo "=== DONE ==="
-echo "Instance:  $INSTANCE_ID  (public IP $PUBLIC_IP)"
-echo "Volume:    $VOL_ID"
-echo "SSH:       ssh -i ~/atacseq_project/bioinfo-key.pem ubuntu@$PUBLIC_IP"
-echo ""
-echo "To stop (preserve EBS):     aws ec2 stop-instances --instance-ids $INSTANCE_ID"
-echo "To terminate (delete all):  aws ec2 terminate-instances --instance-ids $INSTANCE_ID"
+step "Resuming EC2 with EBS_VOLUME_ID=$VOL"
+EBS_VOLUME_ID="$VOL" bash "$(dirname "$0")/aws_spinup.sh"

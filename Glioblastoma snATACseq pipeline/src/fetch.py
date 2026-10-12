@@ -152,20 +152,14 @@ def fetch_guilhamon(out: Path) -> None:
     log(f"Guilhamon → {out}  ({len(frags)} fragments, {len(matrices)} matrix files)")
 
 
-def fetch_tcga_scatac(out: Path) -> None:
-    """TCGA scATAC GBM subset — Terekhanova et al. 2024 Science (PMID 39236169).
+def fetch_sundaram_gbm(out: Path) -> None:
+    """Sundaram et al. 2024 Science pan-cancer scATAC-seq (GDC-hosted).
 
-    Pulls the single open-access pan-cancer fragment tar.gz from the GDC
-    publication endpoint, which is where the processed per-sample fragments
-    for the TCGA scATAC collection are distributed. Extracts only the GBM
-    subset (scATAC_GBMx_* fragments.tsv.gz + .tbi), leaving other cancer
-    types on disk but outside the per-cohort workflow dir.
+    Pulls the single open-access pan-cancer fragment tar.gz. Extracts only
+    the GBM subset (scATAC_GBMx_* fragments.tsv.gz + .tbi index files),
+    leaving the other cancer types on disk but outside the per-cohort
+    workflow dir.
 
-    5 of 9 GBMx samples are directly in the open-access tar; the other 4
-    require dbGaP phs000178 controlled access for the raw BAMs.
-
-    Previously named ``fetch_sundaram_gbm`` — the "Sundaram" release IS this
-    TCGA scATAC data, so the fetch is renamed to reflect the true source.
     All GBM samples are primary IDH-WT per the paper's inclusion criteria.
     """
     out.mkdir(parents=True, exist_ok=True)
@@ -278,10 +272,22 @@ def fetch_raviram(out: Path) -> None:
     log(f"GSE165037 → {out}  ({len(rds_files)} .rds files; downstream needs R extraction)")
 
 
-# (fetch_tcga_scatac defined above; the former S3-arrow-sync fallback was
-# removed — the Terekhanova 2024 processed fragments are on the GDC endpoint
-# used by that handler, and we do not depend on the S3 ArchR .arrow mirror
-# any more.)
+def fetch_tcga_scatac(out: Path) -> None:
+    """TCGA pan-cancer scATAC (Terekhanova 2024). Processed objects on S3."""
+    out.mkdir(parents=True, exist_ok=True)
+    log("TCGA scATAC — syncing processed objects from S3 archive")
+    s3_src = "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/tcga_scatac/"
+    log(f"  aws s3 sync {s3_src} {out}")
+    subprocess.run(["aws", "s3", "sync", s3_src, str(out)], check=True)
+
+    # Expect either an integrated.h5ad or per-patient ArchR arrow dir
+    integrated = out / "integrated.h5ad"
+    arrows = sorted(out.rglob("*.arrow"))
+    require(integrated.exists() or len(arrows) > 0,
+            "Neither integrated.h5ad nor .arrow files found in TCGA S3 sync — "
+            "re-upload or restore from backup")
+    log(f"TCGA → {out}  (integrated.h5ad={'yes' if integrated.exists() else 'no'}, "
+        f".arrow files={len(arrows)})")
 
 
 def fetch_mathewson_lupien(out: Path) -> None:

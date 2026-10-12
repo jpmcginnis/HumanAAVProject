@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this atlas, please cite it as below."
+title: "A harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq, 48 patients, 8 cohorts, 1.52M nuclei)"
+version: "1.0.0"
+date-released: "2026-10-11"
+doi: "10.5281/zenodo.23252324"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23252324"
+    description: "Zenodo deposit of the atlas data artifacts (peak reference, pseudobulk matrix, per-report scores, polished reports)."
+abstract: >-
+  Harmonized snATAC-seq / snMultiome atlas across 8 published GBM cohorts
+  (48 patients with ≥50 cells per label group, 1.52M nuclei, 1,958,753 union
+  peaks, 74% de-novo vs CATLAS), scored per cell type with patient-level
+  replication, cohort batch sanity, per-non-target-cell-type contamination for
+  AAV safety, and arm-adjusted Daigle Z for CNV correction. Deliverables include
+  top-100 polished per-report CSVs, a sortable combined HTML, and 16 per-report
+  parquet score tables.
+authors:
+  - family-names: "McGinnis"
+    given-names: "JP"
+    affiliation: "Department of Neurosurgery, Baylor College of Medicine"
+    email: "jpmcginnis1@gmail.com"
+license: "CC-BY-4.0"
+repository-code: "https://github.com/jpmcginnis/HumanAAVProject"
+keywords:
+  - "glioblastoma"
+  - "GBM"
+  - "snATAC-seq"
+  - "snMultiome"
+  - "enhancer"
+  - "AAV"
+  - "gene therapy"
+  - "cell-type-specific regulation"
+  - "cross-cohort replication"
+  - "Daigle score"
+  - "Allen Armamentarium"
+  - "GRCh38"

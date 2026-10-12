@@ -61,31 +61,43 @@ cohorts:
       - "RL3 multi-region case previously attributed here does NOT exist in GSE165037. Dropped from config. If multi-region GBM snATAC is wanted, needs a separate accession search."
 
   tcga_scatac:
-    status: in_pipeline
+    status: in_pipeline_UNVERIFIED
     priority: existing
-    citation: "Terekhanova/Corces/Chang 2024 Science (PMID 39236169) 'Epigenetic regulation during cancer transitions across 11 tumour types'"
+    citation: "Terekhanova/Corces/Chang 2024 Science (PMID 39236169)"
     accession: TCGA-ATAC-Seq-2024
     url: "https://gdc.cancer.gov/about-data/publications/TCGA-ATAC-Seq-2024"
     platform: 10x_scATAC
     # Lin 2026 Nat Neurosci (Data Availability, ref 37) cites 9 GBM scATAC-seq samples
-    # from this deposit; 5 of 9 are directly extractable from the GDC open-access
-    # pan-cancer fragments tar, 4 require dbGaP phs000178 for the raw BAMs.
-    n_patients: 9
-    n_patients_open_access: 5
-    n_patients_dbgap_controlled: 4
-    n_cells: 157685  # from this pipeline's 9-sample ingest, Oct 2026
+    # from this deposit. Our prior memory said 6. The 9 is from a newer paper that
+    # inspected the deposit; use that as the upper bound until we read the h5ad.
+    n_patients: "6-9"
+    n_patients_verified_source: "Lin 2026 Nat Neurosci Data Availability (ref 37) cites 9; our 2026-04-23 memory said 6"
+    n_cells: 22004
     disease: GBM_IDHwt
     tissue_type: primary_tumor_tissue
-    access: mostly_open  # 5/9 open on GDC endpoint, 4/9 behind dbGaP phs000178
-    fetch_source: "GDC publication endpoint — fetch.fetch_tcga_scatac pulls full_cancer_scatacseq.tar.gz and extracts the GBMx subset"
-    ingest_mode: fragment  # per-sample fragments.tsv.gz → snapatac2 → flatten_cohort.py
+    access: open  # processed data open; raw FASTQs are dbGaP controlled (phs000178)
+    s3_path: "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/tcga_scatac/"
+    s3_expected_integrated_h5ad: "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/tcga_scatac/integrated.h5ad"
+    unverified: |
+      JP flagged 2026-10-04: cannot verify from here whether integrated.h5ad
+      actually exists in the S3 path until the EC2 is up. Prior memory
+      (verified 2026-04-23) says "6 IDHwt samples, 22,004 cells" are present
+      in the folder, but did not confirm an integrated AnnData object exists.
+    fallback_if_h5ad_missing: |
+      If integrated.h5ad is NOT present, the deposit is raw per-sample ArchR
+      Arrow files. Pipeline must then run an ArchR → AnnData conversion
+      step (not currently in src/ingest.py). The Terekhanova 2024 paper
+      publishes ArchR projects on the GDC publication page; the per-sample
+      Arrow files + the GBM metadata table (IDH status, sample IDs) would
+      need to be downloaded and converted.
+    first_run_action: |
+      In ingest_tcga_scatac(), after `aws s3 sync` completes, check whether
+      integrated.h5ad exists. If yes, use the current path. If no, FAIL FAST
+      with a clear message and prompt the user to supply the ArchR conversion
+      step before continuing.
     notes: |
-      Cohort was previously slugged ``sundaram_gbm`` in this pipeline because the
-      5-sample open-access release is sometimes attributed to a "Sundaram et al."
-      distribution. Lin 2026 Nat Neurosci (Data Availability, ref 37) confirms
-      the X003-X011 samples ARE the TCGA scATAC collection — same raw data,
-      different distribution name. Renamed to ``tcga_scatac`` 2026-10-07 to
-      reflect the primary source.
+      Three additional patients remain behind dbGaP phs000178 — JP has an
+      application pending. If approved, bumps cohort from 6 → 9.
 
   mathewson_lupien:
     status: partially_in_pipeline
