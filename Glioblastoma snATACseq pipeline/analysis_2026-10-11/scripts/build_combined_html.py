@@ -393,7 +393,7 @@ tr:hover {{ background: #f1f3f5; }}
 
 <div class="topbar" id="topbar">
 <header>
-  <h1>GBM Enhancer Atlas v1.0.0 — Combined Top-100 Distal</h1>
+  <h1>GBM Enhancer Atlas v2026-10-11 — Combined Top-100 Distal</h1>
   <div class="sub">1,958,753 union peaks across 8 cohorts · 12 reports · filtered to distance_category ≠ promoter, target_mean_cpm ≥ 1.0, n_target_patients ≥ 2 · ranked by Daigle Z</div>
 </header>
 

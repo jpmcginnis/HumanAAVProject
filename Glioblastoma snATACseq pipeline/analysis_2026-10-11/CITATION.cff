@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this atlas, please cite it as below."
 title: "A harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq, 48 patients, 8 cohorts, 1.52M nuclei)"
-version: "1.0.0"
+version: "2026-10-11"
 date-released: "2026-10-11"
 doi: "10.5281/zenodo.23252324"
 identifiers:

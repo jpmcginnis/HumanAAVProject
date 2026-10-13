@@ -1,4 +1,4 @@
-# Frozen schema — Harmonized human glioblastoma chromatin accessibility atlas v1.0.0 (2026-10-11)
+# Frozen schema — Harmonized human glioblastoma chromatin accessibility atlas v2026-10-11 (2026-10-11)
 
 **This schema is frozen for deposit.** Zenodo deposits are versioned but not editable,
 so column names and types below are the contract. Any future renames or additions
@@ -67,7 +67,7 @@ Preserved fine-grained Greenwald pseudobulk (99 labels × 12 patients) using the
 
 ## `data/matrix/slug_canonical.tsv`
 
-Two-column TSV mapping legacy cohort slugs → canonical first-author_year slugs. Notably: `gse276177_khan_astro` → `sojka_2025` (misattribution corrected in v1.0.0; the Sojka et al. 2025 Nat Cell Biol paper is the correct authorship).
+Two-column TSV mapping legacy cohort slugs → canonical first-author_year slugs. Notably: `gse276177_khan_astro` → `sojka_2025` (misattribution corrected in v2026-10-11; the Sojka et al. 2025 Nat Cell Biol paper is the correct authorship).
 
 ---
 

@@ -1,4 +1,4 @@
-# Regeneration log — v1.0.0 (built 2026-10-11, rc2 revision)
+# Regeneration log — v2026-10-11 (built 2026-10-11, rc2 revision)
 
 This file is the receipt that the deliverables and tests in this repository
 were regenerated end-to-end before being pushed. A reviewer who clones does

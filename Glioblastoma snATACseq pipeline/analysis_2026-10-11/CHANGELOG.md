@@ -2,13 +2,13 @@
 
 Semantic versioning: major = schema change, minor = new data / new reports, patch = fixes.
 
-Everything numbered below v1.0.0 was a working iteration — the artifact set at the root of this folder is **v1.0.0 (current)**, with no version suffixes in filenames.
+Everything numbered below v2026-10-11 was a working iteration — the artifact set at the root of this folder is **v2026-10-11 (current)**, with no version suffixes in filenames.
 
-## v1.0.0-rc2 — 2026-10-11 (reviewer-driven pre-push revisions)
+## v2026-10-11-rc2 — 2026-10-11 (reviewer-driven pre-push revisions)
 
-Diff vs. earlier internally-circulated v1.0.0-rc1 (same date). If you were handed
-a v1.0.0 draft before this entry existed, you have rc1 and the numbers below are
-what changed. If you cloned the GitHub repo, you have rc2 (now stamped v1.0.0).
+Diff vs. earlier internally-circulated v2026-10-11-rc1 (same date). If you were handed
+a v2026-10-11 draft before this entry existed, you have rc1 and the numbers below are
+what changed. If you cloned the GitHub repo, you have rc2 (now stamped v2026-10-11).
 
 - **`n_target_patients` semantic fix.** Previously counted pseudobulk COLUMNS
   (patient × label groups) with signal, so `pan_myeloid` reported values up to
@@ -52,7 +52,7 @@ what changed. If you cloned the GitHub repo, you have rc2 (now stamped v1.0.0).
   guards the new column's `[0, 1]` bound and the known-high `pan_malignant` median.
   17/17 total passing — see `REGEN_LOG.md` at repo root.
 
-## v1.0.0 — 2026-10-11 (CURRENT, released)
+## v2026-10-11 — 2026-10-11 (CURRENT, released)
 
 **Headline:** First release of the atlas as a usable deliverable.
 **48 patients** across 8 GBM cohorts (unique `(cohort, patient_id)` pseudobulks
@@ -65,7 +65,7 @@ Daigle Z for CNV correction.
 
 Earlier working drafts of this release stated **"51 patients"** across the atlas.
 That number was wrong on multiple fronts, caught by reviewer audit against the
-pseudobulk matrix. Corrected in v1.0.0:
+pseudobulk matrix. Corrected in v2026-10-11:
 
 - **`zhao_2024` was transcribed as 7 patients in prior `cohort_attribution.csv`.**
   The h5ad actually contains **11** unique donor IDs (P62, P64, P77, P78, P79,
@@ -89,7 +89,7 @@ pseudobulk matrix. Corrected in v1.0.0:
   (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo +
   4 guilhamon + 2 nagaraja). Of these, X008 was excluded (snapatac2 panic),
   leaving **48** patients pseudobulked. This is the denominator used
-  everywhere in v1.0.0 (README, SCHEMA, zenodo.json, tooltips, tests,
+  everywhere in v2026-10-11 (README, SCHEMA, zenodo.json, tooltips, tests,
   cohort_attribution.csv `n_patients_included` column, and the HTML
   denominator-table tooltip on n_target_patients / n_target_cohorts).
 
@@ -192,4 +192,4 @@ cell types, and 4 Neftel-state detail-only reports):
 - v0.6 — pool rule fix (same peak reference, cohort-level still). Verified
   the pool rule logic but didn't ship due to pivot to patient-level.
 - v0.7 — patient-level pseudobulks, CPM floor, per-non-target-cell-type
-  contamination metrics. Became v1.0.0 after reorganization + rename.
+  contamination metrics. Became v2026-10-11 after reorganization + rename.
