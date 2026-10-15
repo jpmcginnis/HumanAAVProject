@@ -156,7 +156,7 @@ All 8 published GBM scATAC/snMultiome cohorts contribute to both the peak refere
 | `zhao_2024` | Zhao et al. 2024 Cell Rep Med | HRA004942 | snATAC | 7 | 591 |
 | `mathewson_2021` | Mathewson 2021 Cell + Wang 2024 Sci Adv | GSE163654 + DNBelab | 10x + DNBelab | 5 | 2,202 |
 | `guo_2020` | Guo et al. 2020 Nat Commun | GSE138794 | 10x snATAC | 3 | 1,817 |
-| `guilhamon_2021` | Guilhamon et al. 2021 eLife | GSE139860 | 10x snATAC | 4 | 2,332 |
+| `guilhamon_2021` | Guilhamon et al. 2021 eLife | GSE139136 | 10x snATAC | 4 | 2,332 |
 | `raviram_2023` | Raviram et al. 2023 PNAS 120:e2210991120 | GSE165037 | sci-ATAC | 2 | 2,990 |
 
 See `cohort_attribution.csv` for data-use conditions and `CHANGELOG.md` for the slug rename rationale.

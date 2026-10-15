@@ -26,8 +26,8 @@ consistently?"
 | `zhao_2024` | Zhao et al. | Cell Rep Med (2024) | HRA004942 (CNCB-GSA) | snATAC | 11 | 6,735 |
 | `mathewson_2021` | Mathewson KL (Lupien) + Wang 2024 | Cell (2021) / Sci Adv (2024) | GSE163654 + DNBelab | snATAC / DNBelab | 5 | 14,378 |
 | `guo_2020` | Guo X | Nat Commun (2020) | GSE138794 | 10x snATAC | 3 | 6,614 |
-| `guilhamon_2021` | Guilhamon P (Lupien) | eLife (2021) | GSE139860 | 10x snATAC | 4 | 3,818 |
-| `nagaraja_2021` | Nagaraja S (Monje) | 2021 | GSE165037 | sci-ATAC | 2 | 3,327 |
+| `guilhamon_2021` | Guilhamon P (Lupien) | eLife (2021) | GSE139136 | 10x snATAC | 4 | 3,818 |
+| `raviram_2023` | Raviram R (Ren) | PNAS (2023) | GSE165037 | sci-ATAC | 2 | 3,327 |
 | **TOTAL** | | | | | **48 patients** | **1,523,668 nuclei** |
 
 ### Changes vs. the Oct-7 draft
@@ -35,7 +35,7 @@ consistently?"
 - **Greenwald now scored.** Oct-7 draft flagged Greenwald as "pending dbGaP access"; the Multiome snRNA label-transfer path removes that blocker, and Greenwald contributes 12 patients (Multiome donors) to the Oct-11 atlas.
 - **`zhao_2024` patient count correction.** Oct-7 `cohort_attribution.csv` said 7 patients; the h5ad actually contains 11 unique donor IDs. 4-patient attribution error, corrected.
 - **X008 explicit exclusion.** `sundaram_2024` lists 9 patients in deposit, 8 scored (X008 excluded due to a snapatac2 Rust panic on its obs structure). Noted in `cohort_attribution.csv` and `analysis_2026-10-14/README.md` Known Limitations.
-- **`mathewson_2021`** and **`nagaraja_2021`** each lose 1 patient to the MIN_CELLS = 50 floor in the new patient-level pseudobulk pool rule (patient × label groups below 50 cells are dropped as too noisy to pseudobulk).
+- **`mathewson_2021`** and **`raviram_2023`** each lose 1 patient to the MIN_CELLS = 50 floor in the new patient-level pseudobulk pool rule (patient × label groups below 50 cells are dropped as too noisy to pseudobulk).
 - **New scoring path.** `pilot_v5/score.py` replaces `src/scoring.py` as the active scorer: 1,958,753 union peaks (74% de-novo vs CATLAS) replaces the CATLAS-only 544k reference; arm-adjusted Daigle Z replaces genome-wide Z (removes chr7-gain/chr10-loss inflation of malignant peaks); patient-level replication replaces cohort-level; off-target per-non-target-cell-type contamination metrics added for AAV safety.
 - **n_target_patients semantics fix.** Previously counted pseudobulk COLUMNS (patient × label); now counts unique (cohort, patient_id) tuples, bounded by atlas size. The old quantity preserved as `n_target_pseudobulks`.
 

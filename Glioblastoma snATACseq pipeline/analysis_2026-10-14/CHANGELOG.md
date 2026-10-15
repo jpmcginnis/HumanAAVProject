@@ -4,10 +4,11 @@ Semantic versioning: major = schema change, minor = new data / new reports, patc
 
 Everything numbered below v2026-10-14 was a working iteration — the artifact set at the root of this folder is **v2026-10-14 (current)**, with no version suffixes in filenames.
 
-## v2026-10-14 — 2026-10-14 (CURRENT, released) — Raviram-attribution patch
+## v2026-10-14 — 2026-10-14 (CURRENT, released) — Attribution patch (Raviram + Guilhamon)
 
 Non-breaking metadata correction. No change to sample set, scoring, or scoring metrics.
 
+- **GSE139860 → GSE139136 accession correction for `guilhamon_2021`.** The accession listed in v2026-10-11 (GSE139860) is actually a Yeung & Smith yeast RNA Pol III / replication-fork study at NYU (Saccharomyces cerevisiae, 33 strain samples), NOT the Guilhamon GBM scATAC-seq data. The actual Guilhamon 2021 eLife deposit is **GSE139136** — title "Single-cell ATAC-Seq of Adult GBM surgical specimens", 4 patients (GBM_4218, GBM_4250, GBM_4275, GBM_4349, matching the atlas's `guilhamon_2021` columns exactly), deposited by Marco Gallo's lab at University of Calgary (co-senior with Mathieu Lupien at Princess Margaret; PMID 33427645). The DATA in the atlas was always correct — only the accession LABEL in cohort_attribution.csv / SCHEMA.md / zenodo.json / README.md was wrong. Updated primary_pi field to reflect both Lupien and Gallo.
 - **GSE165037 attribution corrected.** The cohort previously labeled `nagaraja_2021` (and attributed to "Nagaraja et al. 2021 / Michelle Monje") is actually from the Raviram, Chen, Ren group at UCSD and published as Raviram et al. 2023 PNAS 120:e2210991120 ("Integrated analysis of single-cell chromatin state and transcriptome identified common vulnerability despite glioblastoma heterogeneity", NFIA/NFIB finding). Verified directly against the GEO series matrix: series title "Single Cell Analysis of Chromatin Accessibility Reveals Genetic and Regulatory Heterogeneity in Glioblastomas", contributors Raviram / Chen / Ren at UCSD, sci-ATAC combinatorial-indexing platform, 6 snATAC samples (3 IDH-WT GBMs: GBM4 / GBM9 / GBM12; 2 IDH-mutant astrocytomas: GBM1 / GBM11; non-tumor brain).
 - Cohort slug renamed: **`nagaraja_2021` → `raviram_2023`** throughout the deposit:
   - `cohort_attribution.csv`: full row rewritten with corrected citation, PI (Bing Ren, UCSD), and expanded notes.
