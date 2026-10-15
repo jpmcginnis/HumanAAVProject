@@ -1,4 +1,4 @@
-# Frozen schema — Harmonized human glioblastoma chromatin accessibility atlas v2026-10-11 (2026-10-11)
+# Frozen schema — Harmonized human glioblastoma chromatin accessibility atlas v2026-10-14 (2026-10-14)
 
 **This schema is frozen for deposit.** Zenodo deposits are versioned but not editable,
 so column names and types below are the contract. Any future renames or additions
@@ -55,7 +55,7 @@ Wide-form patient × cell-type pseudobulk matrix. 1 row per union peak, 337 pseu
 - `mathewson_2021`: 20 columns
 - `guo_2020`: 15 columns
 - `guilhamon_2021`: 10 columns
-- `nagaraja_2021`: 3 columns
+- `raviram_2023`: 3 columns
 
 **Pool rule.** A cell with `malignant_cnv == 1` OR `cell_type == "malignant_unresolved"` is bucketed as `malignant`, not as its gbmap cell_type. This fixes "hidden malignant" contamination of non-malignant pseudobulks seen in earlier versions.
 
@@ -157,6 +157,6 @@ All 8 published GBM scATAC/snMultiome cohorts contribute to both the peak refere
 | `mathewson_2021` | Mathewson 2021 Cell + Wang 2024 Sci Adv | GSE163654 + DNBelab | 10x + DNBelab | 5 | 2,202 |
 | `guo_2020` | Guo et al. 2020 Nat Commun | GSE138794 | 10x snATAC | 3 | 1,817 |
 | `guilhamon_2021` | Guilhamon et al. 2021 eLife | GSE139860 | 10x snATAC | 4 | 2,332 |
-| `nagaraja_2021` | Nagaraja et al. 2021 | GSE165037 | sci-ATAC | 2 | 2,990 |
+| `raviram_2023` | Raviram et al. 2023 PNAS 120:e2210991120 | GSE165037 | sci-ATAC | 2 | 2,990 |
 
 See `cohort_attribution.csv` for data-use conditions and `CHANGELOG.md` for the slug rename rationale.

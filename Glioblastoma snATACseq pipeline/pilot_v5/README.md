@@ -2,7 +2,7 @@
 
 Scripts that superseded parts of `src/` for the atlas release deposited on
 2026-10-11. These are the files that actually generated the per-report
-parquets in `analysis_2026-10-11/`. The original `src/` pipeline modules
+parquets in `analysis_2026-10-14/`. The original `src/` pipeline modules
 describe the architecture; these files are the current implementation of
 the scoring step.
 

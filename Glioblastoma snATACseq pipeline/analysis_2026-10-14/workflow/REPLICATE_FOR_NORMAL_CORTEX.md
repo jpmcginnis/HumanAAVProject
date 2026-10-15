@@ -75,7 +75,7 @@ Shipped at <https://github.com/jpmcginnis/HumanAAVProject> → `Glioblastoma snA
 ### Watch out for
 
 - **Platform / batch effects** still a concern: sci-ATAC vs 10x cohorts need
-  separate QC (we saw this in GBM Nagaraja 2021). Replication filter protects
+  separate QC (we saw this in GBM Raviram 2023). Replication filter protects
   against single-cohort noise, but be explicit about which cohorts contribute
   per cell type in your methods.
 - **Fresh vs postmortem** is a bigger issue in normal cortex than in GBM

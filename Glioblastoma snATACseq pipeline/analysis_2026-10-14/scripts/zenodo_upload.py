@@ -129,7 +129,7 @@ class _TqdmReader:
         return self.total
 
 
-def put_file(bucket_url: str, path: Path, token: str, retries: int = 3) -> dict:
+def put_file(bucket_url: str, path: Path, token: str, retries: int = 10) -> dict:
     size = path.stat().st_size
     attempt = 0
     while attempt < retries:
@@ -147,12 +147,19 @@ def put_file(bucket_url: str, path: Path, token: str, retries: int = 3) -> dict:
             if 200 <= r.status_code < 300:
                 return r.json()
             log(f"  server returned {r.status_code}: {r.text[:400]}")
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout) as e:
             reader.close()
             log(f"  network error: {e}")
         if attempt < retries:
-            backoff = 5 * (2 ** (attempt - 1))
-            log(f"  retrying in {backoff}s")
+            # Backoff tuned for the two failure modes we see:
+            #   - client-side TCP timeout / connection reset → retry FAST (30-120s)
+            #     because the stall was just a network blip, Zenodo itself is fine
+            #   - Zenodo-side 502 nginx error → retry SLOWER (90s-5min) to let their
+            #     server recover
+            # Linear-ish growth with a 5-minute ceiling. Over 10 attempts this gives
+            # a worst-case 10×5=50 min per file (vs 10×15=150 min with the old curve).
+            backoff = min(30 + 30 * attempt, 300)
+            log(f"  retrying in {backoff}s (= {backoff // 60}min {backoff % 60}s)")
             time.sleep(backoff)
     raise RuntimeError(f"failed to upload {path.name} after {retries} attempts")
 

@@ -61,7 +61,7 @@ def test_peak_provenance_sources_match_canonical_slugs(peak_provenance):
     slugs = set(peak_provenance["source"].unique())
     expected = {
         "greenwald_2024", "sojka_2025", "sundaram_2024", "zhao_2024",
-        "mathewson_2021", "guo_2020", "guilhamon_2021", "nagaraja_2021",
+        "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023",
         "catlas",
     }
     # All source values must be in the expected set

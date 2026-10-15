@@ -1,6 +1,6 @@
 # Harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq)
 
-**v2026-10-11 — 2026-10-11**
+**v2026-10-14 — 2026-10-14**
 **Scope:** 48 patients (unique (cohort, patient) pseudobulks with ≥50 cells; counted from the matrix, not the raw submission counts), 8 published GBM scATAC/snMultiome cohorts, 1.52M nuclei, 1,958,753 union peaks.
 **Deliverable focus:** AAV cell-type-targeting enhancer peak candidates with patient-level replication, cohort batch sanity, per-non-target-cell-type contamination, and arm-level CNV correction.
 **License:** CC-BY-4.0 for data (`LICENSE_DATA`), MIT for code (`LICENSE_CODE`)
@@ -30,8 +30,8 @@
 
 ```bash
 # 1. Download the Zenodo deposit; place its contents under data/matrix/ and reports/detail/
-#    (via the Zenodo web UI at https://doi.org/10.5281/zenodo.23252324,
-#     or with the `zenodo_get` CLI: `pip install zenodo_get && zenodo_get 10.5281/zenodo.23252324 -o .`)
+#    (zenodo_upload.py also pulls deposits by DOI)
+python3 scripts/zenodo_upload.py --download 10.5281/zenodo.23252324 --out .
 
 # 2. Rebuild the polished deliverables from the per-report parquets
 python3 scripts/build_reports.py          # annotated CSVs + per-report HTMLs + top30 distal BEDs
@@ -198,7 +198,7 @@ Pulls each cohort's raw fragments overlapping the region, builds per-cohort cove
 
 - **pan_malignant is Greenwald-weighted** (median `greenwald_fraction` = 0.78). Greenwald is the only cohort with Neftel-resolved malignant labels, which gives it 60 of ~88 total pan_malignant target columns. The scoring is still cross-cohort-validated (seven other cohorts contribute signal), but reviewers should treat the pan_malignant top-100 as "Greenwald-primary, cross-cohort-corroborated" rather than fully cohort-balanced. Use the `greenwald_fraction` column to filter if a strictly cross-cohort view is needed.
 - **TAM top-5 includes chrX pile-up driven by Greenwald.** Three of the top-5 TAM peaks (ZCCHC12, SASH3, ARMCX2) are on chrXq with Greenwald contributing 61–69% of signal; only 3 cohorts have myeloid-label pseudobulks on chrX. Greenwald's snMultiome gives cleaner TAM labels than other cohorts' label-transfer labels, which inflates its apparent contribution at low-coverage loci. Pattern does not reflect sex confounding; Greenwald's TAM contribution is uniform across its 12 patients.
-- **sundaram_2024 sample X008** skipped in peak-matrix build due to a known snapatac2 Rust panic on its obs structure. 8/9 sundaram samples contribute. Explicitly: of 49 patients across the 8 cohorts' deposit records (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 2 nagaraja), **48 made it into scored pseudobulks** — only X008 was excluded. See CHANGELOG §"Patient-count provenance" for the audit trail (the zhao row was transcribed as 7 patients in a prior cohort_attribution.csv — actual count from h5ad is 11, 4-patient attribution error corrected in v2026-10-11).
+- **sundaram_2024 sample X008** skipped in peak-matrix build due to a known snapatac2 Rust panic on its obs structure. 8/9 sundaram samples contribute. Explicitly: of 50 patients across the 8 cohorts' deposit records (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 3 raviram), **48 made it into scored pseudobulks** — sundaram X008 excluded (snapatac2 panic) and raviram GBM9 excluded (MIN_CELLS=50 floor). See CHANGELOG §"Patient-count provenance" for the audit trail (the zhao row was transcribed as 7 patients in a prior cohort_attribution.csv — actual count from h5ad is 11, 4-patient attribution error corrected in v2026-10-11).
 - **Arm-adjusted Z nulls are stable at small-arm sizes.** We checked whether the per-arm null estimation suffered on tiny arms (chr21p=47 peaks, chr22p=9, chrYp=34, chrYq=83, chr15p=1 in the matrix); the top-100 of each report has at most 3 peaks on chr21q and ≤2 on chr22q, with no peaks from the smaller arms, so the σ estimates are not driving ranking.
 - **Fresh-tissue vs postmortem.** Cohorts mix fresh surgical specimens with postmortem tissue; batch effects attributable to this split are not explicitly modeled. `cohort_balance` partially controls, but residual bias is possible.
 - **Replication count metric: detection, not strength.** `n_target_patients` counts patients with any nonzero signal. A peak weakly detected in 15 patients is treated the same as one strongly detected in 15. The CPM axis carries the strength component.

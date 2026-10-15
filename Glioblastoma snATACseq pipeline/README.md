@@ -12,9 +12,9 @@ consistently?"
 
 ## Latest atlas release
 
-> **Current deposit: [`analysis_2026-10-11/`](analysis_2026-10-11/) — v2026-10-11.**
+> **Current deposit: [`analysis_2026-10-14/`](analysis_2026-10-14/) — v2026-10-11.**
 > Zenodo DOI [10.5281/zenodo.23252324](https://doi.org/10.5281/zenodo.23252324).
-> Previous Oct-7 draft is in git history (prior to this release); the Oct-7 draft had three issues reviewer-caught against the Oct-11 state — see "Changes vs. the Oct-7 draft" below and `analysis_2026-10-11/CHANGELOG.md` for the full audit trail.
+> Previous Oct-7 draft is in git history (prior to this release); the Oct-7 draft had three issues reviewer-caught against the Oct-11 state — see "Changes vs. the Oct-7 draft" below and `analysis_2026-10-14/CHANGELOG.md` for the full audit trail.
 
 ## Final atlas (as of 2026-10-11, canonical first-author slugs)
 
@@ -34,7 +34,7 @@ consistently?"
 
 - **Greenwald now scored.** Oct-7 draft flagged Greenwald as "pending dbGaP access"; the Multiome snRNA label-transfer path removes that blocker, and Greenwald contributes 12 patients (Multiome donors) to the Oct-11 atlas.
 - **`zhao_2024` patient count correction.** Oct-7 `cohort_attribution.csv` said 7 patients; the h5ad actually contains 11 unique donor IDs. 4-patient attribution error, corrected.
-- **X008 explicit exclusion.** `sundaram_2024` lists 9 patients in deposit, 8 scored (X008 excluded due to a snapatac2 Rust panic on its obs structure). Noted in `cohort_attribution.csv` and `analysis_2026-10-11/README.md` Known Limitations.
+- **X008 explicit exclusion.** `sundaram_2024` lists 9 patients in deposit, 8 scored (X008 excluded due to a snapatac2 Rust panic on its obs structure). Noted in `cohort_attribution.csv` and `analysis_2026-10-14/README.md` Known Limitations.
 - **`mathewson_2021`** and **`nagaraja_2021`** each lose 1 patient to the MIN_CELLS = 50 floor in the new patient-level pseudobulk pool rule (patient × label groups below 50 cells are dropped as too noisy to pseudobulk).
 - **New scoring path.** `pilot_v5/score.py` replaces `src/scoring.py` as the active scorer: 1,958,753 union peaks (74% de-novo vs CATLAS) replaces the CATLAS-only 544k reference; arm-adjusted Daigle Z replaces genome-wide Z (removes chr7-gain/chr10-loss inflation of malignant peaks); patient-level replication replaces cohort-level; off-target per-non-target-cell-type contamination metrics added for AAV safety.
 - **n_target_patients semantics fix.** Previously counted pseudobulk COLUMNS (patient × label); now counts unique (cohort, patient_id) tuples, bounded by atlas size. The old quantity preserved as `n_target_pseudobulks`.
@@ -82,7 +82,7 @@ Two cohorts remain flagged but not included:
 │   ├── remap_greenwald_coarse.py  # Greenwald's 99 fine labels → 14 coarse schema (keeps 4 Neftel malignant states)
 │   ├── cnv_patch.py          # hg38 arm coords + arm-conditional Z helpers + chr7-elevated flag
 │   └── score.py              # per-report scorer: arm-adjusted Daigle Z + CNV + off-target metrics
-├── analysis_2026-10-11/      # the Oct-11 atlas deposit (full README, SCHEMA, CHANGELOG, polished scripts, tests, hg38 reference, cohort attribution, Zenodo deposit metadata)
+├── analysis_2026-10-14/      # the Oct-11 atlas deposit (full README, SCHEMA, CHANGELOG, polished scripts, tests, hg38 reference, cohort attribution, Zenodo deposit metadata)
 ├── CLAUDE.md                 # project brief (useful if resuming with an LLM collaborator)
 ├── DEPOSIT_LAYOUTS.md        # per-cohort GEO/dbGaP/Zenodo deposit layouts
 ├── RESTORE.md                # EBS-restore quickstart

@@ -53,7 +53,7 @@ COHORT_FRAG_ROOTS = {
     "zhao_2024":      (f"{RAW_ROOT}/gbm_tme_atlas_hra004942", "*fragments*.tsv.gz"),
     "mathewson_2021": (f"{RAW_ROOT}/mathewson_lupien",        "*fragments*.tsv.gz"),
     "guilhamon_2021": (f"{RAW_ROOT}/guilhamon",               "*fragments*.tsv.gz"),
-    "nagaraja_2021":  (f"{RAW_ROOT}/gse165037",               "*fragments*.tsv.gz"),
+    "raviram_2023":   (f"{RAW_ROOT}/gse165037",               "*fragments*.tsv.gz"),
 }
 
 
