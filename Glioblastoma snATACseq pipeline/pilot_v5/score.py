@@ -49,7 +49,7 @@ def log(m):
 
 
 COHORTS = ["greenwald_2024", "sundaram_2024", "sojka_2025", "zhao_2024",
-           "mathewson_2021", "guo_2020", "guilhamon_2021", "nagaraja_2021"]
+           "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023"]
 
 
 def parse_col(col):

@@ -55,7 +55,7 @@ COHORTS = {
                        "h5ad": str(PROCESSED / "gse138794_guo" / "catlas_quantified.h5ad")},
     "guilhamon_2021": {"type": "matrix",
                        "h5ad": str(PROCESSED / "guilhamon" / "catlas_quantified.h5ad")},
-    "nagaraja_2021":  {"type": "matrix",
+    "raviram_2023":  {"type": "matrix",
                        "h5ad": str(PROCESSED / "gse165037" / "catlas_quantified.h5ad")},
 }
 
