@@ -40,16 +40,30 @@ the config as provisional until all seven items are closed out.
 
 **Original four discrepancies:**
 
-1. **GSE165037 citation is wrong.** Was labeled "Raviram et al. 2023 PNAS" but
-   that paper is scHi-C/Paired-seq, not snATAC. The actual GSE165037 title is
-   "Single Cell Analysis of Chromatin Accessibility Reveals Genetic and
-   Regulatory Heterogeneity in Glioblastomas" — a Guilhamon-lab-adjacent
-   deposit. Cohort slug renamed from `raviram` → `gse165037`. **Dedup against
-   Guilhamon GSE139136 (4 patients) is required** — sample IDs look distinct
-   (`GBM4` vs `GBM_4349`) but computational CNV-fingerprint dedup is the only
-   way to prove non-overlap. Previous "RL3 multi-region case (4 sections)"
-   attribution was incorrect and has been removed; no such samples exist in
-   GSE165037.
+1. **GSE165037 citation — resolved in v2026-10-14 as Raviram et al. 2023 PNAS.**
+   This cohort has been mis-attributed twice. The slug was briefly `raviram`,
+   then renamed to `gse165037` based on a note that "the Raviram paper is
+   scHi-C/Paired-seq, not snATAC" — but that note confused **two different
+   Raviram papers** (Raviram et al. 2016 Genome Res is the scHi-C one;
+   Raviram et al. 2023 PNAS 120:e2210991120 is the snATAC/GBM one, and IS
+   this deposit). The slug was then changed again to `nagaraja_2021` with an
+   attribution to Michelle Monje — also wrong. Verified directly against the
+   GSE165037 GEO series matrix (2026-10-14): series title "Single Cell Analysis
+   of Chromatin Accessibility Reveals Genetic and Regulatory Heterogeneity in
+   Glioblastomas", contributors Ramya Raviram / Clark Chen / Bing Ren, lab
+   affiliation Ren lab UCSD (rraviram@ucsd.edu), platform sci-ATAC
+   combinatorial indexing (snATAC via 96-well Tn5 + 768-well PCR barcode).
+   Deposit contents: 6 snATAC samples (3 IDH-WT GBMs: GBM4, GBM9, GBM12;
+   2 IDH-mutant astrocytomas: GBM1, GBM11; non-tumor brain) + 6 matched
+   snRNA samples. Cohort slug is now **`raviram_2023`** (as of v2026-10-14).
+   The atlas correctly includes GBM4 and GBM12 (the 2 IDH-WT samples passing
+   MIN_CELLS=50); GBM9 fails that floor; IDH-mutant samples and non-tumor
+   brain are excluded by WT-GBM scope.
+   **Dedup against Guilhamon GSE139136 (4 patients) is still worth confirming**
+   — sample IDs are distinct between the two deposits by naming convention
+   (`GBM4` / `GBM12` from Raviram vs `GBM_4218` / `GBM_4250` / `GBM_4275` /
+   `GBM_4349` from Guilhamon), and computational CNV-fingerprint dedup can
+   verify non-overlap, but no overlap has been identified.
 
 2. **TCGA scATAC S3 contents unverified.** The `integrated.h5ad` at
    `s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/tcga_scatac/` is
