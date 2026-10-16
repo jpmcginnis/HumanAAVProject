@@ -5,8 +5,7 @@ IDH-wildtype glioblastoma snATAC-seq and 10x Multiome dataset into one
 re-queryable **candidate enhancer matrix** — a parquet tensor keyed on
 ``(peak_id, cell_type, cohort, patient_id, region)``.
 
-Built to drive AAV-delivered cell-type-specific enhancer selection for a BCM
-Neurosurgery R01, but the matrix is general-purpose for any question that
+Built to drive AAV-delivered cell-type-specific enhancer selection, but the matrix is general-purpose for any question that
 asks "which GRCh38 regions are open, in which cells, in which patients, how
 consistently?"
 
