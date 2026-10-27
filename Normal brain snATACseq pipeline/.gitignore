@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+.Rhistory
+.Rproj.user/
+.DS_Store
+# large data / intermediate parquets stay out of git; they live on S3 / local scratch
+*.parquet
+*.h5ad
+*.mtx
+*.rds
+*.tsv.gz
+# the tests dir can emit a small golden parquet
+!tests/golden_*.parquet
+# log files
+*.log
+nohup.out
+# backups
+*.bak
+*.bak_*

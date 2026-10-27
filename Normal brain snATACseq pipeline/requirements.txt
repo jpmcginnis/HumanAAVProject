@@ -1,0 +1,10 @@
+polars>=1.0
+pandas>=2.0
+numpy>=1.24
+scipy>=1.11
+pyranges>=0.0.129
+h5py>=3.8
+anndata>=0.10
+scanpy>=1.9
+# R-side (Takeuchi/Lattke RDS ingest):
+# R >= 4.3 with: Seurat, Signac, Matrix, data.table, GenomicRanges
