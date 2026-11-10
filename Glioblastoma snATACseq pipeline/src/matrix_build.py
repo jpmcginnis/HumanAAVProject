@@ -40,7 +40,7 @@ Query with polars or duckdb for fast slice-and-dice.
 | start            | int    | GRCh38 start |
 | end              | int    | GRCh38 end |
 | cell_type        | str    | harmonized vocabulary from config/celltypes.yaml |
-| cohort           | str    | source dataset (guilhamon, tcga_scatac, mathewson_lupien, gbm_space, ...) |
+| cohort           | str    | source dataset (guilhamon, tcga_scatac, wang_bgi, gbm_space, ...) |
 | patient_id       | str    | standardized patient id |
 | modality         | str    | "snATAC" or "multiome" |
 | region           | str    | multi-region label (gbm_space); else "unknown" |

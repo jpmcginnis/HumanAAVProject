@@ -60,8 +60,8 @@ def test_peak_provenance_columns(peak_provenance):
 def test_peak_provenance_sources_match_canonical_slugs(peak_provenance):
     slugs = set(peak_provenance["source"].unique())
     expected = {
-        "dejong_2026", "sojka_2025", "sundaram_2024", "zhao_2024",
-        "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023",
+        "dejong_2026", "sojka_2025", "sundaram_2024", "lin_2026",
+        "wang_2024", "wang_2019", "guilhamon_2021", "raviram_2023",
         "catlas",
     }
     # All source values must be in the expected set

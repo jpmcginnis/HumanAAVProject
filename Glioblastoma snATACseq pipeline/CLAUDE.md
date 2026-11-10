@@ -24,7 +24,7 @@ the config as provisional until all seven items are closed out.
 
 **Datasets added in the second-pass sweep (not yet verified end-to-end):**
 
-- **`gbm_tme_atlas_hra004942`** — Nature Neuroscience 2026 paper. 100 primary
+- **`lin_2026`** — Nature Neuroscience 2026 paper. 100 primary
   GBM patients, 121 samples across spatial + scRNA + scATAC + patch-seq. This
   is the largest primary GBM cohort found. Deposited at NGDC GSA (Chinese
   archive) under HRA004942; processed data on Zenodo. **IDH status, ATAC-sample
@@ -74,18 +74,16 @@ the config as provisional until all seven items are closed out.
    absent, it fails fast. If only `.arrow` files exist, we need an
    ArchR → AnnData conversion step (not yet implemented).
 
-3. **GSE174554 (Mathewson/Lupien) IDH-WT subset unverified.** The deposit
+3. **CNP0003766 (Wang/BGI) IDH-WT subset unverified.** The deposit
    has 113 samples total, 10 of which are snATAC, but IDH status and
-   primary-vs-recurrent are not in sample titles. Table S1 of Mathewson 2022
-   Nature Cancer must be downloaded and parsed to filter the 10 snATAC
-   samples. The claim that "4 primary IDH-WT from Mathewson 2021 Nature are
-   included as reanalysis" is also unverified — those 4 may live under a
-   separate GEO accession. Ingest handler reads
-   `mathewson_tableS1_IDH_status.tsv` from the raw directory; if absent,
+   primary-vs-recurrent are not in sample titles. Table S1 of Wang X et al.
+   2024 Sci Adv must be downloaded and parsed to filter the 10 snATAC
+   samples. Ingest handler reads
+   `wang_sciadv_tableS1_IDH_status.tsv` from the raw directory; if absent,
    `idh_status='unknown'` propagates and matrix_build will exclude them.
 
 4. **Expected cohort counts are soft.** Prior claim of ~23 IDH-WT primary
-   snATAC samples across 4 existing cohorts assumed Mathewson 2022 contributed
+   snATAC samples across 4 existing cohorts assumed Wang X 2024 contributed
    all 10 scATAC samples as IDH-WT primary. If Table S1 shows fewer qualifying
    samples, this number drops and the "do we need our own data?" verdict in
    `src/dataset_issues.py` becomes more likely to recommend prospective

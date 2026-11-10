@@ -50,10 +50,10 @@ Wide-form patient × cell-type pseudobulk matrix. 1 row per union peak, 337 pseu
 **Cohort coverage** (337 total pseudobulk columns):
 - `dejong_2026`: 144 columns (12 patients × up to 14 coarse labels, incl. 4 Neftel states + `malignant`)
 - `sundaram_2024`: 62 columns
-- `zhao_2024`: 50 columns
+- `lin_2026`: 50 columns
 - `sojka_2025`: 33 columns
-- `mathewson_2021`: 20 columns
-- `guo_2020`: 15 columns
+- `wang_2024`: 20 columns
+- `wang_2019`: 15 columns
 - `guilhamon_2021`: 10 columns
 - `raviram_2023`: 3 columns
 
@@ -153,9 +153,9 @@ All 8 published GBM scATAC/snMultiome cohorts contribute to both the peak refere
 | `dejong_2026` | de Jong et al. 2026 Nature | E-MTAB-17183 | 10x snATAC + snMultiome | 12 | 438,994 |
 | `sojka_2025` | Sojka et al. 2025 Nat Cell Biol | GSE276177 | 10x snATAC | 3 | 73,413 |
 | `sundaram_2024` | Sundaram et al. 2024 Cell Rep | GDC/dbGaP phs001287 | 10x snATAC | 9 | 53,632 |
-| `zhao_2024` | Zhao et al. 2024 Cell Rep Med | HRA004942 | snATAC | 7 | 591 |
-| `mathewson_2021` | Mathewson 2021 Cell + Wang 2024 Sci Adv | GSE163654 + DNBelab | 10x + DNBelab | 5 | 2,202 |
-| `guo_2020` | Guo et al. 2020 Nat Commun | GSE138794 | 10x snATAC | 3 | 1,817 |
+| `lin_2026` | Lin et al. 2026 Nat Neurosci | HRA004942 | snATAC | 7 | 591 |
+| `wang_2024` | Wang 2024 Cell + Wang 2024 Sci Adv | CNP0003766 + DNBelab | 10x + DNBelab | 5 | 2,202 |
+| `wang_2019` | Wang et al. 2019 Cancer Discov | GSE138794 | 10x snATAC | 3 | 1,817 |
 | `guilhamon_2021` | Guilhamon et al. 2021 eLife | GSE139136 | 10x snATAC | 4 | 2,332 |
 | `raviram_2023` | Raviram et al. 2023 PNAS 120:e2210991120 | GSE165037 | sci-ATAC | 2 | 2,990 |
 

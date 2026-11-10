@@ -48,8 +48,8 @@ def log(m):
         f.write(s + "\n")
 
 
-COHORTS = ["dejong_2026", "sundaram_2024", "sojka_2025", "zhao_2024",
-           "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023"]
+COHORTS = ["dejong_2026", "sundaram_2024", "sojka_2025", "lin_2026",
+           "wang_2024", "wang_2019", "guilhamon_2021", "raviram_2023"]
 
 
 def parse_col(col):

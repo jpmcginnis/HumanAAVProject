@@ -35,7 +35,7 @@ what changed. If you cloned the GitHub repo, you have rc2 (now stamped v2026-10-
   reports; equal for single-label reports). Patch applied to all 16 report
   parquets with a vectorized full-matrix recomputation.
 - **Patient-count correction.** Headline "51 patients" was wrong across README,
-  CHANGELOG header, and zenodo.json; cohort_attribution.csv had `zhao_2024`
+  CHANGELOG header, and zenodo.json; cohort_attribution.csv had `lin_2026`
   transcribed as 7 patients when the h5ad holds 11 unique donor IDs — a
   4-patient attribution error. Corrected everywhere; `n_patients_included`
   per cohort now ties out to 48 (= 49 deposit records − 1 for X008 exclusion).
@@ -84,7 +84,7 @@ Earlier working drafts of this release stated **"51 patients"** across the atlas
 That number was wrong on multiple fronts, caught by reviewer audit against the
 pseudobulk matrix. Corrected in v2026-10-11:
 
-- **`zhao_2024` was transcribed as 7 patients in prior `cohort_attribution.csv`.**
+- **`lin_2026` was transcribed as 7 patients in prior `cohort_attribution.csv`.**
   The h5ad actually contains **11** unique donor IDs (P62, P64, P77, P78, P79,
   P80, P83, P84, P92, P98, P101). This is a data-provenance error, not a
   copyedit — the attribution file was wrong by 4 patients in one row. Corrected
@@ -136,7 +136,7 @@ pseudobulk matrix. Corrected in v2026-10-11:
   earlier versions.
 - MIN_CELLS = 50 per (patient × label) group — tiny groups skipped as noisy.
 - **Scored cohorts (8, all GBM snATAC/snMultiome sources):** sundaram_2024,
-  sojka_2025, zhao_2024, mathewson_2021, guo_2020, guilhamon_2021, raviram_2023,
+  sojka_2025, lin_2026, wang_2024, wang_2019, guilhamon_2021, raviram_2023,
   and **dejong_2026** (10.5B-nnz CSR scored via an 8-worker parallel chunked
   decompress across the ATAC h5ad; labels transferred from the shared-barcode
   Multiome snRNA and remapped to the coarse schema, with 4 Neftel states
@@ -154,9 +154,9 @@ Legacy slugs replaced site-wide:
 | gbm_space | dejong_2026 | de Jong et al. Cell |
 | gse276177_khan_astro | **sojka_2025** | Sojka et al. Nat Cell Biol (fixed misattribution: NOT Khan) |
 | tcga_scatac | sundaram_2024 | Sundaram et al. Cell Rep |
-| gbm_tme_atlas_hra004942 | zhao_2024 | Zhao et al. Cell Rep Med |
-| mathewson_lupien | mathewson_2021 | Mathewson Cell + Wang 2024 Sci Adv |
-| gse138794_guo | guo_2020 | Guo et al. Nat Comm |
+| lin_2026 | lin_2026 | Lin et al. Cell Rep Med |
+| wang_bgi | wang_2024 | Wang Sci Adv + Wang 2024 Sci Adv |
+| gse138794_guo / guo_2020 | wang_2019 | Wang L et al. Cancer Discov (attribution corrected from Guo et al. Nat Comm) |
 | guilhamon | guilhamon_2021 | Guilhamon et al. eLife |
 | gse165037 | raviram_2023 | Raviram et al. 2023 PNAS 120:e2210991120 (Ren lab, UCSD — attribution corrected from Nagaraja/Monje) |
 

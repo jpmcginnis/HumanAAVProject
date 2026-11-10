@@ -453,7 +453,7 @@ WANG_ATAC_SAMPLES = {
 }
 
 
-def ingest_matrix_mathewson_lupien(src: Path, catlas_bed: Path, out: Path) -> None:
+def ingest_matrix_wang_bgi(src: Path, catlas_bed: Path, out: Path) -> None:
     """Wang/Mathewson 2022 Nat Cancer (GSE174554) — 9 IDH-WT scATAC samples
     from GEO's RAW tar. Format matches Guilhamon (per-sample mtx+barcodes+peaks)."""
     import anndata as ad
@@ -508,7 +508,7 @@ def ingest_matrix_mathewson_lupien(src: Path, catlas_bed: Path, out: Path) -> No
 
         barcodes_df = _load_tsv_gz(barcodes, cols=["barcode"])
         obs = pd.DataFrame({
-            "cohort": "mathewson_lupien",
+            "cohort": "wang_bgi",
             "sample_id": sf,
             "patient_id": patient,
             "region": "unknown",
@@ -724,7 +724,7 @@ HANDLERS = {
     "gse138794_guo": ingest_matrix_gse138794_guo,
     "gse276177_khan_astro": ingest_matrix_gse276177_khan_astro,
     "gbm_tme_atlas_hra004942": ingest_matrix_hra004942,
-    "mathewson_lupien": ingest_matrix_mathewson_lupien,
+    "wang_bgi": ingest_matrix_wang_bgi,
 }
 
 

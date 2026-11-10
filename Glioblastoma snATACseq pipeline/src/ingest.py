@@ -298,7 +298,7 @@ def _wang_sample_from_name(fname: str) -> str | None:
     return m.group(1) if m else None
 
 
-def ingest_mathewson_lupien(src: Path, out: Path) -> None:
+def ingest_wang_bgi(src: Path, out: Path) -> None:
     """GSE174554 (Wang, Jung, Babikir 2022 Nat Cancer) — 10 deposited scATAC samples.
     IDH + stage come from the paper's Supplementary Table 1 (baked in above).
     Drops SF4297 (IDH-mutant)."""
@@ -340,7 +340,7 @@ def ingest_mathewson_lupien(src: Path, out: Path) -> None:
     frag_paths = [f for f, _, _ in kept]
     name_to_sid = {f.name.replace(".fragments.tsv.gz", ""): sid for f, sid, _ in kept}
     _import_fragments_set(
-        frag_paths, cohort="mathewson_lupien", out=out,
+        frag_paths, cohort="wang_bgi", out=out,
         obs_setters={
             "patient_id": lambda s: patient_for(name_to_sid.get(s, "")),
             "region":     lambda s: "unknown",
@@ -523,7 +523,7 @@ HANDLERS = {
     "raviram": ingest_raviram,
     "gse165037": ingest_rds_cohort_stub,          # R SnapATAC .rds.gz
     "tcga_scatac": ingest_tcga_scatac,
-    "mathewson_lupien": ingest_mathewson_lupien,
+    "wang_bgi": ingest_wang_bgi,
     "gbm_space": ingest_gbm_space,
     "gbm_tme_atlas_hra004942": ingest_rds_cohort_stub,   # Signac/ArchR .rds
     "sundaram_gbm": ingest_sundaram_gbm,          # fragment-mode from pan-cancer tar

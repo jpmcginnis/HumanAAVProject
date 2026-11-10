@@ -216,7 +216,7 @@ def fetch_gse276177_khan_astro(out: Path) -> None:
     log(f"GSE276177 → {out}  ({len(found_wanted)}/5 IDH-WT snATAC GSMs present)")
 
 
-def fetch_gse138794_guo(out: Path) -> None:
+def fetch_wang_2019(out: Path) -> None:
     """GSE138794 — Guo/Diaz 2020 'A single cell atlas of human glioma'.
 
     28 total samples (8 snATAC + 20 snRNA). We keep only the 4 IDH-WT primary
@@ -240,7 +240,7 @@ def fetch_gse138794_guo(out: Path) -> None:
     matrices = sorted(out.rglob("*matrix.mtx.gz"))
     log(f"  Found {len(matrices)} matrix.mtx.gz files")
     # Only need our 4 IDH-WT primary GBM GSMs; the rest are present but
-    # ingest_matrix_gse138794_guo filters them.
+    # ingest_matrix_wang_2019 filters them.
     wanted = {"GSM4119517", "GSM4119518", "GSM4119519", "GSM4119520"}
     found_wanted = [m for m in matrices if m.name.split("_")[0] in wanted]
     require(len(found_wanted) >= 2,
@@ -290,16 +290,16 @@ def fetch_tcga_scatac(out: Path) -> None:
         f".arrow files={len(arrows)})")
 
 
-def fetch_mathewson_lupien(out: Path) -> None:
-    """GSE174554 — Mathewson/Lupien, IDH-WT scATAC primary + recurrent.
+def fetch_wang_bgi(out: Path) -> None:
+    """CNP0003766 — Wang/BGI, IDH-WT scATAC primary + recurrent.
 
-    Expect ~10 total scATAC samples per the Mathewson 2022 Nature Cancer paper.
+    Expect ~10 total scATAC samples per the Wang 2022 Nature Cancer paper.
     Flag loudly if ingest finds fewer — may indicate the series only hosts the
-    Wang-2022 subset and the Mathewson-2021 reanalysis fragments live elsewhere.
+    Wang-2022 subset and the Wang-2021 reanalysis fragments live elsewhere.
     """
     out.mkdir(parents=True, exist_ok=True)
-    log("Mathewson/Lupien GSE174554 — enumerating GSMs")
-    gsms = enumerate_gsms("GSE174554")
+    log("Wang/BGI CNP0003766 — enumerating GSMs")
+    gsms = enumerate_gsms("CNP0003766")
     # Keep snATAC/scATAC titles only
     keep_re = re.compile(r"(scATAC|snATAC|ATAC)", re.IGNORECASE)
     kept = [s for s in gsms if keep_re.search(s["title"])]
@@ -309,14 +309,14 @@ def fetch_mathewson_lupien(out: Path) -> None:
         wget_dir(s["ftp"], out / s["accession"])
 
     frags = sorted(out.rglob("*fragments.tsv.gz"))
-    log(f"  Found {len(frags)} fragments files; Mathewson 2022 claims 10 scATAC samples")
+    log(f"  Found {len(frags)} fragments files; Wang 2022 claims 10 scATAC samples")
     if len(frags) < 10:
         log(f"  WARNING — fewer than 10 fragments files. "
             f"May be Wang-subset-only; "
-            f"the 4 Mathewson-2021-reanalysis samples may live under a different accession.")
+            f"the 4 Wang-2021-reanalysis samples may live under a different accession.")
     require(len(frags) >= 1,
-            f"Mathewson expected at least 1 fragments file, found {len(frags)}")
-    log(f"Mathewson → {out}  ({len(frags)} fragments files)")
+            f"Wang expected at least 1 fragments file, found {len(frags)}")
+    log(f"Wang → {out}  ({len(frags)} fragments files)")
 
 
 def fetch_gbm_space(out: Path) -> None:
@@ -525,13 +525,13 @@ def fetch_gbmap(out: Path) -> None:
 HANDLERS = {
     "guilhamon": fetch_guilhamon,
     "gse165037": fetch_raviram,                    # new slug after 2026-10-04 citation fix
-    "gse138794_guo": fetch_gse138794_guo,           # 4 IDH-WT primary GBM from Guo 2020
+    "wang_2019": fetch_wang_2019,           # 4 IDH-WT primary GBM from Wang 2019
     "gse276177_khan_astro": fetch_gse276177_khan_astro,  # 3 IDH-WT primary GBM from Khan 2024
     "raviram": fetch_raviram,                      # keep for backwards compat
     "tcga_scatac": fetch_tcga_scatac,
-    "mathewson_lupien": fetch_mathewson_lupien,
+    "wang_bgi": fetch_wang_bgi,
     "gbm_space": fetch_gbm_space,
-    "gbm_tme_atlas_hra004942": fetch_hra004942,
+    "lin_2026": fetch_hra004942,
     "wang_sciadv_tc_ptb": fetch_wang_sciadv_tc_ptb,
     "spatial_epigenomic_niches": fetch_spatial_epigenomic_niches,
     "catlas": fetch_catlas,

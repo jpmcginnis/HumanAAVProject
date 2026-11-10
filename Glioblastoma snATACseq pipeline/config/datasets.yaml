@@ -99,12 +99,12 @@ cohorts:
       Three additional patients remain behind dbGaP phs000178 — JP has an
       application pending. If approved, bumps cohort from 6 → 9.
 
-  mathewson_lupien:
+  wang_bgi:
     status: partially_in_pipeline
     priority: tier1_verify
-    citation: "Mathewson et al. 2022 Nature Cancer (PMID 36539501) — GSE174554 is 'A single cell atlas of human glioma under therapy' (NOT 'Nature Cancer' title verbatim; verify)"
-    accession: GSE174554
-    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE174554"
+    citation: "Wang et al. 2022 Nature Cancer (PMID 36539501) — CNP0003766 is 'A single cell atlas of human glioma under therapy' (NOT 'Nature Cancer' title verbatim; verify)"
+    accession: CNP0003766
+    url: "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=CNP0003766"
     platform: 10x_scATAC_plus_scRNA_separate   # NOT Multiome; snRNA and snATAC on separate libraries
     n_samples_total: 113
     n_samples_scATAC: 10
@@ -114,8 +114,8 @@ cohorts:
     access: open
     s3_path: "s3://jpm-atacseq-archive-2026/gbm_pipeline_complete/kloosterman_glioma/"  # historical misnomer; preserve path
     action_items:
-      - "READ Table S1 of Mathewson 2022 Nature Cancer paper to determine which of the 10 scATAC samples are (a) IDH-WT and (b) primary (not recurrent). Only those satisfying both filters enter this pipeline."
-      - "VERIFY the 'reanalysis of 4 primary IDHwt from Mathewson 2021 Nature' claim. The deposit title for GSE174554 does not mention reanalysis. If those 4 samples live under a different GEO accession, add it as a separate cohort entry rather than conflating here."
+      - "READ Table S1 of Wang 2022 Nature Cancer paper to determine which of the 10 scATAC samples are (a) IDH-WT and (b) primary (not recurrent). Only those satisfying both filters enter this pipeline."
+      - "VERIFY the 'reanalysis of 4 primary IDHwt from Wang 2024 Nature' claim. The deposit title for CNP0003766 does not mention reanalysis. If those 4 samples live under a different GEO accession, add it as a separate cohort entry rather than conflating here."
       - "If the IDH-WT primary snATAC subset turns out to be <5 patients, this cohort's statistical contribution drops substantially — reflect that in the dataset_issues verdict."
     notes: |
       Prior assumption was 10 IDH-WT primary snATAC samples. That assumption
@@ -188,7 +188,7 @@ cohorts:
 
   # ----- Datasets added in the 2026-10-04 second-pass sweep -----
 
-  gbm_tme_atlas_hra004942:
+  lin_2026:
     status: missing_HIGH_PRIORITY
     priority: tier1_verified_cohort
     citation: "Lin, Chen, Li, Chen, Fang et al. 2026 Nature Neuroscience (DOI 10.1038/s41593-026-02265-5) — 'Spatial and single-cell characterization of human glioblastoma tumor microenvironment reveals malignant cellular communities'"
