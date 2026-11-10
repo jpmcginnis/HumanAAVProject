@@ -1,10 +1,10 @@
-"""Remap Greenwald's fine-grained labels to a coarse schema compatible with
+"""Remap de Jong's fine-grained labels to a coarse schema compatible with
 the other 7 cohorts, PLUS keep Neftel states (MES / AC / OPC / NPC) under
 `malignant_<STATE>` buckets so the atlas can score per-state malignant separately
 from pan_malignant.
 
-The fine-grained pseudobulk is preserved at pseudobulk_v7_greenwald_2024_fine_backup.parquet.
-This script writes pseudobulk_v7_greenwald_2024.parquet with coarse columns.
+The fine-grained pseudobulk is preserved at pseudobulk_v7_dejong_2026_fine_backup.parquet.
+This script writes pseudobulk_v7_dejong_2026.parquet with coarse columns.
 
 Final coarse labels: astrocyte, OPC, microglia, TAM, oligodendrocyte, neuron,
 GABA_neuron, endothelial, T_cell, unassigned, malignant_AC, malignant_OPC,
@@ -17,8 +17,8 @@ import pandas as pd
 import numpy as np
 
 REQ = Path("/data/projects/atacseq/pilot_v5/requant")
-FINE = REQ / "pseudobulk_v7_greenwald_2024_fine_backup.parquet"
-OUT = REQ / "pseudobulk_v7_greenwald_2024.parquet"
+FINE = REQ / "pseudobulk_v7_dejong_2026_fine_backup.parquet"
+OUT = REQ / "pseudobulk_v7_dejong_2026.parquet"
 
 
 def remap(label: str) -> str:
@@ -64,7 +64,7 @@ def main():
     df = pd.read_parquet(FINE)
     print(f"loaded fine-grained parquet: {df.shape}")
 
-    # Each column is: greenwald_2024__<patient>__<fine_label>
+    # Each column is: dejong_2026__<patient>__<fine_label>
     remap_dict = {}  # new_col_name -> list of old col names to sum
     for col in df.columns:
         parts = col.split("__", 2)

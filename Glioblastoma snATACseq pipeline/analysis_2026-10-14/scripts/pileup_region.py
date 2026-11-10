@@ -48,7 +48,7 @@ RAW_ROOT = os.environ.get("ATLAS_PILEUP_RAW_ROOT", "/data/projects/atacseq/raw")
 COHORT_FRAG_ROOTS = {
     "sundaram_2024":  (f"{RAW_ROOT}/sundaram_gbm_gdc",        "scATAC_GBMx_*.fragments.tsv.gz"),
     "sojka_2025":     (f"{RAW_ROOT}/gse276177_khan_astro",    "GSM*_fragments.tsv.gz"),
-    "greenwald_2024": (f"{RAW_ROOT}/gbm_space",               "*fragments*.tsv.gz"),
+    "dejong_2026": (f"{RAW_ROOT}/gbm_space",               "*fragments*.tsv.gz"),
     "guo_2020":       (f"{RAW_ROOT}/gse138794_guo",           "*fragments*.tsv.gz"),
     "zhao_2024":      (f"{RAW_ROOT}/gbm_tme_atlas_hra004942", "*fragments*.tsv.gz"),
     "mathewson_2021": (f"{RAW_ROOT}/mathewson_lupien",        "*fragments*.tsv.gz"),

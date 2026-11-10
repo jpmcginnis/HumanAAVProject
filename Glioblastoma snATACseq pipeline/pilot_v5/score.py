@@ -48,7 +48,7 @@ def log(m):
         f.write(s + "\n")
 
 
-COHORTS = ["greenwald_2024", "sundaram_2024", "sojka_2025", "zhao_2024",
+COHORTS = ["dejong_2026", "sundaram_2024", "sojka_2025", "zhao_2024",
            "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023"]
 
 

@@ -62,7 +62,7 @@ When something fails, spend 2 minutes probing before pivoting:
 - `free -g` — memory pressure
 - `tail -N <log>` — most recent output
 
-In this project, reading `State: D` on the greenwald process + `read_bytes` growing
+In this project, reading `State: D` on the de Jong process + `read_bytes` growing
 at 5 MB/s pointed to HDF5 chunk-level compression as the bottleneck. That led
 to a 10-line fix (sequential col-sums over data+indices) instead of a 100-line
 rearchitecture.
@@ -115,7 +115,7 @@ wait 8 hours" is almost always a bug you haven't found.
 Every stage writes a checkpoint parquet/BED/log. Downstream stages skip steps
 whose output already exists (`if out.exists(): continue`). If the chain dies at
 stage 6/8, restart doesn't redo stages 1-5. This saved ~3 hours in this project
-after the first greenwald attempt failed.
+after the first de Jong attempt failed.
 
 ---
 

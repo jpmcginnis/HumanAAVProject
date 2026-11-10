@@ -19,7 +19,7 @@ consistently?"
 
 | Cohort (slug) | First author (last author) | Journal (year) | Accession | Modality | Patients | Nuclei |
 |---|---|---|---|---|---|---|
-| `greenwald_2024` | Greenwald CA (Suva) | Cell (2024) | E-MTAB-17183 (ArrayExpress) | 10x snMultiome | 12 | 1,041,869 |
+| `dejong_2026` | de Jong et al. (Suva) | Nature (2026) | E-MTAB-17183 (ArrayExpress) | 10x snMultiome | 12 | 1,041,869 |
 | `sojka_2025` | Sojka I (Goldman) | Nat Cell Biol (2025) | GSE276177 | 10x snATAC | 3 | 289,242 |
 | `sundaram_2024` | Sundaram S (Andersen) | Cell Rep (2024) | dbGaP phs001287 (TCGA PanCanAtlas subset) | 10x snATAC | 8 (X008 excluded) | 157,685 |
 | `zhao_2024` | Zhao et al. | Cell Rep Med (2024) | HRA004942 (CNCB-GSA) | snATAC | 11 | 6,735 |
@@ -31,7 +31,7 @@ consistently?"
 
 ### Changes vs. the Oct-7 draft
 
-- **Greenwald now scored.** Oct-7 draft flagged Greenwald as "pending dbGaP access"; the Multiome snRNA label-transfer path removes that blocker, and Greenwald contributes 12 patients (Multiome donors) to the Oct-11 atlas.
+- **de Jong now scored.** Oct-7 draft flagged this cohort as "pending dbGaP access"; the Multiome snRNA label-transfer path removes that blocker, and de Jong contributes 12 patients (Multiome donors) to the Oct-11 atlas.
 - **`zhao_2024` patient count correction.** Oct-7 `cohort_attribution.csv` said 7 patients; the h5ad actually contains 11 unique donor IDs. 4-patient attribution error, corrected.
 - **X008 explicit exclusion.** `sundaram_2024` lists 9 patients in deposit, 8 scored (X008 excluded due to a snapatac2 Rust panic on its obs structure). Noted in `cohort_attribution.csv` and `analysis_2026-10-14/README.md` Known Limitations.
 - **`mathewson_2021`** and **`raviram_2023`** each lose 1 patient to the MIN_CELLS = 50 floor in the new patient-level pseudobulk pool rule (patient × label groups below 50 cells are dropped as too noisy to pseudobulk).
@@ -76,9 +76,9 @@ Two cohorts remain flagged but not included:
 │   ├── aws_restore.sh        # restore from EBS snapshot
 │   └── watchdog.sh           # 20-min cron: restarts snakemake up to 3x on crash
 ├── pilot_v5/                 # Oct-11 scoring revisions (supersedes src/scoring.py for the current deposit — see pilot_v5/README.md)
-│   ├── requant{,_greenwald,_greenwald_parallel}.py  # pseudobulk builders against the union-peak reference
-│   ├── greenwald_finish.py   # 8-worker finisher for the 10.5B-nnz Greenwald h5ad
-│   ├── remap_greenwald_coarse.py  # Greenwald's 99 fine labels → 14 coarse schema (keeps 4 Neftel malignant states)
+│   ├── requant{,_dejong,_dejong_parallel}.py  # pseudobulk builders against the union-peak reference
+│   ├── dejong_finish.py   # 8-worker finisher for the 10.5B-nnz de Jong h5ad
+│   ├── remap_dejong_coarse.py  # de Jong's 99 fine labels → 14 coarse schema (keeps 4 Neftel malignant states)
 │   ├── cnv_patch.py          # hg38 arm coords + arm-conditional Z helpers + chr7-elevated flag
 │   └── score.py              # per-report scorer: arm-adjusted Daigle Z + CNV + off-target metrics
 ├── analysis_2026-10-14/      # the Oct-11 atlas deposit (full README, SCHEMA, CHANGELOG, polished scripts, tests, hg38 reference, cohort attribution, Zenodo deposit metadata)

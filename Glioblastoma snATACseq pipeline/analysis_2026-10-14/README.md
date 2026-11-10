@@ -21,7 +21,7 @@
 | Union peak reference (`union_peak_reference.bed`, 84 MB) | **Zenodo DOI [10.5281/zenodo.23252324](https://doi.org/10.5281/zenodo.23252324)** | `scripts/zenodo_upload.py` or web |
 | Per-peak provenance (`peak_provenance.parquet`, 55 MB) | ↑ same Zenodo DOI | ↑ |
 | Patient × cell-type pseudobulk matrix (`enhancer_candidate_matrix.parquet`, 366 MB) | ↑ same Zenodo DOI | ↑ |
-| Greenwald fine-label backup (`greenwald_fine_pseudobulk_backup.parquet`, 495 MB) | ↑ same Zenodo DOI | ↑ |
+| de Jong fine-label backup (`dejong_fine_pseudobulk_backup.parquet`, 495 MB) | ↑ same Zenodo DOI | ↑ |
 | Per-report scored parquets (16 files, 19–35 MB each) | ↑ same Zenodo DOI | ↑ |
 | Polished top-100 CSVs + combined HTML/xlsx/parquet | ↑ same Zenodo DOI | ↑ |
 | Original per-cohort snATAC h5ads | Original studies' deposits | see `cohort_attribution.csv` for GEO/ArrayExpress/HRA/dbGaP accessions |
@@ -66,8 +66,8 @@ Grouped by where in the pipeline the call was made. Full rationale and the versi
 - **Patient-level, not cohort-level.** Columns are `<cohort>__<patient_id>__<label>` so patient is the unit of replication (`n_target_patients`) and cohort is recoverable for batch sanity (`n_target_cohorts`, `cohort_balance`). (Cohort-level pseudobulks rejected as v0.6.)
 - **Malignant pool rule (CNV-aware).** A cell with `malignant_cnv == 1` OR `cell_type == "malignant_unresolved"` is bucketed as `malignant`, not as its gbmap cell-type label. Fixes the "hidden malignant" contamination of astrocyte / OPC / neuron pseudobulks that affected earlier versions.
 - **MIN_CELLS = 50 per (patient × label) group.** Smaller groups skipped as too noisy to pseudobulk.
-- **Greenwald label transfer via Multiome barcode sharing.** Greenwald is 10x snMultiome, so the snRNA barcodes are the same as snATAC barcodes — labels transfer directly from the paired snRNA h5ad into the ATAC h5ad with no reference-anchor method required.
-- **Coarse-label remap for Greenwald; Neftel subtypes retained as detail; fine labels preserved for future.** Greenwald's 99 fine labels (AC-progenitor-like-1-4, OPC-NPC-like-1-2, Pro-inflammatory TAMs, Astrocyte-like TAMs, etc.) are remapped to the coarse schema used by the other 7 cohorts so cross-cohort reports work; the 4 Neftel-state buckets (`malignant_AC` / `MES` / `OPC` / `NPC`) are preserved as separate drill-down reports in `detail/per_celltype/`; and the full 99-label pseudobulk is preserved at `data/matrix/greenwald_fine_pseudobulk_backup.parquet` so future releases can re-remap and generate super-fine reports without re-reading the 10.5B-nnz ATAC h5ad.
+- **de Jong label transfer via Multiome barcode sharing.** de Jong is 10x snMultiome, so the snRNA barcodes are the same as snATAC barcodes — labels transfer directly from the paired snRNA h5ad into the ATAC h5ad with no reference-anchor method required.
+- **Coarse-label remap for de Jong; Neftel subtypes retained as detail; fine labels preserved for future.** de Jong's 99 fine labels (AC-progenitor-like-1-4, OPC-NPC-like-1-2, Pro-inflammatory TAMs, Astrocyte-like TAMs, etc.) are remapped to the coarse schema used by the other 7 cohorts so cross-cohort reports work; the 4 Neftel-state buckets (`malignant_AC` / `MES` / `OPC` / `NPC`) are preserved as separate drill-down reports in `detail/per_celltype/`; and the full 99-label pseudobulk is preserved at `data/matrix/dejong_fine_pseudobulk_backup.parquet` so future releases can re-remap and generate super-fine reports without re-reading the 10.5B-nnz ATAC h5ad.
 
 ### Scoring
 
@@ -80,7 +80,7 @@ Grouped by where in the pipeline the call was made. Full rationale and the versi
 ### Reports
 
 - **12 headline reports in the top-level polished view.** 10 non-malignant cell types + `pan_malignant` + `pan_myeloid`. `pan_malignant` is the single primary malignant deliverable.
-- **4 Neftel-state malignant reports as detail-only.** `malignant_AC` / `MES` / `OPC` / `NPC` live in `detail/per_celltype/` as drill-down resources. They are intentionally excluded from the headline combined view because they are Greenwald-dominated (only Greenwald has Neftel resolution across the atlas).
+- **4 Neftel-state malignant reports as detail-only.** `malignant_AC` / `MES` / `OPC` / `NPC` live in `detail/per_celltype/` as drill-down resources. They are intentionally excluded from the headline combined view because they are de Jong-dominated (only de Jong has Neftel resolution across the atlas).
 - **Nearest-TSS annotation only, not a regulatory claim.** `nearest_gene`, `dist_to_tss_signed`, `distance_category` are annotations only. No HiC / enhancer-promoter linking.
 
 ## For a reviewer: four files that tell the whole story
@@ -99,10 +99,10 @@ Grouped by where in the pipeline the call was made. Full rationale and the versi
 | `daigle_z_raw` | `(target_mean − μ_bg) / σ_bg` — Allen Armamentarium specificity criterion against a genome-wide null (Z ≥ 2) |
 | `daigle_z_arm_adjusted` | **primary ranking column.** Same formula but μ/σ computed per chromosome arm. **Standardized per chromosome arm and not directly comparable across arms or to `daigle_z_raw`** — a z_arm_adj of 97 does not mean "97× more specific than background", it means that peak sits 97 arm-conditional SDs above the arm's non-target mean. |
 | `n_target_patients` | **primary replication** — unique (cohort, patient_id) tuples with signal in any target label |
-| `n_target_pseudobulks` | distinct patient × label pseudobulk columns with signal. Only differs from `n_target_patients` for `pan_malignant` and `pan_myeloid`, where a patient contributes multiple target columns (e.g. a Greenwald patient has 5 malignant-label columns) |
+| `n_target_pseudobulks` | distinct patient × label pseudobulk columns with signal. Only differs from `n_target_patients` for `pan_malignant` and `pan_myeloid`, where a patient contributes multiple target columns (e.g. a de Jong patient has 5 malignant-label columns) |
 | `n_target_cohorts` | **batch sanity** — distinct cohorts those patients span |
 | `cohort_balance` | fraction of target signal from top-contributing cohort (close to 1 = cohort-dominated) |
-| `greenwald_fraction` | fraction of target signal (CPM-normalized) contributed by Greenwald. **Important for `pan_malignant`**: Greenwald is the only cohort with Neftel-split malignant labels (5 label types × 12 patients = 60 target columns vs. the other cohorts' single `malignant` label × ~28 patients = ~28 columns), so the pan_malignant denominator is Greenwald-weighted (median greenwald_fraction = 0.78). Pan_myeloid is cross-cohort balanced (median 0.25). |
+| `dejong_fraction` | fraction of target signal (CPM-normalized) contributed by de Jong. **Important for `pan_malignant`**: de Jong is the only cohort with Neftel-split malignant labels (5 label types × 12 patients = 60 target columns vs. the other cohorts' single `malignant` label × ~28 patients = ~28 columns), so the pan_malignant denominator is de Jong-weighted (median dejong_fraction = 0.78). Pan_myeloid is cross-cohort balanced (median 0.25). |
 | `offtarget_max_cpm` | **AAV safety** — worst non-target cell type's mean CPM |
 | `offtarget_top_cell_type` | which non-target lineage leaks most |
 | `offtarget_pooled_mean` | mean across non-target cell-type means |
@@ -122,7 +122,7 @@ A good AAV capsid candidate = high `target_mean_cpm`, high `daigle_z_arm_adjuste
 
 **4 Neftel-state detail reports** (`malignant_AC`, `malignant_MES`, `malignant_OPC`, `malignant_NPC`) are available in `reports/detail/per_celltype/` for drill-down. They are intentionally excluded from the headline combined view — `pan_malignant` is the primary malignant deliverable, with the Neftel split as a secondary resource.
 
-The fine-grained Greenwald 99-label pseudobulk (full annotation granularity: AC-progenitor-like-1-4, OPC-NPC-like-1-2, pro-inflammatory TAMs, astrocyte-like TAMs, CD8+ cytotoxic T cells, Exc L4-5 IT, etc.) is preserved at `data/matrix/greenwald_fine_pseudobulk_backup.parquet` so future releases can re-remap and generate those super-fine reports without re-reading the 10.5B-nnz Greenwald h5ad.
+The fine-grained de Jong 99-label pseudobulk (full annotation granularity: AC-progenitor-like-1-4, OPC-NPC-like-1-2, pro-inflammatory TAMs, astrocyte-like TAMs, CD8+ cytotoxic T cells, Exc L4-5 IT, etc.) is preserved at `data/matrix/dejong_fine_pseudobulk_backup.parquet` so future releases can re-remap and generate those super-fine reports without re-reading the 10.5B-nnz de Jong h5ad.
 
 ## Directory contents
 
@@ -141,7 +141,7 @@ The fine-grained Greenwald 99-label pseudobulk (full annotation granularity: AC-
 │       ├── union_peak_reference.bed              1.96M peaks (bed4: chrom, start, end, source list)
 │       ├── peak_provenance.parquet               per-peak contributing cohort + source coords
 │       ├── enhancer_candidate_matrix.parquet     1.96M peaks × 337 (patient × cell_type) pseudobulks across 8 cohorts
-│       ├── greenwald_fine_pseudobulk_backup.parquet  99-label fine-grained Greenwald pseudobulk (for future re-remapping)
+│       ├── dejong_fine_pseudobulk_backup.parquet  99-label fine-grained de Jong pseudobulk (for future re-remapping)
 │       └── slug_canonical.tsv                    legacy → canonical slug map (incl. Sojka ≠ Khan fix)
 │
 ├── reports/                                ← polished deliverables
@@ -196,11 +196,11 @@ Pulls each cohort's raw fragments overlapping the region, builds per-cohort cove
 
 ## Known limitations
 
-- **pan_malignant is Greenwald-weighted** (median `greenwald_fraction` = 0.78). Greenwald is the only cohort with Neftel-resolved malignant labels, which gives it 60 of ~88 total pan_malignant target columns. The scoring is still cross-cohort-validated (seven other cohorts contribute signal), but reviewers should treat the pan_malignant top-100 as "Greenwald-primary, cross-cohort-corroborated" rather than fully cohort-balanced. Use the `greenwald_fraction` column to filter if a strictly cross-cohort view is needed.
-- **TAM top-5 includes chrX pile-up driven by Greenwald.** Three of the top-5 TAM peaks (ZCCHC12, SASH3, ARMCX2) are on chrXq with Greenwald contributing 61–69% of signal; only 3 cohorts have myeloid-label pseudobulks on chrX. Greenwald's snMultiome gives cleaner TAM labels than other cohorts' label-transfer labels, which inflates its apparent contribution at low-coverage loci. Pattern does not reflect sex confounding; Greenwald's TAM contribution is uniform across its 12 patients.
-- **sundaram_2024 sample X008** skipped in peak-matrix build due to a known snapatac2 Rust panic on its obs structure. 8/9 sundaram samples contribute. Explicitly: of 50 patients across the 8 cohorts' deposit records (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 3 raviram), **48 made it into scored pseudobulks** — sundaram X008 excluded (snapatac2 panic) and raviram GBM9 excluded (MIN_CELLS=50 floor). See CHANGELOG §"Patient-count provenance" for the audit trail (the zhao row was transcribed as 7 patients in a prior cohort_attribution.csv — actual count from h5ad is 11, 4-patient attribution error corrected in v2026-10-11).
+- **pan_malignant is de Jong-weighted** (median `dejong_fraction` = 0.78). de Jong is the only cohort with Neftel-resolved malignant labels, which gives it 60 of ~88 total pan_malignant target columns. The scoring is still cross-cohort-validated (seven other cohorts contribute signal), but reviewers should treat the pan_malignant top-100 as "de Jong-primary, cross-cohort-corroborated" rather than fully cohort-balanced. Use the `dejong_fraction` column to filter if a strictly cross-cohort view is needed.
+- **TAM top-5 includes chrX pile-up driven by de Jong.** Three of the top-5 TAM peaks (ZCCHC12, SASH3, ARMCX2) are on chrXq with de Jong contributing 61–69% of signal; only 3 cohorts have myeloid-label pseudobulks on chrX. de Jong's snMultiome gives cleaner TAM labels than other cohorts' label-transfer labels, which inflates its apparent contribution at low-coverage loci. Pattern does not reflect sex confounding; de Jong's TAM contribution is uniform across its 12 patients.
+- **sundaram_2024 sample X008** skipped in peak-matrix build due to a known snapatac2 Rust panic on its obs structure. 8/9 sundaram samples contribute. Explicitly: of 50 patients across the 8 cohorts' deposit records (12 de Jong + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 3 raviram), **48 made it into scored pseudobulks** — sundaram X008 excluded (snapatac2 panic) and raviram GBM9 excluded (MIN_CELLS=50 floor). See CHANGELOG §"Patient-count provenance" for the audit trail (the zhao row was transcribed as 7 patients in a prior cohort_attribution.csv — actual count from h5ad is 11, 4-patient attribution error corrected in v2026-10-11).
 - **Arm-adjusted Z nulls are stable at small-arm sizes.** We checked whether the per-arm null estimation suffered on tiny arms (chr21p=47 peaks, chr22p=9, chrYp=34, chrYq=83, chr15p=1 in the matrix); the top-100 of each report has at most 3 peaks on chr21q and ≤2 on chr22q, with no peaks from the smaller arms, so the σ estimates are not driving ranking.
 - **Fresh-tissue vs postmortem.** Cohorts mix fresh surgical specimens with postmortem tissue; batch effects attributable to this split are not explicitly modeled. `cohort_balance` partially controls, but residual bias is possible.
 - **Replication count metric: detection, not strength.** `n_target_patients` counts patients with any nonzero signal. A peak weakly detected in 15 patients is treated the same as one strongly detected in 15. The CPM axis carries the strength component.
 - **Nearest-TSS annotation does not imply regulatory contact.** `nearest_gene` / `dist_to_tss_signed` are informational labels only — no HiC / enhancer-promoter linking.
-- **Neftel-state assignment is cohort-dependent.** Only Greenwald's snRNA labels resolved to Neftel states; the other 7 cohorts contribute to `pan_malignant` but not to the `malignant_AC/MES/OPC/NPC` detail reports. Treat the Neftel detail reports as Greenwald-dominated (secondary resource).
+- **Neftel-state assignment is cohort-dependent.** Only de Jong's snRNA labels resolved to Neftel states; the other 7 cohorts contribute to `pan_malignant` but not to the `malignant_AC/MES/OPC/NPC` detail reports. Treat the Neftel detail reports as de Jong-dominated (secondary resource).

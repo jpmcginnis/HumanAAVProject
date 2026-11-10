@@ -150,10 +150,10 @@ cohorts:
       Processed Cell Ranger ARC outputs are deposited so no reprocessing from FASTQ
       is required. Priority 1 for immediate ingestion.
 
-  greenwald_hgg:
+  dejong_hgg:
     status: missing_MEDIUM_PRIORITY
     priority: tier2_controlled
-    citation: "Greenwald et al. 2024 Cell (Multi-scale signaling in high-grade gliomas)"
+    citation: "de Jong et al. 2026 Nature (Multi-scale signaling in high-grade gliomas)"
     accession: PENDING_VERIFY
     url: "https://www.sciencedirect.com/science/article/pii/S1535610824002290"
     platform: 10x_Multiome_ARC

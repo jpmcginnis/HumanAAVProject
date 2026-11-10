@@ -17,7 +17,7 @@ Non-breaking metadata correction. No change to sample set, scoring, or scoring m
   - `data/matrix/union_peak_reference.bed`: 78,432 line-level `sources` column replacements.
   - `data/matrix/slug_canonical.tsv`: canonical slug updated; legacy `nagaraja_2021` mapping preserved as backwards-compat entry so downstream code using the old slug still resolves.
   - `SCHEMA.md`, `README.md`, `CHANGELOG.md`, `zenodo.json`, `scripts/pileup_region.py`, `tests/test_schema.py`, `workflow/REPLICATE_FOR_NORMAL_CORTEX.md` all updated.
-- **Patient-count audit clarified.** Deposit records contain 50 patients across 8 cohorts (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 3 raviram); 2 were excluded by QC — sundaram X008 (snapatac2 Rust panic) and raviram GBM9 (MIN_CELLS=50 floor). The headline 48-patient-pseudobulked total is unchanged.
+- **Patient-count audit clarified.** Deposit records contain 50 patients across 8 cohorts (12 de Jong + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo + 4 guilhamon + 3 raviram); 2 were excluded by QC — sundaram X008 (snapatac2 Rust panic) and raviram GBM9 (MIN_CELLS=50 floor). The headline 48-patient-pseudobulked total is unchanged.
 - **`scripts/zenodo_upload.py` reliability improvement.** Retries extended from 3 → 10 attempts, with explicit handling of `ReadTimeout` alongside `ConnectionError` / `ChunkedEncodingError`. Backoff tuned to a 30s–5min window (vs the old exponential curve that could push a single file to 2.5 hours). Observed-helpful on multi-hundred-MB uploads over flaky links.
 - **No change to atlas content, metrics, or scoring.** The 1.96M union peaks, 337 pseudobulk columns, Daigle-Z-arm-adjusted ranking, per-cell-type reports, and 12 polished top-100 deliverables are byte-identical except where the string `nagaraja_2021` has been substituted with `raviram_2023`. The 17/17 pytest regression suite passes.
 
@@ -40,9 +40,9 @@ what changed. If you cloned the GitHub repo, you have rc2 (now stamped v2026-10-
   4-patient attribution error. Corrected everywhere; `n_patients_included`
   per cohort now ties out to 48 (= 49 deposit records − 1 for X008 exclusion).
   See §"Patient-count provenance (disclosure)" below.
-- **`greenwald_fraction` column added** to every report parquet (CPM-normalized
-  share of target signal from greenwald_2024). Median for `pan_malignant` is
-  0.78 (Greenwald has 5 Neftel labels × 12 patients = 60 of 88 target cols);
+- **`dejong_fraction` column added** to every report parquet (CPM-normalized
+  share of target signal from dejong_2026). Median for `pan_malignant` is
+  0.78 (de Jong has 5 Neftel labels × 12 patients = 60 of 88 target cols);
   for `pan_myeloid` 0.25 (cross-cohort balanced). Filterable in the HTML.
 - **SCHEMA.md rewrite.** Previous SCHEMA described v3/v4 files that no longer
   exist (`pan_malignant_scores_v4.parquet`, `candidate_scores.parquet`,
@@ -54,7 +54,7 @@ what changed. If you cloned the GitHub repo, you have rc2 (now stamped v2026-10-
   `accession_version` (specific submission ids + which processed file was
   ingested), `atlas_build_date` (`2026-10-11`).
 - **README gains a Known-Limitations entry** for (a) `pan_malignant` being
-  Greenwald-weighted and (b) the TAM top-5 chrX pile-up driven by Greenwald's
+  de Jong-weighted and (b) the TAM top-5 chrX pile-up driven by de Jong's
   snMultiome label-transfer purity advantage over the other 6 label-transferred
   cohorts. Also an explicit Methods-style statement that X008 is excluded.
 - **Arm-adjusted Z scale note.** README scoring-metrics table clarifies that
@@ -65,7 +65,7 @@ what changed. If you cloned the GitHub repo, you have rc2 (now stamped v2026-10-
   chrY — so the per-arm σ estimates are not driving ranking. Documented as a
   Known-Limitations entry (confirmed non-issue).
 - **+2 regression tests:** `test_n_target_patients_within_atlas_bounds` guards
-  the arithmetic invariant that broke in rc1; `test_greenwald_fraction_in_range`
+  the arithmetic invariant that broke in rc1; `test_dejong_fraction_in_range`
   guards the new column's `[0, 1]` bound and the known-high `pan_malignant` median.
   17/17 total passing — see `REGEN_LOG.md` at repo root.
 
@@ -103,7 +103,7 @@ pseudobulk matrix. Corrected in v2026-10-11:
   A regression test (`test_n_target_patients_within_atlas_bounds`) now guards
   the invariant `n_target_patients ≤ atlas_total ≤ n_target_pseudobulks`.
 - Reconciled totals (post-fix): deposit records contain **50** patients
-  (12 greenwald + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo +
+  (12 de Jong + 3 sojka + 9 sundaram + 11 zhao + 5 mathewson + 3 guo +
   4 guilhamon + 3 raviram). Of these, sundaram X008 was excluded (snapatac2 panic)
   and raviram GBM9 was excluded (MIN_CELLS=50 floor), leaving **48** patients
   pseudobulked. This is the denominator used
@@ -115,7 +115,7 @@ pseudobulk matrix. Corrected in v2026-10-11:
 
 - `data/matrix/union_peak_reference.bed` — 1,958,753 peaks (mean width 594 bp,
   max 6.7 kb; no transitive-chaining artifacts).
-- Composition: catlas 25.8%, greenwald 19.9%, sundaram 45.8%, sojka 36.5%,
+- Composition: catlas 25.8%, de Jong 19.9%, sundaram 45.8%, sojka 36.5%,
   guo 16.7%, zhao 9.5%, mathewson 8.4%, guilhamon 9.5%, raviram 4.0%.
 - **CATLAS-only (would be lost in a CATLAS-only pipeline): 132,960 (6.8%).**
 - **De-novo (not in CATLAS): 1,453,136 (74.2%).**
@@ -137,12 +137,12 @@ pseudobulk matrix. Corrected in v2026-10-11:
 - MIN_CELLS = 50 per (patient × label) group — tiny groups skipped as noisy.
 - **Scored cohorts (8, all GBM snATAC/snMultiome sources):** sundaram_2024,
   sojka_2025, zhao_2024, mathewson_2021, guo_2020, guilhamon_2021, raviram_2023,
-  and **greenwald_2024** (10.5B-nnz CSR scored via an 8-worker parallel chunked
+  and **dejong_2026** (10.5B-nnz CSR scored via an 8-worker parallel chunked
   decompress across the ATAC h5ad; labels transferred from the shared-barcode
   Multiome snRNA and remapped to the coarse schema, with 4 Neftel states
   — `malignant_AC` / `malignant_MES` / `malignant_OPC` / `malignant_NPC` —
   retained as separate detail-only reports; the fine-grained 99-label
-  pseudobulk is preserved at `data/matrix/greenwald_fine_pseudobulk_backup.parquet`
+  pseudobulk is preserved at `data/matrix/dejong_fine_pseudobulk_backup.parquet`
   for future re-remapping).
 
 ### Cohort slugs — canonical first-author naming
@@ -151,7 +151,7 @@ Legacy slugs replaced site-wide:
 
 | Legacy | v1 canonical | First author |
 |---|---|---|
-| gbm_space | greenwald_2024 | Greenwald et al. Cell |
+| gbm_space | dejong_2026 | de Jong et al. Cell |
 | gse276177_khan_astro | **sojka_2025** | Sojka et al. Nat Cell Biol (fixed misattribution: NOT Khan) |
 | tcga_scatac | sundaram_2024 | Sundaram et al. Cell Rep |
 | gbm_tme_atlas_hra004942 | zhao_2024 | Zhao et al. Cell Rep Med |

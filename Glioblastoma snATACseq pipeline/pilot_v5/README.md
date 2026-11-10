@@ -9,10 +9,10 @@ the scoring step.
 | file | role |
 |---|---|
 | `requant.py` | Pseudobulk matrix builder — projects each cohort's h5ad onto the union peak reference and emits patient × cell_type pseudobulks. |
-| `requant_greenwald.py` | Serial Greenwald-specific pseudobulker (10.5B-nnz h5ad). |
-| `requant_greenwald_parallel.py` | 4-worker parallel version of the above (chunk-level gzip decompress in parallel). |
-| `greenwald_finish.py` | 8-worker finisher that merges partial pseudobulks after a parallel scan interrupted. |
-| `remap_greenwald_coarse.py` | Collapses Greenwald's 99 fine labels to the 14-label coarse schema used across the other 7 cohorts, retaining the 4 Neftel malignant states as separate buckets. |
+| `requant_dejong.py` | Serial de Jong-specific pseudobulker (10.5B-nnz h5ad). |
+| `requant_dejong_parallel.py` | 4-worker parallel version of the above (chunk-level gzip decompress in parallel). |
+| `dejong_finish.py` | 8-worker finisher that merges partial pseudobulks after a parallel scan interrupted. |
+| `remap_dejong_coarse.py` | Collapses de Jong's 99 fine labels to the 14-label coarse schema used across the other 7 cohorts, retaining the 4 Neftel malignant states as separate buckets. |
 | `cnv_patch.py` | hg38 chromosome-arm (centromere-split) coordinates + helpers for arm-conditional Z-score, CNV-class annotation, and per-patient chr7-elevated detection. |
 | `score.py` | Per-report scorer: patient-level pseudobulks → `daigle_z_raw` + `daigle_z_arm_adjusted` + CNV columns + patient/cohort replication + off-target metrics. |
 

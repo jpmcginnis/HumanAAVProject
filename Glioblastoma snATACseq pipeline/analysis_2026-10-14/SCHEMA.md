@@ -20,7 +20,7 @@ Genome build: **GRCh38 (hg38)** throughout. All intervals are 0-based half-open 
 | 1 | `chrom` | hg38 chromosome (`chr1`–`chr22`, `chrX`, `chrY`, `chrM`) |
 | 2 | `start` | 0-based start |
 | 3 | `end` | exclusive end |
-| 4 | `sources` | comma-separated list of contributing cohort slugs (e.g. `greenwald_2024,catlas,sundaram_2024`) |
+| 4 | `sources` | comma-separated list of contributing cohort slugs (e.g. `dejong_2026,catlas,sundaram_2024`) |
 
 Mean width 594 bp, max 6.7 kb. No transitive-chaining artifacts (merges are at single-cohort peak-call precision).
 
@@ -48,7 +48,7 @@ Wide-form patient × cell-type pseudobulk matrix. 1 row per union peak, 337 pseu
 | `<cohort>__<patient_id>__<cell_type>` | Int64 (raw counts) | integer fragment counts for that (patient × cell_type) in that cohort |
 
 **Cohort coverage** (337 total pseudobulk columns):
-- `greenwald_2024`: 144 columns (12 patients × up to 14 coarse labels, incl. 4 Neftel states + `malignant`)
+- `dejong_2026`: 144 columns (12 patients × up to 14 coarse labels, incl. 4 Neftel states + `malignant`)
 - `sundaram_2024`: 62 columns
 - `zhao_2024`: 50 columns
 - `sojka_2025`: 33 columns
@@ -61,9 +61,9 @@ Wide-form patient × cell-type pseudobulk matrix. 1 row per union peak, 337 pseu
 
 **MIN_CELLS = 50** per (patient × label) group — tinier groups skipped as noisy.
 
-## `data/matrix/greenwald_fine_pseudobulk_backup.parquet`
+## `data/matrix/dejong_fine_pseudobulk_backup.parquet`
 
-Preserved fine-grained Greenwald pseudobulk (99 labels × 12 patients) using the full annotation granularity from Greenwald et al. (AC-progenitor-like-1-4, OPC-NPC-like-1-2, pro-inflammatory TAMs, astrocyte-like TAMs, CD8+ cytotoxic T cells, Exc L4-5 IT, etc.). Column format: `greenwald_2024__<patient>__<fine_label>`. Preserved so future releases can re-remap and generate super-fine reports without re-reading the 10.5B-nnz Greenwald ATAC h5ad.
+Preserved fine-grained de Jong pseudobulk (99 labels × 12 patients) using the full annotation granularity from de Jong et al. (AC-progenitor-like-1-4, OPC-NPC-like-1-2, pro-inflammatory TAMs, astrocyte-like TAMs, CD8+ cytotoxic T cells, Exc L4-5 IT, etc.). Column format: `dejong_2026__<patient>__<fine_label>`. Preserved so future releases can re-remap and generate super-fine reports without re-reading the 10.5B-nnz de Jong ATAC h5ad.
 
 ## `data/matrix/slug_canonical.tsv`
 
@@ -87,7 +87,7 @@ One parquet per report (16 reports total: 10 non-malignant per-celltype + 4 Neft
 | `n_target_pseudobulks` | Int32 | distinct patient × label pseudobulk columns with nonzero signal. Only differs from `n_target_patients` for the two pooled reports (`pan_malignant`, `pan_myeloid`), where it is strictly ≥ `n_target_patients`. |
 | `n_target_cohorts` | Int32 | distinct cohorts those target patients span |
 | `cohort_balance` | Float64 | fraction of target signal from the top-contributing cohort (1.0 = single-cohort peak) |
-| `greenwald_fraction` | Float64 | fraction of total target CPM contributed by greenwald_2024 columns. **For `pan_malignant` the median is 0.78** (Greenwald is the only cohort with Neftel-split malignant labels, so it provides 60 of ~88 target columns); for `pan_myeloid` the median is 0.25 (cross-cohort balanced). Filter on this column to isolate strictly cross-cohort-replicating peaks. |
+| `dejong_fraction` | Float64 | fraction of total target CPM contributed by dejong_2026 columns. **For `pan_malignant` the median is 0.78** (de Jong is the only cohort with Neftel-split malignant labels, so it provides 60 of ~88 target columns); for `pan_myeloid` the median is 0.25 (cross-cohort balanced). Filter on this column to isolate strictly cross-cohort-replicating peaks. |
 | `offtarget_max_cpm` | Float64 | max mean CPM across any non-target cell type |
 | `offtarget_top_cell_type` | String | which non-target cell type is highest |
 | `offtarget_pooled_mean` | Float64 | mean across non-target cell-type means |
@@ -150,7 +150,7 @@ All 8 published GBM scATAC/snMultiome cohorts contribute to both the peak refere
 
 | canonical slug | citation | accession | platform | n_patients | n_malignant_cells |
 |---|---|---|---|---|---|
-| `greenwald_2024` | Greenwald et al. 2024 Cell | E-MTAB-17183 | 10x snATAC + snMultiome | 12 | 438,994 |
+| `dejong_2026` | de Jong et al. 2026 Nature | E-MTAB-17183 | 10x snATAC + snMultiome | 12 | 438,994 |
 | `sojka_2025` | Sojka et al. 2025 Nat Cell Biol | GSE276177 | 10x snATAC | 3 | 73,413 |
 | `sundaram_2024` | Sundaram et al. 2024 Cell Rep | GDC/dbGaP phs001287 | 10x snATAC | 9 | 53,632 |
 | `zhao_2024` | Zhao et al. 2024 Cell Rep Med | HRA004942 | snATAC | 7 | 591 |

@@ -23,7 +23,7 @@ REPORT_SCORE_COLS = {
     "target_mean_cpm", "bg_mean_cpm",
     "daigle_z_raw", "daigle_z_arm_adjusted",
     "n_target_patients", "n_target_pseudobulks", "n_target_cohorts",
-    "cohort_balance", "greenwald_fraction",
+    "cohort_balance", "dejong_fraction",
     "offtarget_max_cpm", "offtarget_top_cell_type",
     "offtarget_pooled_mean", "n_offtarget_ct_above_1", "aav_safety_ratio",
     "chromosome_arm", "chromosome_cnv_class",
@@ -60,7 +60,7 @@ def test_peak_provenance_columns(peak_provenance):
 def test_peak_provenance_sources_match_canonical_slugs(peak_provenance):
     slugs = set(peak_provenance["source"].unique())
     expected = {
-        "greenwald_2024", "sojka_2025", "sundaram_2024", "zhao_2024",
+        "dejong_2026", "sojka_2025", "sundaram_2024", "zhao_2024",
         "mathewson_2021", "guo_2020", "guilhamon_2021", "raviram_2023",
         "catlas",
     }
@@ -115,13 +115,13 @@ def test_n_target_patients_within_atlas_bounds(pan_malignant, enhancer_matrix):
     )
 
 
-def test_greenwald_fraction_in_range(pan_malignant):
-    """greenwald_fraction must be in [0, 1]; also disclose the known-high
+def test_dejong_fraction_in_range(pan_malignant):
+    """dejong_fraction must be in [0, 1]; also disclose the known-high
     median for pan_malignant so a reviewer isn't surprised."""
-    gf = pan_malignant["greenwald_fraction"]
+    gf = pan_malignant["dejong_fraction"]
     assert gf.min() >= 0 and gf.max() <= 1
-    # pan_malignant is Greenwald-weighted by construction (5 Neftel labels)
-    assert gf.median() > 0.5, f"pan_malignant greenwald_fraction median {gf.median():.2f} < 0.5 — unexpected, double-check pool rule"
+    # pan_malignant is de Jong-weighted by construction (5 Neftel labels)
+    assert gf.median() > 0.5, f"pan_malignant dejong_fraction median {gf.median():.2f} < 0.5 — unexpected, double-check pool rule"
 
 
 def test_union_bed_well_formed():

@@ -4,7 +4,7 @@ Dual-provenance cell-type label transfer with explicit cohort-aware strategy.
 The scaffold's original `sc.tl.ingest` on gene activity scores is a known-weak
 tool for ATAC→RNA bridging. The honest approach differentiates by modality:
 
-  - Multiome cohorts (gbm_space, future gallo, future greenwald):
+  - Multiome cohorts (dejong_2026 / gbm_space, future gallo):
         Transfer labels from GBmap onto the paired snRNA counts (same nucleus),
         then propagate to the ATAC side via the paired barcode. No bridging.
 

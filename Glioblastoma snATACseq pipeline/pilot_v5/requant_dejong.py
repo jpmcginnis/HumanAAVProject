@@ -1,4 +1,4 @@
-"""Greenwald integration — label transfer from snRNA + sequential projection.
+"""de Jong integration — label transfer from snRNA + sequential projection.
 
 Steps:
   1. Read snRNA obs: (cell_id, annotation_coarse, annotation_granular,
@@ -31,13 +31,13 @@ OUT = PILOT / "requant"
 
 ATAC_H5AD = str(PILOT / "gbm_space.h5ad")
 RNA_H5AD = "/data/projects/atacseq/raw/gbm_space/GBM_space_snRNA.h5ad"
-LOG = PILOT / "requant_greenwald.log"
+LOG = PILOT / "requant_dejong.log"
 
 CHUNK_NNZ = 50_000_000
 
 
 def log(m):
-    s = f"[greenwald-v1] {m}"
+    s = f"[dejong-v1] {m}"
     print(s, flush=True)
     with open(LOG, "a") as f:
         f.write(s + "\n")
@@ -130,15 +130,15 @@ def load_atac_annotations_and_x_meta():
 
 
 def build_overlap_map(src_coords, v5_df):
-    src_bed = PILOT / "_greenwald_v1_src.bed"
+    src_bed = PILOT / "_dejong_v1_src.bed"
     with open(src_bed, "w") as f:
         for i in range(len(src_coords[0])):
             c = src_coords[0][i]
             if not (isinstance(c, str) and c.startswith("chr")): continue
             f.write(f"{c}\t{src_coords[1][i]}\t{src_coords[2][i]}\t{i}\n")
-    v5_idx_bed = PILOT / "_greenwald_v1_v5idx.bed"
+    v5_idx_bed = PILOT / "_dejong_v1_v5idx.bed"
     v5_df[["chrom","start","end","v5_idx"]].to_csv(v5_idx_bed, sep="\t", header=False, index=False)
-    out = PILOT / "_greenwald_v1_overlap.tsv"
+    out = PILOT / "_dejong_v1_overlap.tsv"
     subprocess.run(
         f"sort -k1,1 -k2,2n {src_bed} > {src_bed}.s && "
         f"sort -k1,1 -k2,2n {v5_idx_bed} > {v5_idx_bed}.s && "
@@ -161,7 +161,7 @@ def build_overlap_map(src_coords, v5_df):
 
 def main():
     t0 = time.time()
-    log(f"=== greenwald v1 start {time.strftime('%Y-%m-%d %H:%M:%S')} ===")
+    log(f"=== dejong v1 start {time.strftime('%Y-%m-%d %H:%M:%S')} ===")
 
     rna_anno = load_rna_annotations()
 
@@ -233,15 +233,15 @@ def main():
     proj_dense = np.asarray(proj.todense())
     log(f"  projection shape {proj_dense.shape}")
 
-    # Write as DataFrame with columns = greenwald_2024__<patient>__<label>
+    # Write as DataFrame with columns = dejong_2026__<patient>__<label>
     cols = {}
     for gi, g in enumerate(unique_groups):
         if g not in keep_groups:
             continue
         donor, label = g.split("||", 1)
-        cols[f"greenwald_2024__{donor}__{label}"] = proj_dense[gi, :]
+        cols[f"dejong_2026__{donor}__{label}"] = proj_dense[gi, :]
     df = pd.DataFrame(cols)
-    out_pq = OUT / "pseudobulk_v7_greenwald_2024.parquet"
+    out_pq = OUT / "pseudobulk_v7_dejong_2026.parquet"
     df.to_parquet(out_pq, index=False)
     log(f"wrote {out_pq}  shape={df.shape}  elapsed={time.time()-t0:.0f}s")
 

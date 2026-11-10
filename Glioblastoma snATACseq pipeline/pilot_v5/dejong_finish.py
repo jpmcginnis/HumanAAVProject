@@ -1,7 +1,7 @@
 """Standalone finisher — kills nothing itself but assumes the user has killed
 the orchestrator + workers 2/3. Spawns N workers over the UNREAD nnz range,
 merges with the already-saved partial_0 and partial_1, projects, writes
-pseudobulk_v7_greenwald_2024_fast.parquet.
+pseudobulk_v7_dejong_2026_fast.parquet.
 
 Partials 0 and 1 already exist from the earlier run; this script does the rest.
 """
@@ -22,8 +22,8 @@ V5_BED = str(PILOT / "v5_union_reference.bed")
 OUT = PILOT / "requant"
 ATAC_H5AD = str(PILOT / "gbm_space.h5ad")
 RNA_H5AD = "/data/projects/atacseq/raw/gbm_space/GBM_space_snRNA.h5ad"
-PARTIAL_DIR = PILOT / "_greenwald_parallel_partials"
-LOG = PILOT / "greenwald_finish.log"
+PARTIAL_DIR = PILOT / "_dejong_parallel_partials"
+LOG = PILOT / "dejong_finish.log"
 
 # unread range (workers 2+3 original slices combined)
 UNREAD_START = 2_633_847_045 * 2  # end of worker 1 slice
@@ -183,7 +183,7 @@ def main():
     log(f"  merged total: {group_sums.sum():,}")
 
     # Overlap map
-    cohort_bed = PILOT / "_greenwald_finish_src.bed"
+    cohort_bed = PILOT / "_dejong_finish_src.bed"
     with open(cohort_bed, "w") as f:
         for i in range(n_vars):
             c = chrom[i]
@@ -191,9 +191,9 @@ def main():
             f.write(f"{c}\t{start[i]}\t{end[i]}\t{i}\n")
     v5_df = pd.read_csv(V5_BED, sep="\t", header=None, names=["chrom","start","end","sources"])
     v5_df["v5_idx"] = np.arange(len(v5_df))
-    v5_idx_bed = PILOT / "_greenwald_finish_v5idx.bed"
+    v5_idx_bed = PILOT / "_dejong_finish_v5idx.bed"
     v5_df[["chrom","start","end","v5_idx"]].to_csv(v5_idx_bed, sep="\t", header=False, index=False)
-    out = PILOT / "_greenwald_finish_overlap.tsv"
+    out = PILOT / "_dejong_finish_overlap.tsv"
     subprocess.run(
         f"sort -k1,1 -k2,2n {cohort_bed} > {cohort_bed}.s && "
         f"sort -k1,1 -k2,2n {v5_idx_bed} > {v5_idx_bed}.s && "
@@ -218,9 +218,9 @@ def main():
     for gi, g in enumerate(unique_groups):
         if g not in keep_groups: continue
         d, lab = g.split("||", 1)
-        out_cols[f"greenwald_2024__{d}__{lab}"] = proj[gi, :]
+        out_cols[f"dejong_2026__{d}__{lab}"] = proj[gi, :]
     df = pd.DataFrame(out_cols)
-    out_pq = OUT / "pseudobulk_v7_greenwald_2024_fast.parquet"
+    out_pq = OUT / "pseudobulk_v7_dejong_2026_fast.parquet"
     df.to_parquet(out_pq, index=False)
     log(f"wrote {out_pq}  shape={df.shape}  elapsed={time.time()-t0:.0f}s")
 

@@ -144,7 +144,7 @@ files.
    into chromosome-arm intervals. Use `-d -100` (require 100 bp overlap) for the
    cross-cohort union; use `-d -400` for within-cohort if you're not using the
    midpoint-cluster approach.
-6. **Don't try to read Greenwald-style 68 GB filtered-peaks h5ads via anndata
+6. **Don't try to read de Jong-style 68 GB filtered-peaks h5ads via anndata
    backed mode.** Row-slice reads are slow (~5 MB/s) because the HDF5 chunks are
    gzip-compressed. Use direct h5py reads of `X.data` + `X.indices` with a 4 GB
    chunk cache and accumulate col-sums via `np.add.at`. Takes ~15 min instead

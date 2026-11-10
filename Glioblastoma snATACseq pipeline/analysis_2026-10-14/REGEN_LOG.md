@@ -43,7 +43,7 @@ tests/test_schema.py::test_enhancer_matrix_has_pseudobulk_columns PASSED [ 70%]
 tests/test_schema.py::test_pan_malignant_report_schema PASSED            [ 76%]
 tests/test_schema.py::test_annotated_csvs_have_gene_cols PASSED          [ 82%]
 tests/test_schema.py::test_n_target_patients_within_atlas_bounds PASSED  [ 88%]
-tests/test_schema.py::test_greenwald_fraction_in_range PASSED            [ 94%]
+tests/test_schema.py::test_dejong_fraction_in_range PASSED            [ 94%]
 tests/test_schema.py::test_union_bed_well_formed PASSED                  [100%]
 
 ============================= 17 passed in 10.37s ==============================
