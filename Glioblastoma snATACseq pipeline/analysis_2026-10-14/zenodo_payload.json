@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "upload_type": "dataset",
+    "title": "A harmonized human glioblastoma chromatin accessibility atlas (snATAC-seq, 48 patients, 8 cohorts, 1.52M nuclei)",
+    "description": "<p>Harmonized scATAC-seq / snMultiome atlas across 8 published GBM cohorts (48 patients with \u226550 cells per label group, 1,523,668 nuclei) with pan-malignant, per-cell-type, pan-myeloid, and Neftel-state (malignant_AC/MES/OPC/NPC) AAV enhancer candidate shortlists. Peak reference is the union of all cohorts' called peaks plus CATLAS, totaling 1,958,753 peaks (74.2% de-novo vs CATLAS).</p><p><b>Scoring:</b> patient-level replication (primary), cohort-level batch sanity, per-non-target-cell-type contamination for AAV safety, and <b>arm-adjusted Daigle Z</b> (Allen Armamentarium Z &ge; 2 criterion with the null distribution computed per chromosome arm to remove chr7-gain / chr10-loss inflation). CNV annotation columns (chromosome_arm, chromosome_cnv_class, patient_fraction_chr7_elevated) are shipped alongside raw Z for transparency.</p><p><b>Canonical cohort slugs (first-author_year):</b> greenwald_2024 (Greenwald Cell / E-MTAB-17183), sojka_2025 (Sojka Nat Cell Biol / GSE276177 &mdash; the earlier slug 'khan_astro' was a misattribution, corrected in v2026-10-14), sundaram_2024 (Sundaram Cell Rep / GDC dbGaP phs001287), zhao_2024 (Zhao CRM / HRA004942), mathewson_2021 (Mathewson Cell / GSE163654 + Wang 2024 Sci Adv), guo_2020 (Guo Nat Commun / GSE138794), guilhamon_2021 (Guilhamon eLife / GSE139136), raviram_2023 (Raviram et al. 2023 PNAS 120:e2210991120, sci-ATAC / GSE165037). All 8 cohorts contribute to BOTH the peak reference and scoring.</p><p><b>Primary deliverables:</b> reports/top100_distal_combined.html (sortable, filterable, hover-definition table of the 12 headline reports), reports/top100_distal_combined.{csv,xlsx,parquet}, reports/top10_per_arm_combined.{csv,xlsx} (per-chromosome-arm CNV-diversity view), reports/detail/index.html (full per-report gallery with 4 Neftel-state drill-down reports), data/matrix/enhancer_candidate_matrix.parquet (1.96M peaks &times; 337 patient&times;cell-type pseudobulks), data/matrix/greenwald_fine_pseudobulk_backup.parquet (99-label fine-grained Greenwald pseudobulk preserved for future re-remapping), data/matrix/union_peak_reference.bed, data/matrix/peak_provenance.parquet, scripts/pileup_region.py (per-cohort fragment pileup for any region).</p><p>Pipeline source: <a href='https://github.com/jpmcginnis/HumanAAVProject'>github.com/jpmcginnis/HumanAAVProject</a> (Glioblastoma snATACseq pipeline subdirectory).</p>",
+    "creators": [
+      {
+        "name": "McGinnis, JP",
+        "affiliation": "Department of Neurosurgery, Baylor College of Medicine",
+        "orcid": null
+      }
+    ],
+    "keywords": [
+      "glioblastoma",
+      "GBM",
+      "scATAC-seq",
+      "snATAC-seq",
+      "enhancer",
+      "AAV",
+      "gene therapy",
+      "cell-type-specific regulation",
+      "tumor microenvironment",
+      "TAM",
+      "microglia",
+      "Daigle score",
+      "Armamentarium",
+      "CATLAS",
+      "GRCh38",
+      "cross-cohort",
+      "atlas"
+    ],
+    "license": "CC-BY-4.0",
+    "access_right": "open",
+    "related_identifiers": [
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "10.1016/j.cell.2024.03.029",
+        "resource_type": "publication-article",
+        "scheme": "doi",
+        "name": "Greenwald et al. 2024 Cell (gbm_space / E-MTAB-17183)"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE276177",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Sojka et al. 2025 Nat Cell Biol (slug 'sojka_2025'; earlier misattributed as 'khan_astro')"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001287",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Sundaram et al. 2024 Cell Rep (slug 'sundaram_2024'; TCGA PanCanAtlas scATAC subset)"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://ngdc.cncb.ac.cn/gsa-human/browse/HRA004942",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Zhao 2024 CRM GBM-TME (HRA / CNCB-GSA)"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE163654",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Mathewson et al. 2021 Cell + Wang 2024 Sci Adv DNBelab subset (slug 'mathewson_2021')"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE138794",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Guo et al. 2020 Nat Commun (slug 'guo_2020')"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139136",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Guilhamon et al. 2021 eLife (slug 'guilhamon_2021')"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE165037",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "Raviram et al. 2023 PNAS sci-ATAC (slug 'raviram_2023')"
+      },
+      {
+        "relation": "isDerivedFrom",
+        "identifier": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE244618",
+        "resource_type": "dataset",
+        "scheme": "url",
+        "name": "CATLAS 544K peak atlas (Li et al. 2023 Science)"
+      },
+      {
+        "relation": "isSupplementTo",
+        "identifier": "https://github.com/jpmcginnis/HumanAAVProject",
+        "resource_type": "software",
+        "scheme": "url",
+        "name": "GBM chromatin accessibility atlas pipeline source"
+      }
+    ],
+    "notes": "Prepared in support of a June 2026 NIH R01 submission for AAV-delivered cell-type-specific enhancer therapy in GBM. 100 kb distance cap deliberately omitted for AAV enhancer nomination (enhancer is extracted from genomic context in the viral cassette; native-genome distance to the nominally regulated gene is irrelevant). See SCHEMA.md for frozen column definitions and CHANGELOG.md for version history.",
+    "version": "2026-10-14",
+    "language": "eng"
+  }
+}

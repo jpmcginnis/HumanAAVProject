@@ -1,0 +1,15 @@
+cell_type	taxonomy	median_primary_score	median_log2fc	top_log2fc	median_strength_frags_per_cell_wn	pct_2to10kb	pct_gt10kb
+astrocyte	10-primary	0.9881	1.809	2.648	0.0426	14.7	85.3
+microglia	10-primary	0.9698	1.36	2.215	0.019	22.3	77.7
+oligodendrocyte	10-primary	0.994	2.114	3.406	0.116	18.2	81.8
+OPC	10-primary	0.9818	1.578	3.349	0.0422	13.6	86.4
+endothelial	10-primary	0.9964	2.947	4.159	0.0724	19.8	80.2
+neuron	10-primary	0.9765	1.438	2.327	0.0417	7.4	92.6
+GABA_neuron	10-primary	0.9953	2.76	4.157	0.1038	9.5	90.5
+T_cell	10-primary	0.9985	3.65	5.985	0.1549	19.2	80.8
+TAM	10-primary	0.984	1.591	3.796	0.0426	18.3	81.7
+malignant	10-primary	0.9875	1.889	4.535	0.0577	10.2	89.8
+malignant_AC	13-subtype	0.9394	0.841	1.395	0.0426	10.6	89.4
+malignant_MES	13-subtype	0.9785	1.356	2.269	0.051	13.6	86.4
+malignant_NPC	13-subtype	0.99	1.955	3.458	0.0672	12.3	87.7
+malignant_OPC	13-subtype	0.9177	0.774	1.465	0.0222	10.0	90.0

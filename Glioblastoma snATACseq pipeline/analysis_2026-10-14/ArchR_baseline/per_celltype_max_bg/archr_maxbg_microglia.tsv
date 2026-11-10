@@ -1,0 +1,2 @@
+peak_id	chrom	start	end	target_mean_cpm	max_other_ct_mean_cpm	top_competitor_ct	log2fc_vs_max_other	welch_t_vs_pooled	p_value_vs_pooled	fdr_vs_pooled	cpm_mean_astrocyte	cpm_mean_microglia	cpm_mean_oligodendrocyte	cpm_mean_OPC	cpm_mean_endothelial	cpm_mean_neuron	cpm_mean_GABA_neuron	cpm_mean_T_cell	cpm_mean_TAM	cpm_mean_malignant
+chr1:22636807-22637402	chr1	22636807	22637402	49.742783	6.677862	T_cell	2.8784823	3.9570465	0.0009206801519620097	0.019398570010672092	0.46082592	49.742783	0.35046232	0.63107514	0.6623761	5.8044086	0.5363716	6.677862	6.3976808	1.6848153

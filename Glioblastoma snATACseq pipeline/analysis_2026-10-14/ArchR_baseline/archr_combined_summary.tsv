@@ -1,0 +1,11 @@
+cell_type	n_patients_target	n_patients_bg	n_survivors_pooledbg	threshold_log2fc_gt	threshold_fdr_lt	n_survivors_maxbg
+GABA_neuron	13	231	15774	2.0	0.05	3533
+OPC	23	221	1919	2.0	0.05	176
+TAM	36	208	283	2.0	0.05	0
+T_cell	26	218	6697	2.0	0.05	3267
+astrocyte	18	226	23	2.0	0.05	1
+endothelial	15	229	65	2.0	0.05	19
+malignant	39	205	36	2.0	0.05	0
+microglia	19	225	198	2.0	0.05	1
+neuron	34	210	2	2.0	0.05	0
+oligodendrocyte	21	223	9260	2.0	0.05	851
