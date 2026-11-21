@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>GBM snATAC Atlas v4 — Enhancer Candidates</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  :root { --sticky-head-top: 173px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    margin: 0; padding: 0; color: #222; background: #f8f9fa; font-size: 13px; }
+  header { background:#1b1f24; color:#f8f9fa; padding:14px 24px;
+    position:sticky; top:0; z-index:50; box-shadow:0 2px 4px rgba(0,0,0,0.15); }
+  header h1 { margin:0 0 4px 0; font-size:18px; font-weight:600; }
+  header .sub { font-size:11px; opacity:0.7; }
+  header .version-badge { background:#059669; color:white; font-weight:700;
+    font-size:10px; padding:2px 8px; border-radius:4px; margin-left:10px; vertical-align:middle; }
+  .tabs { background:white; padding:10px 24px; border-bottom:1px solid #dee2e6;
+    display:flex; flex-wrap:wrap; gap:6px; position:sticky; top:var(--header-height, 56px); z-index:40; }
+  .tab-btn { padding:6px 12px; font-size:12px; border:1px solid #ced4da; border-radius:4px;
+    background:white; cursor:pointer; color:#495057; font-family:inherit; }
+  .tab-btn:hover { background:#f1f3f5; }
+  .tab-btn.active { background:#0d6efd; color:white; border-color:#0d6efd; }
+  .tab-btn.secondary { border-style:dashed; opacity:0.85; }
+  .tab-btn .n { font-weight:400; font-size:10px; opacity:0.7; }
+  .col-ctrl { background:white; padding:8px 24px; border-bottom:1px solid #dee2e6;
+    display:flex; gap:12px; align-items:center; font-size:11px; color:#666; flex-wrap:wrap; }
+  .col-ctrl label { cursor:pointer; }
+  .col-ctrl .group-label { font-weight:600; color:#333; margin-right:4px; }
+  .col-ctrl select { padding:3px 8px; font-size:11px; border:1px solid #ced4da; border-radius:3px; background:white; }
+  .main { padding:16px 24px; }
+  .caveats { background:#fff3cd; border:1px solid #ffe08a; border-radius:4px;
+    padding:10px 16px; margin-bottom:16px; font-size:12px; color:#664d03; line-height:1.5; }
+  .caveats strong { color:#594100; }
+  table.dataTable { border-collapse: separate !important; border-spacing: 0 !important; font-size:11px; }
+  table.dataTable thead th { background:#343a40 !important; color:#f8f9fa !important; padding:7px 8px !important;
+    font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.3px;
+    cursor:help; border-bottom:2px solid #0d6efd; white-space:nowrap;
+    position: sticky !important; top: var(--sticky-head-top) !important; z-index: 45 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+  table.dataTable thead th[title]:hover { background:#495057 !important; }
+  table.dataTable tbody td { padding:5px 8px !important; white-space:nowrap; }
+  table.dataTable tbody tr:nth-child(even) { background:#fafbfc; }
+  table.dataTable tbody tr:hover { background:#e7f1ff; }
+  .num { font-family:ui-monospace, Menlo, monospace; text-align:right; }
+  .peakid { font-family:ui-monospace, Menlo, monospace; font-size:10px; }
+  .amp-flag { background:#ffebee; color:#b71c1c; padding:1px 6px; border-radius:3px; font-size:10px; }
+  .primary-score-cell { font-weight:700; background:#e7f1ff; }
+  .expander { cursor:pointer; color:#0d6efd; user-select:none; font-weight:600; }
+  .no-expand { padding:12px 16px; color:#999; font-size:11px; background:#f8f9fa; }
+  .expansion { background:#f8f9fa; padding:12px 16px;
+    max-width: calc(100vw - 48px); box-sizing: border-box; overflow: hidden; }
+  .expansion .ucsc-link, .expansion .ucsc-ctx, .expansion .aav-note { white-space: normal; }
+  .expansion h4 { margin:0 0 6px 0; font-size:11px; text-transform:uppercase; color:#495057;
+    letter-spacing:0.3px; }
+  .expansion .ucsc-link { padding:10px 12px; background:white; border:1px solid #0d6efd;
+    border-radius:4px; margin-bottom:12px; font-size:11px; }
+  .expansion .ucsc-link a { color:#0d6efd; font-weight:600; text-decoration:none; }
+  .expansion .ucsc-link a:hover { text-decoration:underline; }
+  .expansion .ucsc-ctx { color:#666; font-size:10px; }
+  .expansion .aav-note { display:inline-block; margin-top:4px; font-size:11px; color:#495057; }
+  .expansion .ct-bar-pair { display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-bottom:12px; }
+  .expansion .ct-bars { display:grid; grid-template-columns:140px 1fr 60px; gap:4px 10px;
+    align-items:center; font-size:10px; }
+  .expansion .ct-bars .bar-cont { background:#e9ecef; height:12px; border-radius:2px; position:relative; }
+  .expansion .ct-bars .bar-fill { background:#0d6efd; height:100%; border-radius:2px; }
+  .expansion .ct-bars .bar-fill.abs-scale { background:#f59e0b; }
+  .expansion .ct-bars .ct-name.highlighted { font-weight:700; color:#0d6efd; }
+  .expansion .pat-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+    gap:4px 8px; font-size:10px; margin-bottom:12px; }
+  .expansion .pat-grid .pat-row { display:flex; justify-content:space-between;
+    padding:3px 6px; background:white; border-radius:3px; border:1px solid #e9ecef; }
+  .expansion .pat-grid .pat-row.detected { background:#d1e7dd; }
+  .expansion .pat-grid .pat-row.unevaluable { opacity:0.4; }
+  .expansion .pat-row .lab { font-family:ui-monospace, monospace; }
+  .expansion .pat-row .pen { font-family:ui-monospace, monospace; font-weight:600; }
+  .expansion .coh-list { display:flex; gap:6px; flex-wrap:wrap; font-size:10px; }
+  .expansion .coh-chip { padding:3px 8px; border-radius:3px; font-family:ui-monospace, monospace; }
+  .expansion .coh-chip.detected { background:#d1e7dd; color:#0a3622; }
+  .expansion .coh-chip.undetected { background:#f8d7da; color:#58151c; }
+  .footer { font-size:10px; color:#666; padding:20px 24px; text-align:center; }
+</style>
+</head><body>
+<header>
+  <h1>GBM snATAC Atlas v4 — Enhancer Candidates <span class="version-badge">v4 · Plain Strength</span></h1>
+  <div class="sub">
+    48 patients × 8 cohorts × 1.52M nuclei × 1.96M union peaks. Top-1000 DISTAL peaks (|dist to TSS| ≥ 2 kb) per cell type,
+    ranked by <b>primary_score = (spec_pct + strength_pct) / 2</b>. Strength = mean per-patient fragments-per-cell (width-normalized),
+    no Poisson adjustment. Click row for expansion details (top-2000 per tab).
+  </div>
+</header>
+
+<div class="tabs"><button class="tab-btn primary" data-ct="astrocyte">astrocyte <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="microglia">microglia <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="oligodendrocyte">oligodendrocyte <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="OPC">OPC <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="endothelial">endothelial <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="neuron">neuron <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="GABA_neuron">GABA_neuron <span class="n">(1)</span></button>
+<button class="tab-btn primary" data-ct="T_cell">T_cell <span class="n">(4)</span></button>
+<button class="tab-btn primary" data-ct="TAM">TAM <span class="n">(0)</span></button>
+<button class="tab-btn primary" data-ct="malignant">malignant (pooled) <span class="n">(2)</span></button>
+<button class="tab-btn secondary" data-ct="malignant_AC">malignant_AC <span class="n">(0)</span></button>
+<button class="tab-btn secondary" data-ct="malignant_MES">malignant_MES <span class="n">(1)</span></button>
+<button class="tab-btn secondary" data-ct="malignant_NPC">malignant_NPC <span class="n">(0)</span></button>
+<button class="tab-btn secondary" data-ct="malignant_OPC">malignant_OPC <span class="n">(0)</span></button>
+</div>
+
+<div class="col-ctrl">
+  <span class="group-label">Distance band:</span>
+  <select id="dist-filter">
+    <option value="all">All distal (≥ 2 kb)</option>
+    <option value="2-10kb">2–10 kb only</option>
+    <option value=">10kb">&gt; 10 kb only</option>
+  </select>
+  <span class="group-label" style="margin-left:12px;">Toggle columns:</span>
+  <label><input type="checkbox" class="col-toggle" data-col="1"> chrom</label>
+  <label><input type="checkbox" class="col-toggle" data-col="2"> start</label>
+  <label><input type="checkbox" class="col-toggle" data-col="3"> end</label>
+</div>
+
+<div class="main">
+  <div class="caveats">
+    <strong>v4 primary ranking (rank-percentile sum):</strong> Top-1000 per cell type ranked by
+    <code>primary_score = (spec_pct + strength_pct) / 2</code>, where <code>spec_pct</code> is the percentile rank of
+    <code>log2FC_top_vs_next</code> and <code>strength_pct</code> is the percentile rank of
+    <code>strength_frags_per_cell_wn</code>, both computed within distal peaks.
+    <br>
+    <strong>v4 strength (plain, no Poisson):</strong>
+    <code>strength = mean over evaluable patients of (fragments / cells × 500 / peak_width_bp)</code>.
+    Just the average number of Tn5 fragments per cell at this peak, width-normalized to a 500 bp reference. No model assumption.
+    (v3 used <code>1 - exp(-fragments/cells)</code>, which was based on a Poisson assumption that doesn't match diploid biology; dropped in v4.)
+    <br><br>
+    <strong>Distal filter + taxonomy separation (unchanged from v3):</strong> |dist_to_tss| ≥ 2 kb applied before top-N selection.
+    Primary tabs use log2FC vs the 10 primary lineages; subtype tabs use log2FC vs 13 lineages (pooled malignant excluded) to avoid self-competition.
+    <br><br>
+    <strong>Amplicon/CN caveat (permanent).</strong> Peaks within ±1 Mb of chr7p11.2 EGFR, chr12q15 MDM2, chr8q24 MYC, or chr9p21.3 CDKN2A carry an <strong class="amp-flag">AMP</strong> badge. In NON-malignant tabs the badge flags ambient-fragment contamination from malignant cells. In MALIGNANT tabs the badge flags copy-number inflation of per-cell fragment counts (recurrent amp/del driving CPM, not regulatory activity). No automatic score correction is applied — treat as de-selection hint.
+    <br><br>
+    <strong>Nearest-gene is informational only.</strong> AAV scaffold efficacy depends on cell-type-selective driving strength (what primary_score ranks), not nearest-gene identity.
+    <br><br>
+    <strong>Hover any column header for its definition and formula.</strong>
+  </div>
+
+  <div id="table-container">
+    <table id="atlas-table" class="display compact" style="width:100%">
+      <thead>
+        <tr>
+          <th title="GRCh38 peak coordinates (chr:start-end). AMP badge = within ±1 Mb of a known GBM amplicon.">peak_id</th>
+          <th title="Chromosome, GRCh38. Hidden by default.">chrom</th>
+          <th title="Peak start coordinate (0-based). Hidden by default.">start</th>
+          <th title="Peak end coordinate (0-based). Hidden by default.">end</th>
+          <th title="Peak width in bp (end − start).">width (bp)</th>
+          <th title="HGNC symbol of nearest annotated TSS. CONTEXT ONLY — does NOT identify the regulatory target.">nearest gene</th>
+          <th title="Signed distance from peak midpoint to the nearest TSS. Negative = upstream on gene's sense strand.">dist to TSS</th>
+          <th title="Distance band: '2-10kb' or '>10kb'. Use the Distance band dropdown to filter.">band</th>
+          <th title="Specificity: log2 fold-change of pseudobulk mean CPM in the top cell type vs the second-highest cell type. Taxonomy: 10 primary cell types for primary tabs; 13 (pooled malignant excluded) for subtype tabs.">log2FC top vs next</th>
+          <th title="Percentile rank of log2FC_top_vs_next across all distal peaks. 0 = lowest, 1 = highest specificity.">spec pct</th>
+          <th title="PLAIN strength (v4): mean over evaluable patients (≥100 cells of target type) of (fragments / cells × 500 / peak_width_bp). Average Tn5 fragments per cell at this peak, width-normalized to a 500 bp reference. No Poisson adjustment, no model assumption.">strength (frags/cell, wn)</th>
+          <th title="Percentile rank of strength_frags_per_cell_wn across all distal peaks. 0 = lowest, 1 = highest.">strength pct</th>
+          <th title="DEFAULT RANKING. (spec_pct + strength_pct) / 2. Equal-weighted sum of nonparametric percentile ranks of specificity and strength. 0-1, higher is better.">primary score</th>
+          <th title="Count of cohorts (0-8) where cohort-level frags/cell (width-normalized) ≥ 0.05. Measures cross-cohort replication.">n cohorts</th>
+          <th title="Detected in N of M evaluable patients. Evaluable = ≥100 cells of target cell type. Detected = per-patient frags/cell (width-normalized) ≥ 0.01.">patient detection</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  Rendered 2026-10-19 15:01 ·
+  v4: plain fragments-per-cell strength, no Poisson · Distal-only · Taxonomy-correct per tab ·
+  Click row for expansion details (top-2000 per tab)
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script>
+const TAB_DATA = {"astrocyte":[],"microglia":[],"oligodendrocyte":[],"OPC":[],"endothelial":[],"neuron":[],"GABA_neuron":[{"peak_id":"chr3:93470196-93470881","chrom":"chr3","start":93470196,"end":93470881,"peak_width_bp":685,"nearest_gene":"PROS1","dist_to_tss_signed":503358,"distance_band":">10kb","log2FC_top_vs_next":0.342,"spec_pct":0.5724,"strength_frags_per_cell_wn":9.2316,"strength_pct":1.0,"primary_score":0.7862,"patient_detection_rate":0.4615,"n_patients_detected":6,"n_patients_evaluable":13,"n_cohorts":2}],"T_cell":[{"peak_id":"chr1:152048488-152048688","chrom":"chr1","start":152048488,"end":152048688,"peak_width_bp":200,"nearest_gene":"S100A11","dist_to_tss_signed":-11584,"distance_band":">10kb","log2FC_top_vs_next":0.082,"spec_pct":0.175,"strength_frags_per_cell_wn":1.3378,"strength_pct":1.0,"primary_score":0.5875,"patient_detection_rate":1.0,"n_patients_detected":16,"n_patients_evaluable":16,"n_cohorts":5},{"peak_id":"chr17:8156182-8156895","chrom":"chr17","start":8156182,"end":8156895,"peak_width_bp":713,"nearest_gene":"PER1","dist_to_tss_signed":-4134,"distance_band":"2-10kb","log2FC_top_vs_next":0.682,"spec_pct":0.8398,"strength_frags_per_cell_wn":1.2246,"strength_pct":1.0,"primary_score":0.9199,"patient_detection_rate":1.0,"n_patients_detected":16,"n_patients_evaluable":16,"n_cohorts":4},{"peak_id":"chr3:50235679-50236415","chrom":"chr3","start":50235679,"end":50236415,"peak_width_bp":736,"nearest_gene":"MIR5787","dist_to_tss_signed":8612,"distance_band":"2-10kb","log2FC_top_vs_next":0.805,"spec_pct":0.8888,"strength_frags_per_cell_wn":1.0605,"strength_pct":1.0,"primary_score":0.9444,"patient_detection_rate":1.0,"n_patients_detected":16,"n_patients_evaluable":16,"n_cohorts":4},{"peak_id":"chr9:36488066-36488718","chrom":"chr9","start":36488066,"end":36488718,"peak_width_bp":652,"nearest_gene":"MELK","dist_to_tss_signed":-84469,"distance_band":">10kb","log2FC_top_vs_next":0.988,"spec_pct":0.9342,"strength_frags_per_cell_wn":1.0038,"strength_pct":1.0,"primary_score":0.9671,"patient_detection_rate":1.0,"n_patients_detected":16,"n_patients_evaluable":16,"n_cohorts":3}],"TAM":[],"malignant":[{"peak_id":"chr19:2950456-2951071","chrom":"chr19","start":2950456,"end":2951071,"peak_width_bp":615,"nearest_gene":"ZNF77","dist_to_tss_signed":-5792,"distance_band":"2-10kb","log2FC_top_vs_next":0.367,"spec_pct":0.6033,"strength_frags_per_cell_wn":1.211,"strength_pct":1.0,"primary_score":0.8016,"patient_detection_rate":0.96,"n_patients_detected":24,"n_patients_evaluable":25,"n_cohorts":5},{"peak_id":"chr19:5292748-5293060","chrom":"chr19","start":5292748,"end":5293060,"peak_width_bp":312,"nearest_gene":"PTPRS","dist_to_tss_signed":47908,"distance_band":">10kb","log2FC_top_vs_next":0.006,"spec_pct":0.0143,"strength_frags_per_cell_wn":1.042,"strength_pct":1.0,"primary_score":0.5072,"patient_detection_rate":0.92,"n_patients_detected":23,"n_patients_evaluable":25,"n_cohorts":5}],"malignant_AC":[],"malignant_MES":[{"peak_id":"chr19:50725265-50725818","chrom":"chr19","start":50725265,"end":50725818,"peak_width_bp":553,"nearest_gene":"CLEC11A","dist_to_tss_signed":2178,"distance_band":"2-10kb","log2FC_top_vs_next":0.128,"spec_pct":0.2638,"strength_frags_per_cell_wn":1.1073,"strength_pct":1.0,"primary_score":0.6319,"patient_detection_rate":1.0,"n_patients_detected":12,"n_patients_evaluable":12,"n_cohorts":1}],"malignant_NPC":[],"malignant_OPC":[]};
+const EXPANSION = {"astrocyte":{},"microglia":{},"oligodendrocyte":{},"OPC":{},"endothelial":{},"neuron":{},"GABA_neuron":{"chr3:93470196-93470881":{"cpms":[242.712,250.892,167.934,123.311,306.866,101.924,389.125,159.726,99.209,67.517,0.0,0.0,0.0,0.0],"patients":[{"p":"AT10","c":"greenwald_2024","n":1210,"e":true,"v":0.0},{"p":"AT12","c":"greenwald_2024","n":548,"e":true,"v":0.0},{"p":"AT13","c":"greenwald_2024","n":3833,"e":true,"v":0.0},{"p":"AT15","c":"greenwald_2024","n":2509,"e":true,"v":0.0},{"p":"AT3","c":"greenwald_2024","n":992,"e":true,"v":0.0},{"p":"AT4","c":"greenwald_2024","n":672,"e":true,"v":0.0},{"p":"AT5","c":"greenwald_2024","n":765,"e":true,"v":0.0},{"p":"GBM20","c":"sojka_2025","n":591,"e":true,"v":73.0841},{"p":"GBM25","c":"sojka_2025","n":349,"e":true,"v":27.1119},{"p":"GBM38","c":"sojka_2025","n":271,"e":true,"v":14.7844},{"p":"scATAC_GBMx_99D8A126","c":"sundaram_2024","n":390,"e":true,"v":1.2034},{"p":"scATAC_GBMx_A90B18B6","c":"sundaram_2024","n":270,"e":true,"v":1.8167},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":138,"e":true,"v":2.0099}],"cohorts":{"greenwald_2024":false,"sojka_2025":true,"sundaram_2024":true}}},"T_cell":{"chr1:152048488-152048688":{"cpms":[9.42,33.324,1.528,5.986,10.4,22.674,1.424,35.307,30.944,17.493,16.954,19.623,7.7,13.596],"patients":[{"p":"AT10","c":"greenwald_2024","n":511,"e":true,"v":1.2965},{"p":"AT11","c":"greenwald_2024","n":104,"e":true,"v":0.9375},{"p":"AT13","c":"greenwald_2024","n":290,"e":true,"v":1.4828},{"p":"AT15","c":"greenwald_2024","n":316,"e":true,"v":1.1234},{"p":"AT3","c":"greenwald_2024","n":35,"e":false,"v":2.0},{"p":"AT4","c":"greenwald_2024","n":236,"e":true,"v":1.197},{"p":"AT5","c":"greenwald_2024","n":164,"e":true,"v":1.128},{"p":"AT6","c":"greenwald_2024","n":206,"e":true,"v":1.2136},{"p":"AT7","c":"greenwald_2024","n":672,"e":true,"v":1.4137},{"p":"AT9","c":"greenwald_2024","n":304,"e":true,"v":1.2089},{"p":"Wang_pair_5","c":"mathewson_2021","n":98,"e":false,"v":0.8418},{"p":"GBM20","c":"sojka_2025","n":1286,"e":true,"v":0.138},{"p":"GBM25","c":"sojka_2025","n":421,"e":true,"v":0.196},{"p":"GBM38","c":"sojka_2025","n":165,"e":true,"v":0.2576},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":75,"e":false,"v":0.6333},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":71,"e":false,"v":0.1408},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":147,"e":true,"v":0.2041},{"p":"P62","c":"zhao_2024","n":50,"e":false,"v":2.7},{"p":"P64","c":"zhao_2024","n":95,"e":false,"v":1.5526},{"p":"P77","c":"zhao_2024","n":65,"e":false,"v":2.9615},{"p":"P78","c":"zhao_2024","n":51,"e":false,"v":1.9118},{"p":"P79","c":"zhao_2024","n":138,"e":true,"v":3.5145},{"p":"P80","c":"zhao_2024","n":133,"e":true,"v":3.1203},{"p":"P83","c":"zhao_2024","n":57,"e":false,"v":1.3596},{"p":"P84","c":"zhao_2024","n":132,"e":true,"v":2.9735},{"p":"P98","c":"zhao_2024","n":67,"e":false,"v":3.7313}],"cohorts":{"greenwald_2024":true,"mathewson_2021":true,"sojka_2025":true,"sundaram_2024":true,"zhao_2024":true}},"chr17:8156182-8156895":{"cpms":[42.893,49.524,56.862,44.74,49.379,49.911,37.333,91.511,49.329,54.904,63.366,69.83,56.302,58.429],"patients":[{"p":"AT10","c":"greenwald_2024","n":511,"e":true,"v":1.3874},{"p":"AT11","c":"greenwald_2024","n":104,"e":true,"v":1.3621},{"p":"AT13","c":"greenwald_2024","n":290,"e":true,"v":1.7725},{"p":"AT15","c":"greenwald_2024","n":316,"e":true,"v":1.2938},{"p":"AT3","c":"greenwald_2024","n":35,"e":false,"v":1.2823},{"p":"AT4","c":"greenwald_2024","n":236,"e":true,"v":1.5125},{"p":"AT5","c":"greenwald_2024","n":164,"e":true,"v":1.3854},{"p":"AT6","c":"greenwald_2024","n":206,"e":true,"v":1.3923},{"p":"AT7","c":"greenwald_2024","n":672,"e":true,"v":1.5037},{"p":"AT9","c":"greenwald_2024","n":304,"e":true,"v":1.2503},{"p":"Wang_pair_5","c":"mathewson_2021","n":98,"e":false,"v":0.0},{"p":"GBM20","c":"sojka_2025","n":1286,"e":true,"v":0.3648},{"p":"GBM25","c":"sojka_2025","n":421,"e":true,"v":0.4764},{"p":"GBM38","c":"sojka_2025","n":165,"e":true,"v":0.7183},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":75,"e":false,"v":1.0098},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":71,"e":false,"v":0.2864},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":147,"e":true,"v":0.2576},{"p":"P62","c":"zhao_2024","n":50,"e":false,"v":1.5428},{"p":"P64","c":"zhao_2024","n":95,"e":false,"v":0.9375},{"p":"P77","c":"zhao_2024","n":65,"e":false,"v":1.5967},{"p":"P78","c":"zhao_2024","n":51,"e":false,"v":0.9488},{"p":"P79","c":"zhao_2024","n":138,"e":true,"v":2.0631},{"p":"P80","c":"zhao_2024","n":133,"e":true,"v":1.3814},{"p":"P83","c":"zhao_2024","n":57,"e":false,"v":0.6274},{"p":"P84","c":"zhao_2024","n":132,"e":true,"v":1.4716},{"p":"P98","c":"zhao_2024","n":67,"e":false,"v":1.7165}],"cohorts":{"greenwald_2024":true,"mathewson_2021":false,"sojka_2025":true,"sundaram_2024":true,"zhao_2024":true}},"chr3:50235679-50236415":{"cpms":[28.269,45.508,46.187,36.021,39.283,43.372,29.543,82.142,43.07,46.804,56.494,58.795,54.23,52.174],"patients":[{"p":"AT10","c":"greenwald_2024","n":511,"e":true,"v":1.2311},{"p":"AT11","c":"greenwald_2024","n":104,"e":true,"v":1.313},{"p":"AT13","c":"greenwald_2024","n":290,"e":true,"v":1.4149},{"p":"AT15","c":"greenwald_2024","n":316,"e":true,"v":0.9975},{"p":"AT3","c":"greenwald_2024","n":35,"e":false,"v":1.2228},{"p":"AT4","c":"greenwald_2024","n":236,"e":true,"v":1.281},{"p":"AT5","c":"greenwald_2024","n":164,"e":true,"v":1.3338},{"p":"AT6","c":"greenwald_2024","n":206,"e":true,"v":1.2334},{"p":"AT7","c":"greenwald_2024","n":672,"e":true,"v":1.2697},{"p":"AT9","c":"greenwald_2024","n":304,"e":true,"v":1.0861},{"p":"Wang_pair_5","c":"mathewson_2021","n":98,"e":false,"v":0.0},{"p":"GBM20","c":"sojka_2025","n":1286,"e":true,"v":0.2129},{"p":"GBM25","c":"sojka_2025","n":421,"e":true,"v":0.4357},{"p":"GBM38","c":"sojka_2025","n":165,"e":true,"v":0.4735},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":75,"e":false,"v":0.6703},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":71,"e":false,"v":0.2392},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":147,"e":true,"v":0.2773},{"p":"P62","c":"zhao_2024","n":50,"e":false,"v":1.2636},{"p":"P64","c":"zhao_2024","n":95,"e":false,"v":0.9439},{"p":"P77","c":"zhao_2024","n":65,"e":false,"v":1.4005},{"p":"P78","c":"zhao_2024","n":51,"e":false,"v":0.7726},{"p":"P79","c":"zhao_2024","n":138,"e":true,"v":1.6688},{"p":"P80","c":"zhao_2024","n":133,"e":true,"v":1.277},{"p":"P83","c":"zhao_2024","n":57,"e":false,"v":0.6913},{"p":"P84","c":"zhao_2024","n":132,"e":true,"v":1.4616},{"p":"P98","c":"zhao_2024","n":67,"e":false,"v":1.3283}],"cohorts":{"greenwald_2024":true,"mathewson_2021":false,"sojka_2025":true,"sundaram_2024":true,"zhao_2024":true}},"chr9:36488066-36488718":{"cpms":[20.635,28.371,33.05,23.844,28.862,29.672,19.726,69.223,29.085,34.643,43.546,44.786,36.674,38.68],"patients":[{"p":"AT10","c":"greenwald_2024","n":511,"e":true,"v":1.4737},{"p":"AT11","c":"greenwald_2024","n":104,"e":true,"v":1.0618},{"p":"AT13","c":"greenwald_2024","n":290,"e":true,"v":1.6818},{"p":"AT15","c":"greenwald_2024","n":316,"e":true,"v":1.0096},{"p":"AT3","c":"greenwald_2024","n":35,"e":false,"v":1.1613},{"p":"AT4","c":"greenwald_2024","n":236,"e":true,"v":1.4428},{"p":"AT5","c":"greenwald_2024","n":164,"e":true,"v":1.3748},{"p":"AT6","c":"greenwald_2024","n":206,"e":true,"v":1.2583},{"p":"AT7","c":"greenwald_2024","n":672,"e":true,"v":1.3968},{"p":"AT9","c":"greenwald_2024","n":304,"e":true,"v":1.1982},{"p":"Wang_pair_5","c":"mathewson_2021","n":98,"e":false,"v":0.0},{"p":"GBM20","c":"sojka_2025","n":1286,"e":true,"v":0.0382},{"p":"GBM25","c":"sojka_2025","n":421,"e":true,"v":0.0619},{"p":"GBM38","c":"sojka_2025","n":165,"e":true,"v":0.0511},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":75,"e":false,"v":0.1227},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":71,"e":false,"v":0.0432},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":147,"e":true,"v":0.0365},{"p":"P62","c":"zhao_2024","n":50,"e":false,"v":1.2117},{"p":"P64","c":"zhao_2024","n":95,"e":false,"v":0.9202},{"p":"P77","c":"zhao_2024","n":65,"e":false,"v":1.3568},{"p":"P78","c":"zhao_2024","n":51,"e":false,"v":0.9623},{"p":"P79","c":"zhao_2024","n":138,"e":true,"v":1.5949},{"p":"P80","c":"zhao_2024","n":133,"e":true,"v":1.0494},{"p":"P83","c":"zhao_2024","n":57,"e":false,"v":0.6996},{"p":"P84","c":"zhao_2024","n":132,"e":true,"v":1.3304},{"p":"P98","c":"zhao_2024","n":67,"e":false,"v":1.5109}],"cohorts":{"greenwald_2024":true,"mathewson_2021":false,"sojka_2025":false,"sundaram_2024":true,"zhao_2024":true}}},"TAM":{},"malignant":{"chr19:2950456-2951071":{"cpms":[41.661,36.978,41.09,42.042,32.641,41.776,22.536,60.246,78.49,60.737,48.772,53.383,45.775,43.147],"patients":[{"p":"AT10","c":"greenwald_2024","n":76330,"e":true,"v":0.5113},{"p":"AT11","c":"greenwald_2024","n":62929,"e":true,"v":0.6246},{"p":"AT12","c":"greenwald_2024","n":48162,"e":true,"v":0.7481},{"p":"AT13","c":"greenwald_2024","n":20139,"e":true,"v":0.9946},{"p":"AT14","c":"greenwald_2024","n":20088,"e":true,"v":0.677},{"p":"AT15","c":"greenwald_2024","n":109857,"e":true,"v":0.5326},{"p":"AT3","c":"greenwald_2024","n":58924,"e":true,"v":0.8454},{"p":"AT4","c":"greenwald_2024","n":56808,"e":true,"v":0.599},{"p":"AT5","c":"greenwald_2024","n":66959,"e":true,"v":0.5948},{"p":"AT6","c":"greenwald_2024","n":109678,"e":true,"v":0.7596},{"p":"AT7","c":"greenwald_2024","n":19985,"e":true,"v":0.5953},{"p":"AT9","c":"greenwald_2024","n":119975,"e":true,"v":0.5235},{"p":"GBM_4218","c":"guilhamon_2021","n":696,"e":true,"v":4.53},{"p":"GBM_4250","c":"guilhamon_2021","n":675,"e":true,"v":0.0},{"p":"GBM_4275","c":"guilhamon_2021","n":457,"e":true,"v":2.5618},{"p":"GBM_4349","c":"guilhamon_2021","n":504,"e":true,"v":5.4975},{"p":"SF11215","c":"guo_2020","n":350,"e":true,"v":5.1057},{"p":"SF11979","c":"guo_2020","n":1455,"e":true,"v":0.7085},{"p":"Wang_pair_22","c":"mathewson_2021","n":638,"e":true,"v":0.2561},{"p":"Wang_pair_27","c":"mathewson_2021","n":893,"e":true,"v":0.0473},{"p":"Wang_pair_37","c":"mathewson_2021","n":116,"e":true,"v":0.0841},{"p":"Wang_pair_5","c":"mathewson_2021","n":509,"e":true,"v":0.5143},{"p":"GBM12","c":"raviram_2023","n":70,"e":false,"v":0.0348},{"p":"GBM4","c":"raviram_2023","n":2912,"e":true,"v":0.0335},{"p":"GBM20","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"GBM25","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"GBM38","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_09C0DCE7","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_6BEE2CB6","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_9976F952","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_99D8A126","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_A90B18B6","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"P101","c":"zhao_2024","n":54,"e":false,"v":0.5721},{"p":"P62","c":"zhao_2024","n":101,"e":true,"v":1.4892},{"p":"P64","c":"zhao_2024","n":250,"e":true,"v":1.4407},{"p":"P77","c":"zhao_2024","n":52,"e":false,"v":1.1882},{"p":"P92","c":"zhao_2024","n":55,"e":false,"v":0.2069}],"cohorts":{"greenwald_2024":true,"guilhamon_2021":true,"guo_2020":true,"mathewson_2021":true,"raviram_2023":false,"zhao_2024":true}},"chr19:5292748-5293060":{"cpms":[18.824,0.73,27.196,20.116,9.545,9.61,9.408,3.885,10.839,27.307,32.102,35.833,23.246,26.885],"patients":[{"p":"AT10","c":"greenwald_2024","n":76330,"e":true,"v":0.7402},{"p":"AT11","c":"greenwald_2024","n":62929,"e":true,"v":0.7458},{"p":"AT12","c":"greenwald_2024","n":48162,"e":true,"v":1.0684},{"p":"AT13","c":"greenwald_2024","n":20139,"e":true,"v":1.12},{"p":"AT14","c":"greenwald_2024","n":20088,"e":true,"v":0.7581},{"p":"AT15","c":"greenwald_2024","n":109857,"e":true,"v":0.386},{"p":"AT3","c":"greenwald_2024","n":58924,"e":true,"v":1.0047},{"p":"AT4","c":"greenwald_2024","n":56808,"e":true,"v":0.8255},{"p":"AT5","c":"greenwald_2024","n":66959,"e":true,"v":0.6618},{"p":"AT6","c":"greenwald_2024","n":109678,"e":true,"v":1.0312},{"p":"AT7","c":"greenwald_2024","n":19985,"e":true,"v":0.7566},{"p":"AT9","c":"greenwald_2024","n":119975,"e":true,"v":0.6476},{"p":"GBM_4218","c":"guilhamon_2021","n":696,"e":true,"v":2.0585},{"p":"GBM_4250","c":"guilhamon_2021","n":675,"e":true,"v":0.0},{"p":"GBM_4275","c":"guilhamon_2021","n":457,"e":true,"v":3.2647},{"p":"GBM_4349","c":"guilhamon_2021","n":504,"e":true,"v":3.3896},{"p":"SF11215","c":"guo_2020","n":350,"e":true,"v":3.1136},{"p":"SF11979","c":"guo_2020","n":1455,"e":true,"v":0.532},{"p":"Wang_pair_22","c":"mathewson_2021","n":638,"e":true,"v":0.113},{"p":"Wang_pair_27","c":"mathewson_2021","n":893,"e":true,"v":0.0179},{"p":"Wang_pair_37","c":"mathewson_2021","n":116,"e":true,"v":0.0},{"p":"Wang_pair_5","c":"mathewson_2021","n":509,"e":true,"v":0.2204},{"p":"GBM12","c":"raviram_2023","n":70,"e":false,"v":0.0},{"p":"GBM4","c":"raviram_2023","n":2912,"e":true,"v":0.044},{"p":"GBM20","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"GBM25","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"GBM38","c":"sojka_2025","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_09C0DCE7","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_193F811A","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_6BEE2CB6","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_9976F952","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_99D8A126","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_A299027D","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_A90B18B6","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"scATAC_GBMx_ED12A6C9","c":"sundaram_2024","n":0,"e":false,"v":0.0},{"p":"P101","c":"zhao_2024","n":54,"e":false,"v":0.8903},{"p":"P62","c":"zhao_2024","n":101,"e":true,"v":2.1262},{"p":"P64","c":"zhao_2024","n":250,"e":true,"v":1.4231},{"p":"P77","c":"zhao_2024","n":52,"e":false,"v":1.3868},{"p":"P92","c":"zhao_2024","n":55,"e":false,"v":0.2914}],"cohorts":{"greenwald_2024":true,"guilhamon_2021":true,"guo_2020":true,"mathewson_2021":true,"raviram_2023":false,"zhao_2024":true}}},"malignant_AC":{},"malignant_MES":{"chr19:50725265-50725818":{"cpms":[20.087,1.982,39.097,25.884,20.846,14.982,26.911,8.595,17.685,41.567,64.446,70.476,63.904,59.956],"patients":[{"p":"AT10","c":"greenwald_2024","n":7940,"e":true,"v":0.6235},{"p":"AT11","c":"greenwald_2024","n":1194,"e":true,"v":1.095},{"p":"AT12","c":"greenwald_2024","n":6091,"e":true,"v":1.2146},{"p":"AT13","c":"greenwald_2024","n":1832,"e":true,"v":1.526},{"p":"AT14","c":"greenwald_2024","n":2200,"e":true,"v":1.0213},{"p":"AT15","c":"greenwald_2024","n":4140,"e":true,"v":0.9893},{"p":"AT3","c":"greenwald_2024","n":8809,"e":true,"v":1.3009},{"p":"AT4","c":"greenwald_2024","n":7250,"e":true,"v":1.2852},{"p":"AT5","c":"greenwald_2024","n":2704,"e":true,"v":1.0697},{"p":"AT6","c":"greenwald_2024","n":22068,"e":true,"v":1.1312},{"p":"AT7","c":"greenwald_2024","n":2819,"e":true,"v":0.9189},{"p":"AT9","c":"greenwald_2024","n":9544,"e":true,"v":1.1119}],"cohorts":{"greenwald_2024":true}}},"malignant_NPC":{},"malignant_OPC":{}};
+const CT_LIST = ["astrocyte", "microglia", "oligodendrocyte", "OPC", "endothelial", "neuron", "GABA_neuron", "T_cell", "TAM", "malignant", "malignant_AC", "malignant_MES", "malignant_NPC", "malignant_OPC"];
+const ATLAS_MAX_PER_CT = {"astrocyte": 242.7117462158203, "microglia": 250.8919677734375, "oligodendrocyte": 167.9342041015625, "OPC": 123.31147766113281, "endothelial": 306.86590576171875, "neuron": 134.57308959960938, "GABA_neuron": 389.12493896484375, "T_cell": 186.0647735595703, "TAM": 147.82203674316406, "malignant": 182.8500518798828, "malignant_AC": 205.5443572998047, "malignant_MES": 230.17958068847656, "malignant_NPC": 183.89117431640625, "malignant_OPC": 188.4754180908203};
+
+const AMP_REGIONS = [
+  { chrom: 'chr7',  start: 54500000, end: 56000000, label: 'EGFR amp' },
+  { chrom: 'chr12', start: 68000000, end: 70000000, label: 'MDM2 amp' },
+  { chrom: 'chr8',  start: 127000000,end: 129000000,label: 'MYC amp' },
+  { chrom: 'chr9',  start: 21000000, end: 22500000, label: 'CDKN2A del' }
+];
+function parsePeak(p) {
+  const m = p.match(/^(chr[^:]+):(\d+)-(\d+)$/);
+  return m ? { chrom: m[1], start: parseInt(m[2]), end: parseInt(m[3]) } : null;
+}
+function ampAdjacent(peak_id, celltype) {
+  const p = parsePeak(peak_id);
+  if (!p) return false;
+  const mid = (p.start + p.end) / 2;
+  return AMP_REGIONS.some(a => a.chrom === p.chrom && mid >= a.start - 1e6 && mid <= a.end + 1e6);
+}
+function fmtDist(d) {
+  const sign = d < 0 ? '-' : '+';
+  const abs = Math.abs(d);
+  if (abs < 1000) return `${sign}${abs} bp`;
+  if (abs < 1e6)  return `${sign}${(abs/1000).toFixed(1)} kb`;
+  return `${sign}${(abs/1e6).toFixed(2)} Mb`;
+}
+function fmtDetection(r) {
+  const pct = (100 * r.patient_detection_rate).toFixed(0);
+  return `${pct}% (${r.n_patients_evaluable})`;
+}
+
+let dt, currentCT = null, currentDistFilter = 'all';
+
+function renderExpansion(peak_id, tab_ct) {
+  const data = EXPANSION[tab_ct] && EXPANSION[tab_ct][peak_id];
+  if (!data) {
+    return `<div class="no-expand">(expansion data available for top-${2000} per tab only — this peak is outside that range; see supplementary CSV)</div>`;
+  }
+  const max_cpm = Math.max(...data.cpms, 1e-6);
+  let ctBars = '';
+  let ctBarsAbs = '';
+  for (let i = 0; i < CT_LIST.length; i++) {
+    const ct = CT_LIST[i];
+    const cpm = data.cpms[i];
+    const w = (100 * cpm / max_cpm).toFixed(1);
+    const atlasMax = ATLAS_MAX_PER_CT[ct] || 1;
+    const wAbs = Math.min(100, (100 * cpm / atlasMax)).toFixed(1);
+    const hl = (ct === tab_ct) ? 'highlighted' : '';
+    const label = (ct === 'malignant') ? 'malignant (pooled)' : ct;
+    ctBars += `<div class="ct-name ${hl}">${label}</div>`
+           + `<div class="bar-cont"><div class="bar-fill" style="width:${w}%"></div></div>`
+           + `<div class="num">${cpm.toFixed(2)}</div>`;
+    ctBarsAbs += `<div class="ct-name ${hl}">${label}</div>`
+              + `<div class="bar-cont"><div class="bar-fill abs-scale" style="width:${wAbs}%" title="${cpm.toFixed(2)} / ${atlasMax.toFixed(0)} atlas-max"></div></div>`
+              + `<div class="num">${wAbs}%</div>`;
+  }
+  let patients = '';
+  const sorted_pats = data.patients.slice().sort((a, b) => b.v - a.v);
+  for (const p of sorted_pats) {
+    const cls = !p.e ? 'unevaluable' : (p.v >= 0.01 ? 'detected' : '');
+    const vStr = (p.v >= 0.001 ? p.v.toFixed(3) : '0');
+    patients += `<div class="pat-row ${cls}" title="${p.c} / n_cells=${p.n}">`
+             +  `<span class="lab">${p.p}</span><span class="pen">${vStr}</span></div>`;
+  }
+  let cohorts = '';
+  for (const [coh, detected] of Object.entries(data.cohorts)) {
+    const cls = detected ? 'detected' : 'undetected';
+    const icon = detected ? '✓' : '✗';
+    cohorts += `<span class="coh-chip ${cls}">${icon} ${coh}</span>`;
+  }
+  // UCSC Genome Browser deep link with ±500bp flanking context, our atlas peak overlaid as custom red track
+  const pp = parsePeak(peak_id);
+  let ucscLink = '';
+  if (pp) {
+    const flank = 500;
+    const ucscPos = `${pp.chrom}:${pp.start - flank}-${pp.end + flank}`;
+    const peakWidth = pp.end - pp.start;
+    // Inline BED custom track: our atlas peak as a red block so it's visible at its position
+    // (UCSC regulatory tracks are normal-tissue biased; this makes our GBM peak visible for correlation)
+    const bedText = `track name="GBM atlas peak" description="${peak_id} (${tab_ct})" color=220,20,60 visibility=pack itemRgb=on\n${pp.chrom}\t${pp.start}\t${pp.end}\tv4_${tab_ct}_peak\t1000\t.\t${pp.start}\t${pp.end}\t220,20,60`;
+    const customText = encodeURIComponent(bedText);
+    const ucscParams = [
+      'db=hg38',
+      `position=${ucscPos}`,
+      `hgct_customText=${customText}`,
+      'hgt.labelWidth=20',
+      'encRegTfbsClusteredV3=dense',
+      'encRegDnaseClustered=dense',
+      'wgEncodeRegMarkH3k27ac=full',
+      'phastCons100way=full',
+      'jaspar2024=pack',
+      'rmsk=dense'
+    ].join('&');
+    const ucscUrl = `https://genome.ucsc.edu/cgi-bin/hgTracks?${ucscParams}`;
+    const aavNote = peakWidth > 700
+      ? `<span class="aav-note">⚠ Peak is ${peakWidth} bp — larger than a typical ~500 bp AAV enhancer insert; use UCSC view to pick a focal ~500 bp subregion (follow phastCons spikes + JASPAR TFBS clusters within our red peak block).</span>`
+      : `<span class="aav-note">✓ Peak is ${peakWidth} bp — fits a standard ~500 bp AAV enhancer insert directly.</span>`;
+    ucscLink = `<div class="ucsc-link">
+      <a href="${ucscUrl}" target="_blank" rel="noopener noreferrer">🧬 View in UCSC Genome Browser</a>
+      <span class="ucsc-ctx">— opens ${ucscPos} (peak + ±500 bp flanks). Our atlas peak is overlaid as a <span style="color:#dc143c;font-weight:600">red block</span>. ENCODE / H3K27ac / phastCons / JASPAR / RepeatMasker pre-enabled. <b>Note:</b> ENCODE regulatory tracks are from NORMAL tissue; weak signal there doesn't invalidate a GBM-specific peak — use conservation (phastCons) and motifs (JASPAR) which are tissue-independent.</span>
+      <br>${aavNote}
+    </div>`;
+  }
+
+  return `<div class="expansion">
+    ${ucscLink}
+    <div class="ct-bar-pair">
+      <div>
+        <h4>Specificity — scaled to this peak's max (cell-type selectivity)</h4>
+        <div class="ct-bars">${ctBars}</div>
+      </div>
+      <div>
+        <h4>Absolute strength — scaled to atlas-wide max per cell type</h4>
+        <div class="ct-bars">${ctBarsAbs}</div>
+      </div>
+    </div>
+    <h4>Per-patient fragments-per-cell (width-normalized), ALL EVALUABLE patients sorted descending</h4>
+    <div class="pat-grid">${patients}</div>
+    <h4>Per-cohort detection (cohort-level frags/cell wn ≥ 0.05)</h4>
+    <div class="coh-list">${cohorts}</div>
+  </div>`;
+}
+
+function renderTab(ct) {
+  currentCT = ct;
+  const rows = TAB_DATA[ct] || [];
+  const filtered = currentDistFilter === 'all'
+    ? rows
+    : rows.filter(r => r.distance_band === currentDistFilter);
+  if (dt) { dt.destroy(); $('#atlas-table tbody').empty(); }
+  const tbody = document.getElementById('atlas-table').getElementsByTagName('tbody')[0];
+  filtered.forEach(r => {
+    const tr = document.createElement('tr');
+    const ampFlag = ampAdjacent(r.peak_id, ct) ? ' <span class="amp-flag" title="Within ±1 Mb of a GBM amp/del locus (EGFR / MDM2 / MYC / CDKN2A). In non-malignant tabs: ambient-fragment contamination. In malignant tabs: CPM inflated by local copy number, not necessarily regulatory.">AMP</span>' : '';
+    tr.setAttribute('data-peak', r.peak_id);
+    tr.innerHTML = `
+      <td class="peakid"><span class="expander" title="Click to expand">▸</span> ${r.peak_id}${ampFlag}</td>
+      <td>${r.chrom}</td>
+      <td class="num">${r.start}</td>
+      <td class="num">${r.end}</td>
+      <td class="num">${r.peak_width_bp}</td>
+      <td>${r.nearest_gene}</td>
+      <td class="num">${fmtDist(r.dist_to_tss_signed)}</td>
+      <td>${r.distance_band}</td>
+      <td class="num">${r.log2FC_top_vs_next.toFixed(2)}</td>
+      <td class="num">${r.spec_pct.toFixed(3)}</td>
+      <td class="num">${r.strength_frags_per_cell_wn.toFixed(4)}</td>
+      <td class="num">${r.strength_pct.toFixed(3)}</td>
+      <td class="num primary-score-cell">${r.primary_score.toFixed(3)}</td>
+      <td class="num">${r.n_cohorts}</td>
+      <td class="num" title="Detected in ${r.n_patients_detected} of ${r.n_patients_evaluable}; evaluable=≥100 cells; detected=per-patient frags/cell wn ≥ 0.01." data-order="${r.patient_detection_rate}">${fmtDetection(r)}</td>`;
+    tbody.appendChild(tr);
+  });
+  dt = $('#atlas-table').DataTable({
+    paging: true, pageLength: 100,
+    lengthMenu: [25, 50, 100, 250, 1000],
+    order: [[12, 'desc']],
+    dom: '<"top"lf>rt<"bottom"ip>',
+    columnDefs: [
+      { orderable: true, targets: '_all' },
+      { visible: false, targets: [1,2,3] },
+      { className: 'num', targets: [2,3,4,6,8,9,10,11,12,13,14] }
+    ]
+  });
+  $('#atlas-table tbody').off('click').on('click', 'tr', function(e) {
+    const tr = $(this);
+    const peak_id = tr.data('peak');
+    const row = dt.row(tr);
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.find('.expander').text('▸');
+    } else {
+      row.child(renderExpansion(peak_id, currentCT)).show();
+      tr.find('.expander').text('▾');
+    }
+  });
+  $('.col-toggle').each(function() {
+    const idx = parseInt(this.dataset.col);
+    this.checked = dt.column(idx).visible();
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-ct="${ct}"]`).classList.add('active');
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => renderTab(btn.dataset.ct));
+});
+$(document).on('change', '.col-toggle', function() {
+  const col = dt.column(parseInt(this.dataset.col));
+  col.visible(this.checked);
+});
+document.getElementById('dist-filter').addEventListener('change', function() {
+  currentDistFilter = this.value;
+  renderTab(currentCT);
+});
+
+function updateStickyHeadTop() {
+  const header = document.querySelector('header');
+  const tabs = document.querySelector('.tabs');
+  if (!header || !tabs) return;
+  const headerH = header.offsetHeight;
+  const tabsH = tabs.offsetHeight;
+  document.documentElement.style.setProperty('--header-height', headerH + 'px');
+  document.documentElement.style.setProperty('--sticky-head-top', (headerH + tabsH) + 'px');
+}
+window.addEventListener('resize', updateStickyHeadTop);
+window.addEventListener('load', updateStickyHeadTop);
+updateStickyHeadTop();
+
+renderTab('malignant');
+setTimeout(updateStickyHeadTop, 100);
+</script>
+</body></html>
